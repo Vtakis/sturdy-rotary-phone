@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "functions.h"
+#include "../header-files/functions.h"
 
 int main(int argc,char** argv)
 {

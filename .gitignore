@@ -1,0 +1,6 @@
+.cproject
+.directory
+.project
+.settings/
+*.o
+myexe
