@@ -45,6 +45,7 @@ struct chainNode
 	int bucketPos;
 	int prevchainPosition;
 };
+void createRelations(int32_t[],uint32_t,int32_t[],uint32_t,relation **,relation**);
 result* RadixHashJoin(relation *relR,relation *relS);
 histNode* createHistArray(relation *rel);
 histNode* createSumHistArray(histNode *array);
