@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../header-files/functions.h"
-
+#define bucketPosNum 15
 void createRelations(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,relation **S,relation **R){
 	int32_t i;
 
@@ -21,4 +21,45 @@ void createRelations(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,rel
 		(*R)->tuples[i].value=B[i];
 	}
 	
+}
+unsigned int hash(int32_t x,int mod) {
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = (x >> 16) ^ x;
+    return x%mod;
+}
+indexHT* createHashTable(relation* reOrderedArray){
+
+	int32_t i;
+	indexHT* indexht;
+	indexht = initiliazeIndexHT(reOrderedArray);
+	for(i=0;i<reOrderedArray->num_of_tuples;i++){
+		if(indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition == -1)
+		{
+			indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition = reOrderedArray->tuples[i].id;
+		}
+		else
+		{
+			indexht->chainNode[reOrderedArray->tuples[i].id].prevchainPosition = indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition;
+			indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition = indexht->chainNode[reOrderedArray->tuples[i].id].bucketPos;
+		}
+	}
+	return indexht;
+}
+indexHT* initiliazeIndexHT(relation* reOrderedArray)
+{
+	int32_t i;
+	indexHT* indexht = malloc(sizeof(indexHT));
+	indexht->bucketArray = malloc(bucketPosNum*sizeof(bucketNode));
+	indexht->chainNode = malloc(reOrderedArray->num_of_tuples*sizeof(chainNode));
+	indexht->bucketSize = bucketPosNum;
+	indexht->chainSize = reOrderedArray->num_of_tuples;
+	for(i=0;i<bucketPosNum;i++){
+		indexht->bucketArray[i].lastChainPosition = -1;
+	}
+	for(i=0;i<indexht->chainSize;i++){
+		indexht->chainNode->prevchainPosition = -1;
+		indexht->chainNode->bucketPos = i;
+	}
+	return indexht;
 }
