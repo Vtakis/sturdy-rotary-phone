@@ -63,3 +63,20 @@ indexHT* initiliazeIndexHT(relation* reOrderedArray)
 	}
 	return indexht;
 }
+
+relation* createReOrderedArray(relation *array,int32_t *sumArray,int32_t sizeofsum){//mporei na mhn xreiazetai to sizeofsum
+	relation *result;
+	int32_t i;
+
+	result=malloc(sizeof(relation));
+	result->num_of_tuples=array->num_of_tuples;
+	result->tuples=malloc(array->num_of_tuples*sizeof(tuple));
+	
+	for(i=0;i<array->num_of_tuples;i++){
+		result->tuples[sumArray[array->tuples[i].value%sizeofsum]].id=array->tuples[i].id;
+		result->tuples[sumArray[array->tuples[i].value%sizeofsum]++].value=array->tuples[i].value;
+		//sumArray[array[i]%sizeofsum]++;
+	}
+
+	return result;
+}
