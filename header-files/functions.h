@@ -53,12 +53,12 @@ struct chainNode
 	int prevchainPosition;
 };
 unsigned int hash(int32_t x,int);
-indexHT* initiliazeIndexHT(relation* );
+indexHT* initiliazeIndexHT(relation* ,int32_t);
 void createRelations(int32_t[],uint32_t,int32_t[],uint32_t,relation **,relation**);
 result* RadixHashJoin(relation *relR,relation *relS);
 hist* createHistArray(relation **rel);
 hist* createSumHistArray(hist *array);
 relation* createReOrderedArray(relation *array,int32_t *sumArray,int32_t sizeofsum);
-indexHT* createHashTable(relation* reOrderedArray,hist *sumArray);
+indexHT* createHashTable(relation* reOrderedArray,int32_t start,int32_t end);
 void compareRelations(indexHT *bucketArray,relation* reOrdered_Bigger_Array,result* output);
 #endif /* FUNCTIONS_H_ */

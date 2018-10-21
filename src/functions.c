@@ -58,12 +58,12 @@ unsigned int hash(int32_t x,int mod) {
     x = (x >> 16) ^ x;
     return x%mod;
 }
-indexHT* createHashTable(relation* reOrderedArray,histNode* sumArray){
+indexHT* createHashTable(relation* reOrderedArray,int32_t start,int32_t end){
 
 	int32_t i;
 	indexHT* indexht;
-	indexht = initiliazeIndexHT(reOrderedArray);
-	for(i=0;i<reOrderedArray->num_of_tuples;i++){
+	indexht = initiliazeIndexHT(reOrderedArray,end-start+1);
+	for(i=start;i<end;i++){
 		if(indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition == -1)
 		{
 			indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition = reOrderedArray->tuples[i].id;
@@ -76,14 +76,14 @@ indexHT* createHashTable(relation* reOrderedArray,histNode* sumArray){
 	}
 	return indexht;
 }
-indexHT* initiliazeIndexHT(relation* reOrderedArray)
+indexHT* initiliazeIndexHT(relation* reOrderedArray,int32_t chainNumSize)
 {
 	int32_t i;
 	indexHT* indexht = malloc(sizeof(indexHT));
 	indexht->bucketArray = malloc(bucketPosNum*sizeof(bucketNode));
-	indexht->chainNode = malloc(reOrderedArray->num_of_tuples*sizeof(chainNode));
+	indexht->chainNode = malloc(chainNumSize*sizeof(chainNode));
 	indexht->bucketSize = bucketPosNum;
-	indexht->chainSize = reOrderedArray->num_of_tuples;
+	indexht->chainSize = chainNumSize;
 	for(i=0;i<bucketPosNum;i++){
 		indexht->bucketArray[i].lastChainPosition = -1;
 	}

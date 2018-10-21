@@ -54,21 +54,30 @@ int main(int argc,char** argv)
 		printf("%d %d\n",RR->tuples[i].id,RR->tuples[i].value);
 	}
 
-
-
-	if(histSumArrayR->histArray[histSumArrayR->histSize].count >= histSumArrayS->histArray[histSumArrayS->histSize])
+	int32_t startR,endR,startS,endS,counter = 0;
+	startR = 0;
+	startS = 0;
+	while(1)
 	{
-
+		if(counter+1 > histArrayR->histSize-1)break;				//counter+1 giati einai h thesh gia to end ,dld an h thesh pou tha einai to end einai ektos oriwn break//
+		startR = histArrayR->histArray[counter].count;
+		startS = histArrayS->histArray[counter].count;
+		endR = histArrayR->histArray[counter+1].count-1;
+		endS = histArrayS->histArray[counter+1].count-1;
+		if((endR - startR) >= (endS - startS))
+		{
+			createHashTable(RS,startS,endS);
+			/*toDo 	compare*/
+		}
+		else
+		{
+			createHashTable(RR,startR,endR);
+			/*toDo 	compare*/
+		}
+		if(endR == -1 || endS == -1){
+			counter++;
+			continue;
+		}
 	}
-	for(i=0;i<histSumArray->histSize;i++)
-	{
-		int32_t start,end;
-
-	}
-			createHashTable(RS);
-			compareRelations();
-
-			createHashTable(RR);
-
 
 }
