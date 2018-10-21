@@ -14,11 +14,17 @@ int main(int argc,char** argv)
 	hist *histArrayR,*histSumArrayR,*histArrayS,*histSumArrayS;   							//to xrhsimopoiw gia na ftiaksw to hashtable kathe bucket //
 	createRelations(A,size_A,B,size_B,&S,&R);
 
+/////////////////////////////////////////////////////////
 	printf("Takis start test\n");
-	createHistArray(&S);
-	createHistArray(&R);
-	printf("Takis end test\n");
-
+	hist *sumArrayS;	
+	
+	sumArrayS=createSumHistArray(createHistArray(&S));
+	printf("---------------\n");
+	createSumHistArray(createHistArray(&R));
+	
+	printf("Takis end test\n\n");
+////////////////////////////////////////////////////////	
+	
 	printf("S->num_of_tuples = %d \n",S->num_of_tuples);
 	for(i=0;i<size_A;i++){
 		printf("%d %d\n",S->tuples[i].id,S->tuples[i].value);
@@ -29,12 +35,12 @@ int main(int argc,char** argv)
 	}
 
 	relation *RS,*RR;
-	hist *sumArrayS;
-	/*sumArrayS=malloc(4*sizeof(int32_t));//n=2
+/*	hist *sumArrayS;
+	sumArrayS=malloc(4*sizeof(int32_t));//n=2
 	sumArrayS[0]=0;
 	sumArrayS[1]=5;
 	sumArrayS[2]=10;
-	sumArrayS[3]=15;*/
+	sumArrayS[3]=15;
 
 	sumArrayS=malloc(sizeof(hist));//n=3
 	sumArrayS->histSize=8;
@@ -48,7 +54,7 @@ int main(int argc,char** argv)
 	sumArrayS->histArray[5].count=14;
 	sumArrayS->histArray[6].count=16;
 	sumArrayS->histArray[7].count=18;
-
+*/
 	RR=createReOrderedArray(S,sumArrayS);//pinakas,sumarray gia ton pinaka,n^2
 
 	printf("\n\n\n\n\nRR->num_of_tuples = %d \n",RR->num_of_tuples);

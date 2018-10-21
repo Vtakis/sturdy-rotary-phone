@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "../header-files/functions.h"
 #define bucketPosNum 15
+#define N 3
+
 void createRelations(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,relation **S,relation **R){
 	int32_t i;
 
@@ -26,7 +29,12 @@ void createRelations(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,rel
 hist* createHistArray(relation **rel){
 	int32_t i,j,*freq;
 	int32_t count;
-	histNode* HistNode;
+	hist *Hist;
+	Hist=malloc(sizeof(Hist));
+	Hist->histSize=pow(2,N);
+	Hist->histArray=malloc(Hist->histSize*sizeof(histNode));	
+	for(i=0;i<N;i++)
+		Hist->histArray[i].count=0;
 
 	freq=malloc((*rel)->num_of_tuples*sizeof(int32_t));
 	for(i=0;i<(*rel)->num_of_tuples;i++)
@@ -36,20 +44,46 @@ hist* createHistArray(relation **rel){
 		count=1;
 		for(j=i+1;j<(*rel)->num_of_tuples;j++){
 			if((*rel)->tuples[i].value==(*rel)->tuples[j].value){
-				count++;
+				count++;				
 				freq[j]=0;
 			}
 		}
-		if(freq[i]!=0)
+		if(freq[i]!=0){
 			freq[i]=count;
+			Hist->histArray[(*rel)->tuples[i].value%Hist->histSize].count+=freq[i];
+		}
 	}
-	for(i=0;i<(*rel)->num_of_tuples;i++){
-		if(freq[i]!=0)
-			printf("%d: %d\n",(*rel)->tuples[i].value,freq[i]);
-	}
-	//Prepei na epistrefw pinaka typou histNode. Need to do it!
+	
+	for(i=0;i<Hist->histSize;i++)
+		printf("Hist[%d]=%d\n",i,Hist->histArray[i].count);
 
-	return NULL;
+	return Hist;
+}
+
+hist* createSumHistArray(hist *array){
+	int32_t i,nextBucket=0;
+	hist *Hist;
+	Hist=malloc(sizeof(Hist));
+	Hist->histSize=pow(2,N);
+	Hist->histArray=malloc(Hist->histSize*sizeof(histNode));
+	
+	for(i=0;i<N;i++)
+		Hist->histArray[i].count=0;
+	for(i=0;i<array->histSize;i++){
+		if(i==0){
+			nextBucket=array->histArray[i].count;
+			Hist->histArray[i].count=0;
+		}
+		else{
+			Hist->histArray[i].count=nextBucket;
+			nextBucket+=array->histArray[i].count;
+		}
+	}
+	printf("\nSum------------->\n");
+	for(i=0;i<Hist->histSize;i++){
+		printf("Hist[%d]=%d\n",i,Hist->histArray[i].count);
+	}
+	return Hist;
 }
 
 unsigned int hash(int32_t x,int mod) {
