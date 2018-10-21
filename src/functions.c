@@ -58,7 +58,7 @@ unsigned int hash(int32_t x,int mod) {
     x = (x >> 16) ^ x;
     return x%mod;
 }
-indexHT* createHashTable(relation* reOrderedArray){
+indexHT* createHashTable(relation* reOrderedArray,histNode* sumArray){
 
 	int32_t i;
 	indexHT* indexht;

@@ -6,6 +6,7 @@ typedef struct histNode histNode;
 typedef struct bucketNode bucketNode;
 typedef struct chainNode chainNode;
 typedef struct indexHT indexHT;
+typedef struct hist hist;
 #ifndef FUNCTIONS_H_
 #define FUNCTIONS_H_
 
@@ -24,6 +25,11 @@ struct relation
 {
 	tuple *tuples;
 	uint32_t num_of_tuples;
+};
+struct hist
+{
+	histNode* histArray;
+	int32_t histSize;
 };
 struct histNode
 {
@@ -50,10 +56,9 @@ unsigned int hash(int32_t x,int);
 indexHT* initiliazeIndexHT(relation* );
 void createRelations(int32_t[],uint32_t,int32_t[],uint32_t,relation **,relation**);
 result* RadixHashJoin(relation *relR,relation *relS);
-histNode* createHistArray(relation **rel);
-histNode* createSumHistArray(histNode *array);
+hist* createHistArray(relation **rel);
+hist* createSumHistArray(hist *array);
 relation* createReOrderedArray(relation *array,int32_t *sumArray,int32_t sizeofsum);
-int hashFunction();
-indexHT* createHashTable(relation* reOrderedArray);
+indexHT* createHashTable(relation* reOrderedArray,hist *sumArray);
 void compareRelations(indexHT *bucketArray,relation* reOrdered_Bigger_Array,result* output);
 #endif /* FUNCTIONS_H_ */

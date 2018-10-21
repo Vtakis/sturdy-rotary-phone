@@ -11,7 +11,7 @@ int main(int argc,char** argv)
 	uint32_t size_B=3;
 
 	relation *S,*R;
-
+	hist *histArrayR,*histSumArrayR,*histArrayS,*histSumArrayS;   							//to xrhsimopoiw gia na ftiaksw to hashtable kathe bucket //
 	createRelations(A,size_A,B,size_B,&S,&R);
 
 	printf("Takis start test\n");
@@ -49,7 +49,26 @@ int main(int argc,char** argv)
 	RR=createReOrderedArray(S,sumArrayS,8);//pinakas,sumarray gia ton pinaka,n^2
 
 	printf("\n\n\n\n\nRR->num_of_tuples = %d \n",RR->num_of_tuples);
+
 	for(i=0;i<RR->num_of_tuples;i++){
 		printf("%d %d\n",RR->tuples[i].id,RR->tuples[i].value);
 	}
+
+
+
+	if(histSumArrayR->histArray[histSumArrayR->histSize].count >= histSumArrayS->histArray[histSumArrayS->histSize])
+	{
+
+	}
+	for(i=0;i<histSumArray->histSize;i++)
+	{
+		int32_t start,end;
+
+	}
+			createHashTable(RS);
+			compareRelations();
+
+			createHashTable(RR);
+
+
 }
