@@ -23,7 +23,7 @@ void createRelations(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,rel
 	
 }
 
-histNode* createHistArray(relation **rel){
+hist* createHistArray(relation **rel){
 	int32_t i,j,*freq;
 	int32_t count;
 	histNode* HistNode;
@@ -94,7 +94,7 @@ indexHT* initiliazeIndexHT(relation* reOrderedArray,int32_t chainNumSize)
 	return indexht;
 }
 
-relation* createReOrderedArray(relation *array,int32_t *sumArray,int32_t sizeofsum){//mporei na mhn xreiazetai to sizeofsum
+relation* createReOrderedArray(relation *array,hist *sumArray){
 	relation *result;
 	int32_t i;
 
@@ -103,10 +103,15 @@ relation* createReOrderedArray(relation *array,int32_t *sumArray,int32_t sizeofs
 	result->tuples=malloc(array->num_of_tuples*sizeof(tuple));
 	
 	for(i=0;i<array->num_of_tuples;i++){
-		result->tuples[sumArray[array->tuples[i].value%sizeofsum]].id=array->tuples[i].id;
-		result->tuples[sumArray[array->tuples[i].value%sizeofsum]++].value=array->tuples[i].value;
+		result->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].count].id=array->tuples[i].id;
+		result->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].count++].value=array->tuples[i].value;
 		//sumArray[array[i]%sizeofsum]++;
 	}
 
 	return result;
+}
+
+
+void compareRelations(indexHT *bucketArray,relation* reOrdered_Bigger_Array,result* output){
+
 }

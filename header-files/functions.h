@@ -40,7 +40,7 @@ struct bucketNode
 {
 	int lastChainPosition;
 };
-struct indexHT
+struct indexHT //bucket kai chain
 {
 	bucketNode* bucketArray;
 	int bucketSize;
@@ -58,7 +58,7 @@ void createRelations(int32_t[],uint32_t,int32_t[],uint32_t,relation **,relation*
 result* RadixHashJoin(relation *relR,relation *relS);
 hist* createHistArray(relation **rel);
 hist* createSumHistArray(hist *array);
-relation* createReOrderedArray(relation *array,int32_t *sumArray,int32_t sizeofsum);
+relation* createReOrderedArray(relation *array,hist *sumArray);
 indexHT* createHashTable(relation* reOrderedArray,int32_t start,int32_t end);
 void compareRelations(indexHT *bucketArray,relation* reOrdered_Bigger_Array,result* output);
 #endif /* FUNCTIONS_H_ */

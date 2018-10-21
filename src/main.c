@@ -29,31 +29,34 @@ int main(int argc,char** argv)
 	}
 
 	relation *RS,*RR;
-	int32_t *sumArrayS;
+	hist *sumArrayS;
 	/*sumArrayS=malloc(4*sizeof(int32_t));//n=2
 	sumArrayS[0]=0;
 	sumArrayS[1]=5;
 	sumArrayS[2]=10;
 	sumArrayS[3]=15;*/
 
-	sumArrayS=malloc(8*sizeof(int32_t));//n=3
-	sumArrayS[0]=0;
-	sumArrayS[1]=2;
-	sumArrayS[2]=5;
-	sumArrayS[3]=8;
-	sumArrayS[4]=11;
-	sumArrayS[5]=14;
-	sumArrayS[6]=16;
-	sumArrayS[7]=18;
+	sumArrayS=malloc(sizeof(hist));//n=3
+	sumArrayS->histSize=8;
+	sumArrayS->histArray=malloc(sumArrayS->histSize*sizeof(histNode));
+	//den exw kanei to tuple
+	sumArrayS->histArray[0].count=0;
+	sumArrayS->histArray[1].count=2;
+	sumArrayS->histArray[2].count=5;
+	sumArrayS->histArray[3].count=8;
+	sumArrayS->histArray[4].count=11;
+	sumArrayS->histArray[5].count=14;
+	sumArrayS->histArray[6].count=16;
+	sumArrayS->histArray[7].count=18;
 
-	RR=createReOrderedArray(S,sumArrayS,8);//pinakas,sumarray gia ton pinaka,n^2
+	RR=createReOrderedArray(S,sumArrayS);//pinakas,sumarray gia ton pinaka,n^2
 
 	printf("\n\n\n\n\nRR->num_of_tuples = %d \n",RR->num_of_tuples);
 
 	for(i=0;i<RR->num_of_tuples;i++){
 		printf("%d %d\n",RR->tuples[i].id,RR->tuples[i].value);
 	}
-
+return;
 	int32_t startR,endR,startS,endS,counter = 0;
 	startR = 0;
 	startS = 0;
