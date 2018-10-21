@@ -50,7 +50,7 @@ unsigned int hash(int32_t x,int);
 indexHT* initiliazeIndexHT(relation* );
 void createRelations(int32_t[],uint32_t,int32_t[],uint32_t,relation **,relation**);
 result* RadixHashJoin(relation *relR,relation *relS);
-histNode* createHistArray(relation *rel);
+histNode* createHistArray(relation **rel);
 histNode* createSumHistArray(histNode *array);
 relation* createReOrderedArray(relation *array,int32_t *sumArray,int32_t sizeofsum);
 int hashFunction();

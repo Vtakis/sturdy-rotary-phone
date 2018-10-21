@@ -22,6 +22,36 @@ void createRelations(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,rel
 	}
 	
 }
+
+histNode* createHistArray(relation **rel){
+	int32_t i,j,*freq;
+	int32_t count;
+	histNode* HistNode;
+
+	freq=malloc((*rel)->num_of_tuples*sizeof(int32_t));
+	for(i=0;i<(*rel)->num_of_tuples;i++)
+		freq[i]=-1;
+
+	for(i=0;i<(*rel)->num_of_tuples;i++){
+		count=1;
+		for(j=i+1;j<(*rel)->num_of_tuples;j++){
+			if((*rel)->tuples[i].value==(*rel)->tuples[j].value){
+				count++;
+				freq[j]=0;
+			}
+		}
+		if(freq[i]!=0)
+			freq[i]=count;
+	}
+	for(i=0;i<(*rel)->num_of_tuples;i++){
+		if(freq[i]!=0)
+			printf("%d: %d\n",(*rel)->tuples[i].value,freq[i]);
+	}
+	//Prepei na epistrefw pinaka typou histNode. Need to do it!
+
+	return NULL;
+}
+
 unsigned int hash(int32_t x,int mod) {
     x = ((x >> 16) ^ x) * 0x45d9f3b;
     x = ((x >> 16) ^ x) * 0x45d9f3b;

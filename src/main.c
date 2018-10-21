@@ -14,6 +14,11 @@ int main(int argc,char** argv)
 
 	createRelations(A,size_A,B,size_B,&S,&R);
 
+	printf("Takis start test\n");
+	createHistArray(&S);
+	createHistArray(&R);
+	printf("Takis end test\n");
+
 	printf("S->num_of_tuples = %d \n",S->num_of_tuples);
 	for(i=0;i<size_A;i++){
 		printf("%d %d\n",S->tuples[i].id,S->tuples[i].value);
