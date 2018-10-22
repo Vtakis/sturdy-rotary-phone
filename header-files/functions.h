@@ -62,5 +62,5 @@ hist* createSumHistArray(hist *array);
 relation* createReOrderedArray(relation *array,hist *sumArray);
 void deleteHashTable(indexHT **);
 indexHT* createHashTable(relation* reOrderedArray,int32_t start,int32_t end);
-void compareRelations(indexHT *bucketArray,relation* reOrdered_Bigger_Array,result* output);
+void compareRelations(indexHT *ht,relation *array,int32_t start,int32_t end,relation *hashedArray);
 #endif /* FUNCTIONS_H_ */

@@ -22,8 +22,7 @@ void createRelations(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,rel
 	for(i=0;i<size_B;i++){
 		(*R)->tuples[i].id=i+1;
 		(*R)->tuples[i].value=B[i];
-	}
-	
+	}	
 }
 
 hist* createHistArray(relation **rel){
@@ -55,10 +54,6 @@ hist* createHistArray(relation **rel){
 			Hist->histArray[(*rel)->tuples[i].value%Hist->histSize].count+=freq[i];
 		}
 	}
-	
-	for(i=0;i<Hist->histSize;i++)
-		printf("Hist[%d]=%d\n",i,Hist->histArray[i].count);
-
 	return Hist;
 }
 
@@ -74,22 +69,33 @@ hist* createSumHistArray(hist *array){
 		Hist->histArray[i].point=0;
 	}
 	for(i=0;i<array->histSize;i++){
-	if(i==0){
-		nextBucket=array->histArray[i].count;
-		Hist->histArray[i].count=0;
-		Hist->histArray[i].point=0;
-	}
-	else{
-		Hist->histArray[i].count=nextBucket;
-		Hist->histArray[i].point=nextBucket;
-		nextBucket+=array->histArray[i].count;
-	}
-	}
-	printf("\nSum------------->\n");
-	for(i=0;i<Hist->histSize;i++){
-		printf("Hist[%d]=%d\n",i,Hist->histArray[i].count);
+		if(i==0){
+			nextBucket=array->histArray[i].count;
+			Hist->histArray[i].count=0;
+			Hist->histArray[i].point=0;
+		}
+		else{
+			Hist->histArray[i].count=nextBucket;
+			Hist->histArray[i].point=nextBucket;
+			nextBucket+=array->histArray[i].count;
+		}
 	}
 	return Hist;
+}
+
+relation* createReOrderedArray(relation *array,hist *sumArray){
+	relation *reOrderedArray;
+	int32_t i;
+
+	reOrderedArray=malloc(sizeof(relation));
+	reOrderedArray->num_of_tuples=array->num_of_tuples;
+	reOrderedArray->tuples=malloc(array->num_of_tuples*sizeof(tuple));
+
+	for(i=0;i<array->num_of_tuples;i++){
+		reOrderedArray->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].point].id=array->tuples[i].id;//koitazoume ton sumArray gia na brw to offset pou 8a balw to epomeno tuple
+		reOrderedArray->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].point++].value=array->tuples[i].value;//thn deuterh fora pou bazoume to value kanw ++ gia na deixnei sthn epomenh kenh 8esh
+	}
+	return reOrderedArray;
 }
 
 unsigned int hash(int32_t x,int mod) {
@@ -97,36 +103,6 @@ unsigned int hash(int32_t x,int mod) {
     x = ((x >> 16) ^ x) * 0x45d9f3b;
     x = (x >> 16) ^ x;
     return x%mod;
-}
-indexHT* createHashTable(relation* reOrderedArray,int32_t start,int32_t end){
-
-	int32_t i;
-	indexHT* indexht;
-	indexht = initiliazeIndexHT(reOrderedArray,end-start+1);
-	printf("start=%d  end=%d\n",start,end);
-	for(i=start;i<=end;i++){
-		if(indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition == -1)
-		{
-			indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition = reOrderedArray->tuples[i].id-1;
-			//printf("i= %d --id= %d --value=%d\n",i,reOrderedArray->tuples[i].id-1,reOrderedArray->tuples[i].value);
-		}
-		else
-		{
-			//printf("mpika\n");
-			//printf("lastChainPos =%d\n",indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition);
-			//printf("i= %d --id= %d ...%d--value=%d\n",i,reOrderedArray->tuples[i].id-1,indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition,reOrderedArray->tuples[i].value);
-
-
-			indexht->chainNode[reOrderedArray->tuples[i].id-1].prevchainPosition = indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition;
-			//printf("bucketPos =%d\n",indexht->chainNode[reOrderedArray->tuples[i].id-1].bucketPos);
-		//	indexht->chainNode[reOrderedArray->tuples[i].id-1].prevchainPosition = indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition;
-
-
-			//printf("prevChainPos=%d\n",indexht->chainNode[reOrderedArray->tuples[i].id-1].prevchainPosition);
-			indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition = indexht->chainNode[reOrderedArray->tuples[i].id-1].bucketPos;
-		}
-	}
-	return indexht;
 }
 indexHT* initiliazeIndexHT(relation* reOrderedArray,int32_t chainNumSize)
 {
@@ -145,28 +121,49 @@ indexHT* initiliazeIndexHT(relation* reOrderedArray,int32_t chainNumSize)
 	}
 	return indexht;
 }
+indexHT* createHashTable(relation* reOrderedArray,int32_t start,int32_t end){
+
+	int32_t i;
+	indexHT* indexht;
+	indexht = initiliazeIndexHT(reOrderedArray,end-start+1);
+	for(i=start;i<=end;i++){
+		if(indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition == -1)//elegxos an to h 8esh tou bucket einai kenh
+		{
+			indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition = i;
+		}
+		else
+		{
+			indexht->chainNode[i].prevchainPosition = indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition;
+			indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition = indexht->chainNode[i].bucketPos;
+		}
+	}
+	return indexht;
+}
 void deleteHashTable(indexHT **ht)
 {
 	free((*ht)->bucketArray);				/*diagrafh tou pinaka bucket*/
 	free((*ht)->chainNode);					/*diagrafh tou pinaka chain*/
-	free((*ht));							/*diagrafh olhs ths domhs*/
+	free((*ht));						/*diagrafh olhs ths domhs*/
 }
-relation* createReOrderedArray(relation *array,hist *sumArray){
-	relation *result;
-	int32_t i;
+void compareRelations(indexHT *ht,relation *array,int32_t start,int32_t end,relation *hashedArray){
+	int32_t i,offset;
 
-	result=malloc(sizeof(relation));
-	result->num_of_tuples=array->num_of_tuples;
-	result->tuples=malloc(array->num_of_tuples*sizeof(tuple));
-
-	for(i=0;i<array->num_of_tuples;i++){
-		result->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].point].id=array->tuples[i].id;
-		result->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].point++].value=array->tuples[i].value;
+	for(i=start;i<=end;i++){
+		if(ht->bucketArray[hash(array->tuples[i].value,bucketPosNum)].lastChainPosition == -1){//an einai -1 tote den exoume match opote to agnwoume
+			continue;
+		}
+		else{
+			offset=ht->bucketArray[hash(array->tuples[i].value,bucketPosNum)].lastChainPosition;//pairnw ws offset thn teleutaia 8esh tou chain
+			while(1){
+				if(offset==-1)break;//den exei alla stoixeia na doume
+				if(array->tuples[i].value==hashedArray->tuples[offset].value){//elegxoume an exoun idio value
+					printf("RESULT = %d\n",hashedArray->tuples[offset].value);
+				}
+				offset=ht->chainNode[offset].prevchainPosition;//to neo offset einai apo to prevchainPosition
+			}
+		}
 	}
-	return result;
 }
 
 
-void compareRelations(indexHT *bucketArray,relation* reOrdered_Bigger_Array,result* output){
 
-}
