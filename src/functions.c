@@ -32,7 +32,7 @@ hist* createHistArray(relation **rel){
 	Hist=malloc(sizeof(Hist));
 	Hist->histSize=pow(2,N);
 	Hist->histArray=malloc(Hist->histSize*sizeof(histNode));	
-	for(i=0;i<N;i++){
+	for(i=0;i<Hist->histSize;i++){
 		Hist->histArray[i].count=0;
 		Hist->histArray[i].point=0;
 	}
@@ -64,7 +64,7 @@ hist* createSumHistArray(hist *array){
 	Hist->histSize=pow(2,N);
 	Hist->histArray=malloc(Hist->histSize*sizeof(histNode));
 	
-	for(i=0;i<N;i++){
+	for(i=0;i<Hist->histSize;i++){
 		Hist->histArray[i].count=0;
 		Hist->histArray[i].point=0;
 	}
