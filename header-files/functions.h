@@ -59,6 +59,7 @@ result* RadixHashJoin(relation *relR,relation *relS);
 hist* createHistArray(relation **rel);
 hist* createSumHistArray(hist *array);
 relation* createReOrderedArray(relation *array,hist *sumArray);
+void deleteHashTable(indexHT **);
 indexHT* createHashTable(relation* reOrderedArray,int32_t start,int32_t end);
 void compareRelations(indexHT *bucketArray,relation* reOrdered_Bigger_Array,result* output);
 #endif /* FUNCTIONS_H_ */

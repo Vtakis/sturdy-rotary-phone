@@ -9,30 +9,29 @@ int main(int argc,char** argv)
 	uint32_t size_A=20;
 	int32_t B[]={1,1,3};
 	uint32_t size_B=3;
-
+	indexHT* ht;
 	relation *S,*R;
 	hist *histArrayR,*histSumArrayR,*histArrayS,*histSumArrayS;   							//to xrhsimopoiw gia na ftiaksw to hashtable kathe bucket //
 	createRelations(A,size_A,B,size_B,&S,&R);
 
 /////////////////////////////////////////////////////////
 	printf("Takis start test\n");
-	hist *sumArrayS;	
 	
-	sumArrayS=createSumHistArray(createHistArray(&S));
+	histSumArrayS=createSumHistArray(createHistArray(&S));
 	printf("---------------\n");
-	createSumHistArray(createHistArray(&R));
+	histSumArrayR=createSumHistArray(createHistArray(&R));
 	
 	printf("Takis end test\n\n");
 ////////////////////////////////////////////////////////	
 	
-	printf("S->num_of_tuples = %d \n",S->num_of_tuples);
+	/*printf("S->num_of_tuples = %d \n",S->num_of_tuples);
 	for(i=0;i<size_A;i++){
 		printf("%d %d\n",S->tuples[i].id,S->tuples[i].value);
 	}
 	printf("R->num_of_tuples = %d \n",R->num_of_tuples);
 	for(i=0;i<size_B;i++){
 		printf("%d %d\n",R->tuples[i].id,R->tuples[i].value);
-	}
+	}*/
 
 	relation *RS,*RR;
 /*	hist *sumArrayS;
@@ -55,38 +54,78 @@ int main(int argc,char** argv)
 	sumArrayS->histArray[6].count=16;
 	sumArrayS->histArray[7].count=18;
 */
-	RR=createReOrderedArray(S,sumArrayS);//pinakas,sumarray gia ton pinaka,n^2
+	/*for(i=0;i<histSumArrayR->histSize;i++){
+		printf("1Hist[%d]=%d\n",i,histSumArrayR->histArray[i].count);
+	}*/
+	RR=createReOrderedArray(R,histSumArrayR);//pinakas,sumarray gia ton pinaka,n^2
+	RS=createReOrderedArray(S,histSumArrayS);//pinakas,sumarray gia ton pinaka,n^2
 
 	printf("\n\n\n\n\nRR->num_of_tuples = %d \n",RR->num_of_tuples);
-
 	for(i=0;i<RR->num_of_tuples;i++){
-		printf("%d %d\n",RR->tuples[i].id,RR->tuples[i].value);
+		printf("RR[%d] -> %d\n",i,RR->tuples[i].value);
 	}
-return;
+
+	printf("\n\n\n\n\nRS->num_of_tuples = %d \n",RS->num_of_tuples);
+	for(i=0;i<RS->num_of_tuples;i++){
+		printf("RS[%d] -> %d\n",i,RS->tuples[i].value);
+	}
+	for(i=0;i<histSumArrayR->histSize;i++){
+		printf("1Hist[%d]=%d\n",i,histSumArrayR->histArray[i].count);
+	}
+	printf("\n");
+	for(i=0;i<histSumArrayS->histSize;i++){
+		printf("2Hist[%d]=%d\n",i,histSumArrayS->histArray[i].count);
+	}
+
 	int32_t startR,endR,startS,endS,counter = 0;
 	startR = 0;
 	startS = 0;
 	while(1)
 	{
-		if(counter+1 > histArrayR->histSize-1)break;				//counter+1 giati einai h thesh gia to end ,dld an h thesh pou tha einai to end einai ektos oriwn break//
-		startR = histArrayR->histArray[counter].count;
-		startS = histArrayS->histArray[counter].count;
-		endR = histArrayR->histArray[counter+1].count-1;
-		endS = histArrayS->histArray[counter+1].count-1;
+		if(counter+1 > histSumArrayR->histSize-1)break;				//counter+1 giati einai h thesh gia to end ,dld an h thesh pou tha einai to end einai ektos oriwn break//
+		printf("counter=%d\n",counter);
+		startR = histSumArrayR->histArray[counter].count;
+		startS = histSumArrayS->histArray[counter].count;
+		endR = histSumArrayR->histArray[counter+1].count-1;
+		endS = histSumArrayS->histArray[counter+1].count-1;
+
+		printf("startR=%d \nendR=%d \nstartS=%d \nendS=%d\n",startR,endR,startS,endS);
+
+		if(endR + 1 == startR || endS + 1== startS){
+			counter++;
+			continue;
+		}
 		if((endR - startR) >= (endS - startS))
 		{
-			createHashTable(RS,startS,endS);
+			ht=createHashTable(RS,startS,endS);
+			for(i=0;i<ht->bucketSize;i++)
+			{
+				printf("Bucket[%d]=%d\n",i,ht->bucketArray[i].lastChainPosition);
+			}
+			for(i=0;i<ht->chainSize;i++)
+			{
+				printf("Chain[%d]->bucketPos=%d\nChain[%d]->prevChainPost=%d\n",i,ht->chainNode[i].bucketPos,i,ht->chainNode[i].prevchainPosition);
+			}
+			deleteHashTable(&ht);
+			return 1;
 			/*toDo 	compare*/
 		}
 		else
 		{
-			createHashTable(RR,startR,endR);
+			ht=createHashTable(RR,startR,endR);
+			for(i=0;i<ht->bucketSize;i++)
+			{
+				printf("Bucket[%d]=%d\n",i,ht->bucketArray[i].lastChainPosition);
+			}
+			for(i=0;i<ht->chainSize;i++)
+			{
+				printf("Chain[%d]->bucketPos=%d\nChain[%d]->prevChainPost=%d\n",i,ht->chainNode[i].bucketPos,i,ht->chainNode[i].prevchainPosition);
+			}
+			deleteHashTable(&ht);
+			return 1;
 			/*toDo 	compare*/
 		}
-		if(endR == -1 || endS == -1){
-			counter++;
-			continue;
-		}
+
 	}
 
 }

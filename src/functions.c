@@ -97,6 +97,7 @@ indexHT* createHashTable(relation* reOrderedArray,int32_t start,int32_t end){
 	int32_t i;
 	indexHT* indexht;
 	indexht = initiliazeIndexHT(reOrderedArray,end-start+1);
+	printf("start=%d  end=%d\n",start,end);
 	for(i=start;i<end;i++){
 		if(indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition == -1)
 		{
@@ -127,21 +128,32 @@ indexHT* initiliazeIndexHT(relation* reOrderedArray,int32_t chainNumSize)
 	}
 	return indexht;
 }
-
+void deleteHashTable(indexHT **ht)
+{
+	int32_t i;
+	free((*ht)->bucketArray);				/*diagrafh tou pinaka bucket*/
+	free((*ht)->chainNode);					/*diagrafh tou pinaka chain*/
+	free((*ht));							/*diagrafh olhs ths domhs*/
+}
 relation* createReOrderedArray(relation *array,hist *sumArray){
 	relation *result;
-	int32_t i;
+	int32_t i,start=0,end,counter=0;;
 
 	result=malloc(sizeof(relation));
 	result->num_of_tuples=array->num_of_tuples;
 	result->tuples=malloc(array->num_of_tuples*sizeof(tuple));
-	
+
 	for(i=0;i<array->num_of_tuples;i++){
+		printf("*%d\n",sumArray->histArray[array->tuples[i].value%sumArray->histSize].count);
+		//printf("--%d\n",sumArray->histArray[array->tuples[i].value%sumArray->histSize].count++);
+		//printf("%d\n",sumArray->histArray[array->tuples[i].value%sumArray->histSize].count);
+		//counter = sumArray->histArray[array->tuples[i].value%sumArray->histSize].count;
 		result->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].count].id=array->tuples[i].id;
 		result->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].count++].value=array->tuples[i].value;
-		//sumArray[array[i]%sizeofsum]++;
-	}
+		printf("**%d\n",sumArray->histArray[array->tuples[i].value%sumArray->histSize].count);
+		//counter = sumArray->histArray[array->tuples[i].value%sumArray->histSize].count+1;*/
 
+	}
 	return result;
 }
 
