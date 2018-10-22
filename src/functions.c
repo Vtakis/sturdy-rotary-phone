@@ -69,20 +69,21 @@ hist* createSumHistArray(hist *array){
 	Hist->histSize=pow(2,N);
 	Hist->histArray=malloc(Hist->histSize*sizeof(histNode));
 	
-	for(i=0;i<N;i++)
+	for(i=0;i<N;i++){
 		Hist->histArray[i].count=0;
 		Hist->histArray[i].point=0;
+	}
 	for(i=0;i<array->histSize;i++){
-		if(i==0){
-			nextBucket=array->histArray[i].count;
-			Hist->histArray[i].count=0;
-			Hist->histArray[i].point=0;
-		}
-		else{
-			Hist->histArray[i].count=nextBucket;
-			Hist->histArray[i].point=nextBucket;
-			nextBucket+=array->histArray[i].count;
-		}
+	if(i==0){
+		nextBucket=array->histArray[i].count;
+		Hist->histArray[i].count=0;
+		Hist->histArray[i].point=0;
+	}
+	else{
+		Hist->histArray[i].count=nextBucket;
+		Hist->histArray[i].point=nextBucket;
+		nextBucket+=array->histArray[i].count;
+	}
 	}
 	printf("\nSum------------->\n");
 	for(i=0;i<Hist->histSize;i++){
@@ -103,15 +104,26 @@ indexHT* createHashTable(relation* reOrderedArray,int32_t start,int32_t end){
 	indexHT* indexht;
 	indexht = initiliazeIndexHT(reOrderedArray,end-start+1);
 	printf("start=%d  end=%d\n",start,end);
-	for(i=start;i<end;i++){
+	for(i=start;i<=end;i++){
 		if(indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition == -1)
 		{
-			indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition = reOrderedArray->tuples[i].id;
+			indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition = reOrderedArray->tuples[i].id-1;
+			//printf("i= %d --id= %d --value=%d\n",i,reOrderedArray->tuples[i].id-1,reOrderedArray->tuples[i].value);
 		}
 		else
 		{
-			indexht->chainNode[reOrderedArray->tuples[i].id].prevchainPosition = indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition;
-			indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition = indexht->chainNode[reOrderedArray->tuples[i].id].bucketPos;
+			//printf("mpika\n");
+			//printf("lastChainPos =%d\n",indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition);
+			//printf("i= %d --id= %d ...%d--value=%d\n",i,reOrderedArray->tuples[i].id-1,indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition,reOrderedArray->tuples[i].value);
+
+
+			indexht->chainNode[reOrderedArray->tuples[i].id-1].prevchainPosition = indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition;
+			//printf("bucketPos =%d\n",indexht->chainNode[reOrderedArray->tuples[i].id-1].bucketPos);
+		//	indexht->chainNode[reOrderedArray->tuples[i].id-1].prevchainPosition = indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition;
+
+
+			//printf("prevChainPos=%d\n",indexht->chainNode[reOrderedArray->tuples[i].id-1].prevchainPosition);
+			indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition = indexht->chainNode[reOrderedArray->tuples[i].id-1].bucketPos;
 		}
 	}
 	return indexht;
@@ -128,36 +140,28 @@ indexHT* initiliazeIndexHT(relation* reOrderedArray,int32_t chainNumSize)
 		indexht->bucketArray[i].lastChainPosition = -1;
 	}
 	for(i=0;i<indexht->chainSize;i++){
-		indexht->chainNode->prevchainPosition = -1;
-		indexht->chainNode->bucketPos = i;
+		indexht->chainNode[i].prevchainPosition = -1;
+		indexht->chainNode[i].bucketPos = i;
 	}
 	return indexht;
 }
 void deleteHashTable(indexHT **ht)
 {
-	int32_t i;
 	free((*ht)->bucketArray);				/*diagrafh tou pinaka bucket*/
 	free((*ht)->chainNode);					/*diagrafh tou pinaka chain*/
 	free((*ht));							/*diagrafh olhs ths domhs*/
 }
 relation* createReOrderedArray(relation *array,hist *sumArray){
 	relation *result;
-	int32_t i,start=0,end,counter=0;
+	int32_t i;
 
 	result=malloc(sizeof(relation));
 	result->num_of_tuples=array->num_of_tuples;
 	result->tuples=malloc(array->num_of_tuples*sizeof(tuple));
 
 	for(i=0;i<array->num_of_tuples;i++){
-		printf("*%d\n",sumArray->histArray[array->tuples[i].value%sumArray->histSize].point);
-		//printf("--%d\n",sumArray->histArray[array->tuples[i].value%sumArray->histSize].count++);
-		//printf("%d\n",sumArray->histArray[array->tuples[i].value%sumArray->histSize].count);
-		//counter = sumArray->histArray[array->tuples[i].value%sumArray->histSize].count;
 		result->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].point].id=array->tuples[i].id;
 		result->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].point++].value=array->tuples[i].value;
-		printf("**%d\n",sumArray->histArray[array->tuples[i].value%sumArray->histSize].point);
-		//counter = sumArray->histArray[array->tuples[i].value%sumArray->histSize].count+1;*/
-
 	}
 	return result;
 }

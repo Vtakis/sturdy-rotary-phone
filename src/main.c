@@ -28,20 +28,9 @@ int main(int argc,char** argv)
 	printf("Takis end test\n\n");
 ////////////////////////////////////////////////////////	
 	
-	/*printf("S->num_of_tuples = %d \n",S->num_of_tuples);
-	for(i=0;i<size_A;i++){
-		printf("%d %d\n",S->tuples[i].id,S->tuples[i].value);
-	}
-	printf("R->num_of_tuples = %d \n",R->num_of_tuples);
-	for(i=0;i<size_B;i++){
-		printf("%d %d\n",R->tuples[i].id,R->tuples[i].value);
-	}*/
 
 	relation *RS,*RR;
 
-	/*for(i=0;i<histSumArrayR->histSize;i++){
-		printf("1Hist[%d]=%d\n",i,histSumArrayR->histArray[i].count);
-	}*/
 	RR=createReOrderedArray(R,histSumArrayR);//pinakas,sumarray gia ton pinaka,n^2
 	RS=createReOrderedArray(S,histSumArrayS);//pinakas,sumarray gia ton pinaka,n^2
 
@@ -52,12 +41,12 @@ int main(int argc,char** argv)
 
 	printf("\n\n\n\n\nRR->num_of_tuples = %d \n",RR->num_of_tuples);
 	for(i=0;i<RR->num_of_tuples;i++){
-		printf("RR[%d] -> %d\n",i,RR->tuples[i].value);
+		printf("RR[%d] -> %d %d \n",i,RR->tuples[i].value,RR->tuples[i].id);
 	}
 
 	printf("\n\n\n\n\nRS->num_of_tuples = %d \n",RS->num_of_tuples);
 	for(i=0;i<RS->num_of_tuples;i++){
-		printf("RS[%d] -> %d\n",i,RS->tuples[i].value);
+		printf("RS[%d] -> %d %d\n",i,RS->tuples[i].value,RS->tuples[i].id);
 	}
 	for(i=0;i<histSumArrayR->histSize;i++){
 		printf("1Hist[%d]=%d\n",i,histSumArrayR->histArray[i].count);
@@ -73,28 +62,19 @@ int main(int argc,char** argv)
 	while(1)
 	{
 		if(counter+1 > histSumArrayR->histSize-1)break;				//counter+1 giati einai h thesh gia to end ,dld an h thesh pou tha einai to end einai ektos oriwn break//
-		printf("counter=%d\n",counter);
+	//	printf("counter=%d\n",counter);
 		startR = histSumArrayR->histArray[counter].count;
 		startS = histSumArrayS->histArray[counter].count;
 		endR = histSumArrayR->histArray[counter+1].count-1;
 		endS = histSumArrayS->histArray[counter+1].count-1;
 
-		printf("startR=%d \nendR=%d \nstartS=%d \nendS=%d\n",startR,endR,startS,endS);
-
-		if(endR + 1 == startR || endS + 1== startS){
-			counter++;
-		startR = histSumArrayR->histArray[counter].count;
-		startS = histSumArrayS->histArray[counter].count;
-		endR = histSumArrayR->histArray[counter+1].count-1;
-		endS = histSumArrayS->histArray[counter+1].count-1;
-
+		//printf("startR=%d \nendR=%d \nstartS=%d \nendS=%d\n",startR,endR,startS,endS);
 		if(endR+1 == startR || endS+1 == startS){//enas elegxos an kapoio einai keno
+			//printf("SKIP\n");
 			counter++;
 			continue;
-		}
+		}else counter++;
 
-			continue;
-		}
 		if((endR - startR) >= (endS - startS))
 		{
 			ht=createHashTable(RS,startS,endS);
@@ -107,10 +87,8 @@ int main(int argc,char** argv)
 				printf("Chain[%d]->bucketPos=%d\nChain[%d]->prevChainPost=%d\n",i,ht->chainNode[i].bucketPos,i,ht->chainNode[i].prevchainPosition);
 			}
 			deleteHashTable(&ht);
-			return 1;
+			//return 1;
 			/*toDo 	compare*/
-			//
-			//free(hs)
 		}
 		else
 		{
@@ -124,7 +102,7 @@ int main(int argc,char** argv)
 				printf("Chain[%d]->bucketPos=%d\nChain[%d]->prevChainPost=%d\n",i,ht->chainNode[i].bucketPos,i,ht->chainNode[i].prevchainPosition);
 			}
 			deleteHashTable(&ht);
-			return 1;
+			//return 1;
 			/*toDo 	compare*/
 		}
 
