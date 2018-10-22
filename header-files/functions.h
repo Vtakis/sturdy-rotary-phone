@@ -35,6 +35,7 @@ struct histNode
 {
 	tuple tuple;
 	int count;
+	int point;
 };
 struct bucketNode
 {

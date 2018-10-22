@@ -33,8 +33,10 @@ hist* createHistArray(relation **rel){
 	Hist=malloc(sizeof(Hist));
 	Hist->histSize=pow(2,N);
 	Hist->histArray=malloc(Hist->histSize*sizeof(histNode));	
-	for(i=0;i<N;i++)
+	for(i=0;i<N;i++){
 		Hist->histArray[i].count=0;
+		Hist->histArray[i].point=0;
+	}
 
 	freq=malloc((*rel)->num_of_tuples*sizeof(int32_t));
 	for(i=0;i<(*rel)->num_of_tuples;i++)
@@ -69,13 +71,16 @@ hist* createSumHistArray(hist *array){
 	
 	for(i=0;i<N;i++)
 		Hist->histArray[i].count=0;
+		Hist->histArray[i].point=0;
 	for(i=0;i<array->histSize;i++){
 		if(i==0){
 			nextBucket=array->histArray[i].count;
 			Hist->histArray[i].count=0;
+			Hist->histArray[i].point=0;
 		}
 		else{
 			Hist->histArray[i].count=nextBucket;
+			Hist->histArray[i].point=nextBucket;
 			nextBucket+=array->histArray[i].count;
 		}
 	}
@@ -137,20 +142,20 @@ void deleteHashTable(indexHT **ht)
 }
 relation* createReOrderedArray(relation *array,hist *sumArray){
 	relation *result;
-	int32_t i,start=0,end,counter=0;;
+	int32_t i,start=0,end,counter=0;
 
 	result=malloc(sizeof(relation));
 	result->num_of_tuples=array->num_of_tuples;
 	result->tuples=malloc(array->num_of_tuples*sizeof(tuple));
 
 	for(i=0;i<array->num_of_tuples;i++){
-		printf("*%d\n",sumArray->histArray[array->tuples[i].value%sumArray->histSize].count);
+		printf("*%d\n",sumArray->histArray[array->tuples[i].value%sumArray->histSize].point);
 		//printf("--%d\n",sumArray->histArray[array->tuples[i].value%sumArray->histSize].count++);
 		//printf("%d\n",sumArray->histArray[array->tuples[i].value%sumArray->histSize].count);
 		//counter = sumArray->histArray[array->tuples[i].value%sumArray->histSize].count;
-		result->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].count].id=array->tuples[i].id;
-		result->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].count++].value=array->tuples[i].value;
-		printf("**%d\n",sumArray->histArray[array->tuples[i].value%sumArray->histSize].count);
+		result->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].point].id=array->tuples[i].id;
+		result->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].point++].value=array->tuples[i].value;
+		printf("**%d\n",sumArray->histArray[array->tuples[i].value%sumArray->histSize].point);
 		//counter = sumArray->histArray[array->tuples[i].value%sumArray->histSize].count+1;*/
 
 	}
