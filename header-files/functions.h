@@ -1,7 +1,9 @@
 #include <stdint.h>
 typedef struct tuple tuple;
 typedef struct relation relation;
-typedef struct result result;
+typedef struct resultList resultList;
+typedef struct resultNode resultNode;
+typedef struct rowResult rowResult;
 typedef struct histNode histNode;
 typedef struct bucketNode bucketNode;
 typedef struct chainNode chainNode;
@@ -10,11 +12,22 @@ typedef struct hist hist;
 #ifndef FUNCTIONS_H_
 #define FUNCTIONS_H_
 
-struct result
+struct resultList
 {
-	tuple *array_tuple;
-	result *next;
-	int32_t size;
+	resultNode *start;
+	resultNode *end;
+	int32_t numberOfNodes;
+};
+struct resultNode
+{
+	rowResult *array_tuple;
+	resultNode *next;
+	int32_t tupleSize;
+};
+struct rowResult
+{
+	uint32_t idR;
+	uint32_t idS;
 };
 struct tuple
 {
@@ -56,11 +69,13 @@ struct chainNode
 unsigned int hash(int32_t x,int);
 indexHT* initiliazeIndexHT(relation* ,int32_t);
 void createRelations(int32_t[],uint32_t,int32_t[],uint32_t,relation **,relation**);
-result* RadixHashJoin(relation *relR,relation *relS);
+resultList* RadixHashJoin(relation *relR,relation *relS);
 hist* createHistArray(relation **rel);
 hist* createSumHistArray(hist *array);
 relation* createReOrderedArray(relation *array,hist *sumArray);
 void deleteHashTable(indexHT **);
 indexHT* createHashTable(relation* reOrderedArray,int32_t start,int32_t end);
-void compareRelations(indexHT *ht,relation *array,int32_t start,int32_t end,relation *hashedArray);
+void compareRelations(indexHT *ht,relation *array,int32_t start,int32_t end,relation *hashedArray,resultList *resList);
+resultList *initializeResultList(void);
+void insertTuple(resultList *list,uint32_t id1,uint32_t id2);
 #endif /* FUNCTIONS_H_ */

@@ -145,7 +145,7 @@ void deleteHashTable(indexHT **ht)
 	free((*ht)->chainNode);					/*diagrafh tou pinaka chain*/
 	free((*ht));						/*diagrafh olhs ths domhs*/
 }
-void compareRelations(indexHT *ht,relation *array,int32_t start,int32_t end,relation *hashedArray){
+void compareRelations(indexHT *ht,relation *array,int32_t start,int32_t end,relation *hashedArray,resultList *resList){
 	int32_t i,offset;
 
 	for(i=start;i<=end;i++){
@@ -158,12 +158,67 @@ void compareRelations(indexHT *ht,relation *array,int32_t start,int32_t end,rela
 				if(offset==-1)break;//den exei alla stoixeia na doume
 				if(array->tuples[i].value==hashedArray->tuples[offset].value){//elegxoume an exoun idio value
 					printf("RESULT = %d\n",hashedArray->tuples[offset].value);
+					insertTuple(resList,array->tuples[i]);
 				}
 				offset=ht->chainNode[offset].prevchainPosition;//to neo offset einai apo to prevchainPosition
 			}
 		}
 	}
 }
+
+resultList *initializeResultList(void){
+	resultList *list=malloc(sizeof(resultList));
+	list->start=NULL;
+	list->end=NULL;
+	list->numberOfNodes=0;
+	return list;
+}
+
+void insertTuple(resultList *list,tuple tp){
+	int numberoftuples=(1024*1024)/sizeof(tuple);
+	if(list->end==NULL){//kenh lista
+		list->start=malloc(sizeof(resultNode));
+		list->end=list->start;
+		list->numberOfNodes=1;
+
+		list->start->array_tuple=malloc(numberoftuples*sizeof(tuple));
+		list->start->next=NULL;
+		list->start->tupleSize=1;
+
+		list->start->array_tuple[0].id=tp.id;
+		list->start->array_tuple[0].value=tp.value;
+	}
+	else{
+		if( numberoftuples >= list->start->tupleSize ){//exei xwro
+			list->end->array_tuple[list->end->tupleSize].id=tp.id;
+			list->end->array_tuple[list->end->tupleSize].value=tp.value;
+			list->end->tupleSize++;
+		}
+		else{//ftiaxnw neo kombo
+			list->end->next=malloc(sizeof(resultNode));
+			list->end=list->end->next;
+			list->numberOfNodes++;
+
+			list->end->array_tuple=malloc(numberoftuples*sizeof(tuple));
+			list->end->next=NULL;
+			list->end->tupleSize=1;
+
+			list->end->array_tuple[0].id=tp.id;
+			list->end->array_tuple[0].value=tp.value;
+		}
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 
