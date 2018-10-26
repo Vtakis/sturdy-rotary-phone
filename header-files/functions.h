@@ -20,9 +20,9 @@ struct resultList
 };
 struct resultNode
 {
-	rowResult *array_tuple;
+	rowResult *row_Array;
 	resultNode *next;
-	int32_t tupleSize;
+	int32_t rowSize;
 };
 struct rowResult
 {
@@ -69,13 +69,15 @@ struct chainNode
 unsigned int hash(int32_t x,int);
 indexHT* initiliazeIndexHT(relation* ,int32_t);
 void createRelations(int32_t[],uint32_t,int32_t[],uint32_t,relation **,relation**);
-resultList* RadixHashJoin(relation *relR,relation *relS);
+resultList* RadixHashJoin(relation *relR,relation *relS,int32_t,int32_t);
 hist* createHistArray(relation **rel);
 hist* createSumHistArray(hist *array);
 relation* createReOrderedArray(relation *array,hist *sumArray);
 void deleteHashTable(indexHT **);
 indexHT* createHashTable(relation* reOrderedArray,int32_t start,int32_t end);
-void compareRelations(indexHT *ht,relation *array,int32_t start,int32_t end,relation *hashedArray,resultList *resList);
+void compareRelations(indexHT *ht,relation *array,int32_t start,int32_t end,relation *hashedArray,resultList *resList,int32_t );
 resultList *initializeResultList(void);
-void insertTuple(resultList *list,uint32_t id1,uint32_t id2);
+void insertResult(resultList *list,uint32_t id1,uint32_t id2,int32_t);
+void printResults(resultList *list);
+void createHT_CompareBuckets(resultList* ,hist*,hist*,relation*,relation*,int32_t,int32_t);
 #endif /* FUNCTIONS_H_ */

@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include "../header-files/functions.h"
-#define bucketPosNum 15
-#define N 3
+#define bucketPosNum 50
+#define N 12
 
 void createRelations(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,relation **S,relation **R){
 	int32_t i;
@@ -117,7 +117,7 @@ indexHT* initiliazeIndexHT(relation* reOrderedArray,int32_t chainNumSize)
 	}
 	for(i=0;i<indexht->chainSize;i++){
 		indexht->chainNode[i].prevchainPosition = -1;
-		indexht->chainNode[i].bucketPos = i;
+		indexht->chainNode[i].bucketPos = -1;
 	}
 	return indexht;
 }
@@ -126,15 +126,24 @@ indexHT* createHashTable(relation* reOrderedArray,int32_t start,int32_t end){
 	int32_t i;
 	indexHT* indexht;
 	indexht = initiliazeIndexHT(reOrderedArray,end-start+1);
+
+	/*for(i=0;i<reOrderedArray->num_of_tuples;i++)
+	{
+		printf("reOrdered[%d]->id=%d  ->value=%d\n",i,reOrderedArray->tuples[i].id,reOrderedArray->tuples[i].value);
+	}*/
+
 	for(i=start;i<=end;i++){
 		if(indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition == -1)//elegxos an to h 8esh tou bucket einai kenh
 		{
-			indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition = i;
+			indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition = i-start;		//i-start gia na paroume thn swsth thesh apo to reorder
+			indexht->chainNode[i-start].bucketPos=i;
 		}
 		else
 		{
-			indexht->chainNode[i].prevchainPosition = indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition;
-			indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition = indexht->chainNode[i].bucketPos;
+			//printf("mpika\n");
+			indexht->chainNode[i-start].prevchainPosition = indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition;
+			indexht->chainNode[i-start].bucketPos = i;
+			indexht->bucketArray[hash(reOrderedArray->tuples[i].value,bucketPosNum)].lastChainPosition = i-start;
 		}
 	}
 	return indexht;
@@ -143,24 +152,32 @@ void deleteHashTable(indexHT **ht)
 {
 	free((*ht)->bucketArray);				/*diagrafh tou pinaka bucket*/
 	free((*ht)->chainNode);					/*diagrafh tou pinaka chain*/
-	free((*ht));						/*diagrafh olhs ths domhs*/
+	free((*ht));							/*diagrafh olhs ths domhs*/
 }
-void compareRelations(indexHT *ht,relation *array,int32_t start,int32_t end,relation *hashedArray,resultList *resList){
-	int32_t i,offset;
+void compareRelations(indexHT *ht,relation *array,int32_t start,int32_t end,relation *hashedArray,resultList *resList,int32_t fromArray){
+	int32_t i,chain_offset,j,bucket_offset;
 
 	for(i=start;i<=end;i++){
 		if(ht->bucketArray[hash(array->tuples[i].value,bucketPosNum)].lastChainPosition == -1){//an einai -1 tote den exoume match opote to agnwoume
 			continue;
 		}
 		else{
-			offset=ht->bucketArray[hash(array->tuples[i].value,bucketPosNum)].lastChainPosition;//pairnw ws offset thn teleutaia 8esh tou chain
+			chain_offset=ht->bucketArray[hash(array->tuples[i].value,bucketPosNum)].lastChainPosition;//pairnw ws offset thn teleutaia 8esh tou chain
+			bucket_offset=ht->chainNode[chain_offset].bucketPos;
 			while(1){
-				if(offset==-1)break;//den exei alla stoixeia na doume
-				if(array->tuples[i].value==hashedArray->tuples[offset].value){//elegxoume an exoun idio value
-					printf("RESULT = %d\n",hashedArray->tuples[offset].value);
-					insertTuple(resList,array->tuples[i]);
+				//printf("i=%d num_of_tuples=%d offset=%d\n",i,hashedArray->num_of_tuples,offset);
+				if(array->tuples[i].value==hashedArray->tuples[bucket_offset].value){//elegxoume an exoun idio value
+					//printf("RESULT = %d\n\n",hashedArray->tuples[bucket_offset].value);
+					insertResult(resList,hashedArray->tuples[bucket_offset].id,array->tuples[i].id,fromArray);
 				}
-				offset=ht->chainNode[offset].prevchainPosition;//to neo offset einai apo to prevchainPosition
+				for(j=0;j<ht->chainSize;j++)
+				{
+					//printf("Chain[%d]=%d -->offset=%d\n",j,ht->chainNode[j].prevchainPosition,offset);
+				}
+
+				chain_offset=ht->chainNode[chain_offset].prevchainPosition;//to neo offset einai apo to prevchainPosition
+				if(chain_offset==-1)break;//den exei alla stoixeia na doume
+				bucket_offset = ht->chainNode[chain_offset].bucketPos;
 			}
 		}
 	}
@@ -173,44 +190,131 @@ resultList *initializeResultList(void){
 	list->numberOfNodes=0;
 	return list;
 }
-
-void insertTuple(resultList *list,tuple tp){
-	int numberoftuples=(1024*1024)/sizeof(tuple);
+void insertResult(resultList *list,uint32_t id1,uint32_t id2,int32_t fromArray){
+	int32_t numberoftuples=(1024*1024)/sizeof(rowResult);
+	//printf("numberOfResults=%d  %ld\n",numberoftuples,sizeof(rowResult));
 	if(list->end==NULL){//kenh lista
 		list->start=malloc(sizeof(resultNode));
 		list->end=list->start;
 		list->numberOfNodes=1;
 
-		list->start->array_tuple=malloc(numberoftuples*sizeof(tuple));
+		list->start->row_Array=malloc(numberoftuples*sizeof(rowResult));
 		list->start->next=NULL;
-		list->start->tupleSize=1;
+		list->start->rowSize=1;
 
-		list->start->array_tuple[0].id=tp.id;
-		list->start->array_tuple[0].value=tp.value;
+		if(fromArray == 0){
+			list->start->row_Array[0].idR=id1;
+			list->start->row_Array[0].idS=id2;
+		}else{
+			list->start->row_Array[0].idR=id2;
+			list->start->row_Array[0].idS=id1;
+		}
 	}
 	else{
-		if( numberoftuples >= list->start->tupleSize ){//exei xwro
-			list->end->array_tuple[list->end->tupleSize].id=tp.id;
-			list->end->array_tuple[list->end->tupleSize].value=tp.value;
-			list->end->tupleSize++;
+		if( numberoftuples > list->end->rowSize ){//exei xwro
+
+			if(fromArray == 0){
+				list->end->row_Array[list->end->rowSize].idR=id1;
+				list->end->row_Array[list->end->rowSize].idS=id2;
+			}else{
+				list->end->row_Array[list->end->rowSize].idR=id2;
+				list->end->row_Array[list->end->rowSize].idS=id1;
+			}
+			list->end->rowSize++;
 		}
 		else{//ftiaxnw neo kombo
 			list->end->next=malloc(sizeof(resultNode));
 			list->end=list->end->next;
 			list->numberOfNodes++;
 
-			list->end->array_tuple=malloc(numberoftuples*sizeof(tuple));
+			list->end->row_Array=malloc(numberoftuples*sizeof(rowResult));
 			list->end->next=NULL;
-			list->end->tupleSize=1;
+			list->end->rowSize=1;
 
-			list->end->array_tuple[0].id=tp.id;
-			list->end->array_tuple[0].value=tp.value;
+			if(fromArray == 0){
+				list->end->row_Array[0].idR=id1;
+				list->end->row_Array[0].idS=id2;
+			}else{
+				list->end->row_Array[0].idR=id2;
+				list->end->row_Array[0].idS=id1;
+			}
 		}
 	}
 }
+void printResults(resultList *list){
+
+	int32_t count=0;
+	resultNode *temp;
+	temp =list->start;
+	//printf("list_nodes=%d\n",list->numberOfNodes);
+	printf("RowidR\tRowidS\n");
+	while(temp!=NULL){
+
+		//printf("RowidR\tRowidS\n");
+		printf("RowSize=%d\n",temp->rowSize);
+		for(int i=0;i<temp->rowSize;i++){
+			//printf("%d\t%d\n",temp->row_Array[i].idR,temp->row_Array[i].idS);
+			count++;
+		}
+		temp=temp->next;
+	}
+	printf("%d Results\n",count);
+}
+
+void createHT_CompareBuckets(resultList* resList,hist *histSumArrayR,hist *histSumArrayS,relation *RR, relation*RS,int32_t size_A,int32_t size_B)
+{
+	indexHT* ht;
+	int32_t startR=0,endR,startS=0,endS,counter = 0,cnt=0;
+	while(1)
+	{
+		if(counter+1 > histSumArrayR->histSize)break;		//counter+1 giati einai h thesh gia to end ,dld an h thesh pou tha einai to end einai ektos oriwn break//
+		startR = histSumArrayR->histArray[counter].count;
+		startS = histSumArrayS->histArray[counter].count;
+		if(counter+1==histSumArrayR->histSize){
+			endR=size_A-1;
+			endS=size_B-1;
+		}else{
+		endR = histSumArrayR->histArray[counter+1].count-1;
+		endS = histSumArrayS->histArray[counter+1].count-1;
+		}
+
+		counter++;
+		if(endR+1 == startR || endS+1 == startS) continue;  //elegxos an kapoio einai keno , opote den bgazei apotelesma
+		cnt++;
+		if((endR - startR) >= (endS - startS))//kanoume hash to pio mikro bucket
+		{
+			ht=createHashTable(RS,startS,endS);
+			compareRelations(ht,RR,startR,endR,RS,resList,0);		// 0 -> hashedRs
+			deleteHashTable(&ht);
+		}
+		else
+		{
+			ht=createHashTable(RR,startR,endR);
+			compareRelations(ht,RS,startS,endS,RR,resList,1);		// 1 -> hashedRr
+			deleteHashTable(&ht);
+		}
+	}
+}
+resultList* RadixHashJoin(relation *relR,relation *relS,int32_t size_A,int32_t size_B){
 
 
+	hist *histSumArrayR,*histSumArrayS;
+	relation *RS,*RR;
+	resultList *resList;
 
+	histSumArrayS=createSumHistArray(createHistArray(&relS));//dhmiourgia hist sum arrays
+	histSumArrayR=createSumHistArray(createHistArray(&relR));
+
+	RR=createReOrderedArray(relR,histSumArrayR);//dhmiourgia reordered array
+	RS=createReOrderedArray(relS,histSumArrayS);
+
+	resList=initializeResultList();
+
+
+	createHT_CompareBuckets(resList,histSumArrayR,histSumArrayS,RR,RS,size_A,size_B);
+	return resList;
+
+}
 
 
 

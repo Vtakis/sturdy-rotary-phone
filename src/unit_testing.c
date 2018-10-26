@@ -1,12 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../header-files/functions.h"
-#include <unistd.h>
 
-int main(int argc,char** argv)
+
+int main()
 {
-
-
 	uint32_t size_A=1000;
 	int32_t A[size_A];
 	uint32_t size_B=1000;
@@ -46,24 +44,6 @@ int main(int argc,char** argv)
 	resList = RadixHashJoin(R,S,size_A,size_B);
 	printResults(resList);
 
+
+
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
