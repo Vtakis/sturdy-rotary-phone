@@ -94,7 +94,7 @@ relation* createReOrderedArray(relation *array,hist *sumArray){
 	reOrderedArray->num_of_tuples=array->num_of_tuples;
 	reOrderedArray->tuples=malloc(array->num_of_tuples*sizeof(tuple));
 
-	for(i=0;i<array->num_of_tuples;i++){
+	for(i=0;i<array->num_of_tuples;i++){//to point mou dixnei pou prepei na balw to stoixeio
 		reOrderedArray->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].point].id=array->tuples[i].id;//koitazoume ton sumArray gia na brw to offset pou 8a balw to epomeno tuple
 		reOrderedArray->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].point++].value=array->tuples[i].value;//thn deuterh fora pou bazoume to value kanw ++ gia na deixnei sthn epomenh kenh 8esh
 	}
@@ -168,16 +168,9 @@ void compareRelations(indexHT *ht,relation *array,int32_t start,int32_t end,rela
 			chain_offset=ht->bucketArray[hash(array->tuples[i].value,bucketPosNum)].lastChainPosition;//pairnw ws offset thn teleutaia 8esh tou chain
 			bucket_offset=ht->chainNode[chain_offset].bucketPos;
 			while(1){
-				//printf("i=%d num_of_tuples=%d offset=%d\n",i,hashedArray->num_of_tuples,offset);
 				if(array->tuples[i].value==hashedArray->tuples[bucket_offset].value){//elegxoume an exoun idio value
-					//printf("RESULT = %d\n\n",hashedArray->tuples[bucket_offset].value);
 					insertResult(resList,hashedArray->tuples[bucket_offset].id,array->tuples[i].id,fromArray);
 				}
-				for(j=0;j<ht->chainSize;j++)
-				{
-					//printf("Chain[%d]=%d -->offset=%d\n",j,ht->chainNode[j].prevchainPosition,offset);
-				}
-
 				chain_offset=ht->chainNode[chain_offset].prevchainPosition;//to neo offset einai apo to prevchainPosition
 				if(chain_offset==-1)break;//den exei alla stoixeia na doume
 				bucket_offset = ht->chainNode[chain_offset].bucketPos;
@@ -309,7 +302,39 @@ resultList* RadixHashJoin(relation *relR,relation *relS,int32_t size_A,int32_t s
 	resList=initializeResultList();
 
 
-	createHT_CompareBuckets(resList,histSumArrayR,histSumArrayS,RR,RS,size_A,size_B);
+	//createHT_CompareBuckets(resList,histSumArrayR,histSumArrayS,RR,RS,size_A,size_B);
+	indexHT* ht;
+	int32_t startR=0,endR,startS=0,endS,counter = 0,cnt=0;
+	while(1)
+	{
+		if(counter+1 > histSumArrayR->histSize)break;		//counter+1 giati einai h thesh gia to end ,dld an h thesh pou tha einai to end einai ektos oriwn break//
+		startR = histSumArrayR->histArray[counter].count;
+		startS = histSumArrayS->histArray[counter].count;
+		if(counter+1==histSumArrayR->histSize){
+			endR=size_A-1;
+			endS=size_B-1;
+		}else{
+		endR = histSumArrayR->histArray[counter+1].count-1;
+		endS = histSumArrayS->histArray[counter+1].count-1;
+		}
+
+		counter++;
+		if(endR+1 == startR || endS+1 == startS) continue;  //elegxos an kapoio einai keno , opote den bgazei apotelesma
+		cnt++;
+		if((endR - startR) >= (endS - startS))//kanoume hash to pio mikro bucket
+		{
+			ht=createHashTable(RS,startS,endS);
+			compareRelations(ht,RR,startR,endR,RS,resList,0);		// 0 -> hashedRs
+			deleteHashTable(&ht);
+		}
+		else
+		{
+			ht=createHashTable(RR,startR,endR);
+			compareRelations(ht,RS,startS,endS,RR,resList,1);		// 1 -> hashedRr
+			deleteHashTable(&ht);
+		}
+	}
+	///
 
 	free(histSumArrayR->histArray);
 	free(histSumArrayR);
