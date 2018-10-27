@@ -54,6 +54,7 @@ hist* createHistArray(relation **rel){
 			Hist->histArray[(*rel)->tuples[i].value%Hist->histSize].count+=freq[i];
 		}
 	}
+	free(freq);
 	return Hist;
 }
 
@@ -80,6 +81,8 @@ hist* createSumHistArray(hist *array){
 			nextBucket+=array->histArray[i].count;
 		}
 	}
+	free(array->histArray);
+	free(array);
 	return Hist;
 }
 
@@ -197,6 +200,7 @@ void insertResult(resultList *list,uint32_t id1,uint32_t id2,int32_t fromArray){
 		list->start=malloc(sizeof(resultNode));
 		list->end=list->start;
 		list->numberOfNodes=1;
+		list->numberOfResults=1;
 
 		list->start->row_Array=malloc(numberoftuples*sizeof(rowResult));
 		list->start->next=NULL;
@@ -211,6 +215,7 @@ void insertResult(resultList *list,uint32_t id1,uint32_t id2,int32_t fromArray){
 		}
 	}
 	else{
+		list->numberOfResults++;
 		if( numberoftuples > list->end->rowSize ){//exei xwro
 
 			if(fromArray == 0){
@@ -242,23 +247,16 @@ void insertResult(resultList *list,uint32_t id1,uint32_t id2,int32_t fromArray){
 	}
 }
 void printResults(resultList *list){
-
-	int32_t count=0;
 	resultNode *temp;
 	temp =list->start;
-	//printf("list_nodes=%d\n",list->numberOfNodes);
-	printf("RowidR\tRowidS\n");
+	printf("\nRowidR\t\tRowidS\n");
 	while(temp!=NULL){
-
-		//printf("RowidR\tRowidS\n");
-		printf("RowSize=%d\n",temp->rowSize);
 		for(int i=0;i<temp->rowSize;i++){
-			//printf("%d\t%d\n",temp->row_Array[i].idR,temp->row_Array[i].idS);
-			count++;
+			printf("%d\t\t%d\n",temp->row_Array[i].idR,temp->row_Array[i].idS);
 		}
 		temp=temp->next;
 	}
-	printf("%d Results\n",count);
+	printf("\n%d Results\n\n",list->numberOfResults);
 }
 
 void createHT_CompareBuckets(resultList* resList,hist *histSumArrayR,hist *histSumArrayS,relation *RR, relation*RS,int32_t size_A,int32_t size_B)
@@ -312,9 +310,80 @@ resultList* RadixHashJoin(relation *relR,relation *relS,int32_t size_A,int32_t s
 
 
 	createHT_CompareBuckets(resList,histSumArrayR,histSumArrayS,RR,RS,size_A,size_B);
+
+	free(histSumArrayR->histArray);
+	free(histSumArrayR);
+	free(histSumArrayS->histArray);
+	free(histSumArrayS);
+
+	free(RS->tuples);
+	free(RS);
+	free(RR->tuples);
+	free(RR);
+
+	free(relS->tuples);
+	free(relS);
+	free(relR->tuples);
+	free(relR);
+
 	return resList;
 
 }
+
+void writeFile(uint32_t size_A,uint32_t size_B){
+	FILE *fp;
+	fp=fopen("input-files/input.txt","w");
+	fprintf(fp,"%d %d\n",size_A,size_B);
+	for(int32_t i=0;i<size_A;i++)
+	{
+		fprintf(fp,"%d,",i);
+	}
+	fprintf(fp,"\n");
+	for(int32_t i=0;i<size_B;i++)
+	{
+		fprintf(fp,"%d,",i+2);
+	}
+	fclose(fp);
+}
+
+void readFile(int32_t A[],uint32_t *size_A,int32_t B[],uint32_t *size_B){
+	FILE *fp;
+	fp=fopen("input-files/input.txt","r");
+	int32_t el1,el2;
+	fscanf(fp,"%d %d",size_A,size_B);
+
+	for(int32_t i=0;i<*size_A;i++){
+		fscanf(fp,"%d,",&el1);
+		A[i]=el1;
+	}
+	for(int32_t i=0;i<*size_B;i++){
+		fscanf(fp,"%d,",&el2);
+		B[i]=el2;
+	}
+	fclose(fp);
+}
+
+void deleteResultList(resultList * reslist){
+	resultNode *temp,*temp2;
+	temp=reslist->start;
+
+	while(temp!=NULL){
+		free(temp->row_Array);
+		temp2=temp;
+		temp=temp->next;
+		free(temp2);
+	}
+
+	free(reslist);
+}
+
+
+
+
+
+
+
+
 
 
 

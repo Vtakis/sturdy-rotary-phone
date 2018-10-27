@@ -17,6 +17,7 @@ struct resultList
 	resultNode *start;
 	resultNode *end;
 	int32_t numberOfNodes;
+	int32_t numberOfResults;
 };
 struct resultNode
 {
@@ -80,4 +81,13 @@ resultList *initializeResultList(void);
 void insertResult(resultList *list,uint32_t id1,uint32_t id2,int32_t);
 void printResults(resultList *list);
 void createHT_CompareBuckets(resultList* ,hist*,hist*,relation*,relation*,int32_t,int32_t);
+void writeFile(uint32_t,uint32_t);
+void readFile(int32_t[],uint32_t *,int32_t[],uint32_t *);
+void deleteResultList(resultList *);
 #endif /* FUNCTIONS_H_ */
+
+
+
+
+
+
