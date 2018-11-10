@@ -12,7 +12,7 @@ int main()
 	int32_t i;
 
 	resultList* resList;
-	relation *S,*R;
+	oneColumnRelation *S,*R;
 
 	//case 1
 	printf("Case 1\n");

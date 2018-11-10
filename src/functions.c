@@ -5,10 +5,10 @@
 #define bucketPosNum 50
 #define N 12
 
-void createRelations(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,relation **S,relation **R){
+void createRelations(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,oneColumnRelation **S,oneColumnRelation **R){
 	int32_t i;
 
-	*S=malloc(sizeof(relation));
+	*S=malloc(sizeof(oneColumnRelation));
 	(*S)->num_of_tuples=size_A;
 	(*S)->tuples=malloc(size_A*sizeof(tuple));
 	for(i=0;i<size_A;i++){
@@ -16,7 +16,7 @@ void createRelations(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,rel
 		(*S)->tuples[i].value=A[i];
 	}
 
-	*R=malloc(sizeof(relation));
+	*R=malloc(sizeof(oneColumnRelation));
 	(*R)->num_of_tuples=size_B;
 	(*R)->tuples=malloc(size_B*sizeof(tuple));
 	for(i=0;i<size_B;i++){
@@ -25,7 +25,7 @@ void createRelations(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,rel
 	}	
 }
 
-hist* createHistArray(relation **rel){
+hist* createHistArray(oneColumnRelation **rel){
 	int32_t i,j,*freq;
 	int32_t count;
 	hist *Hist;
@@ -46,10 +46,10 @@ hist* createHistArray(relation **rel){
 		for(j=i+1;j<(*rel)->num_of_tuples;j++){
 			if((*rel)->tuples[i].value==(*rel)->tuples[j].value){
 				count++;				
-				freq[j]=0;//metraw mono 1 fora ton ari8mo twn emfanisewn tou value
+				freq[j]=0;
 			}
 		}
-		if(freq[i]!=0){//an den exw ksanaupologisei to sugkekrimeno value
+		if(freq[i]!=0){
 			freq[i]=count;
 			Hist->histArray[(*rel)->tuples[i].value%Hist->histSize].count+=freq[i];
 		}
@@ -70,15 +70,15 @@ hist* createSumHistArray(hist *array){
 		Hist->histArray[i].point=0;
 	}
 	for(i=0;i<array->histSize;i++){
-		if(i==0){//1o bucket - vriskoume ousiastika pou 8a arxizei to epomeno bucket
+		if(i==0){
 			nextBucket=array->histArray[i].count;
 			Hist->histArray[i].count=0;
 			Hist->histArray[i].point=0;
 		}
 		else{
-			Hist->histArray[i].count=nextBucket;//pou arxizei to trexon bucket
+			Hist->histArray[i].count=nextBucket;
 			Hist->histArray[i].point=nextBucket;
-			nextBucket+=array->histArray[i].count;//pou 8a arxizei to epomeno bucket
+			nextBucket+=array->histArray[i].count;
 		}
 	}
 	free(array->histArray);
@@ -86,11 +86,11 @@ hist* createSumHistArray(hist *array){
 	return Hist;
 }
 
-relation* createReOrderedArray(relation *array,hist *sumArray){
-	relation *reOrderedArray;
+oneColumnRelation* createReOrderedArray(oneColumnRelation *array,hist *sumArray){
+	oneColumnRelation *reOrderedArray;
 	int32_t i;
 
-	reOrderedArray=malloc(sizeof(relation));
+	reOrderedArray=malloc(sizeof(oneColumnRelation));
 	reOrderedArray->num_of_tuples=array->num_of_tuples;
 	reOrderedArray->tuples=malloc(array->num_of_tuples*sizeof(tuple));
 
@@ -107,7 +107,7 @@ unsigned int hash(int32_t x,int mod) {
     x = (x >> 16) ^ x;
     return x%mod;
 }
-indexHT* initiliazeIndexHT(relation* reOrderedArray,int32_t chainNumSize)
+indexHT* initiliazeIndexHT(oneColumnRelation* reOrderedArray,int32_t chainNumSize)
 {
 	int32_t i;
 	indexHT* indexht = malloc(sizeof(indexHT));
@@ -124,7 +124,7 @@ indexHT* initiliazeIndexHT(relation* reOrderedArray,int32_t chainNumSize)
 	}
 	return indexht;
 }
-indexHT* createHashTable(relation* reOrderedArray,int32_t start,int32_t end){
+indexHT* createHashTable(oneColumnRelation* reOrderedArray,int32_t start,int32_t end){
 
 	int32_t i;
 	indexHT* indexht;
@@ -157,7 +157,7 @@ void deleteHashTable(indexHT **ht)
 	free((*ht)->chainNode);					/*diagrafh tou pinaka chain*/
 	free((*ht));							/*diagrafh olhs ths domhs*/
 }
-void compareRelations(indexHT *ht,relation *array,int32_t start,int32_t end,relation *hashedArray,resultList *resList,int32_t fromArray){
+void compareRelations(indexHT *ht,oneColumnRelation *array,int32_t start,int32_t end,oneColumnRelation *hashedArray,resultList *resList,int32_t fromArray){
 	int32_t i,chain_offset,bucket_offset;
 
 	for(i=start;i<=end;i++){
@@ -252,7 +252,7 @@ void printResults(resultList *list){
 	printf("\n%d Results\n\n",list->numberOfResults);
 }
 
-void createHT_CompareBuckets(resultList* resList,hist *histSumArrayR,hist *histSumArrayS,relation *RR, relation*RS,int32_t size_A,int32_t size_B)
+void createHT_CompareBuckets(resultList* resList,hist *histSumArrayR,hist *histSumArrayS,oneColumnRelation *RR, oneColumnRelation *RS,int32_t size_A,int32_t size_B)
 {
 	indexHT* ht;
 	int32_t startR=0,endR,startS=0,endS,counter = 0,cnt=0;
@@ -286,11 +286,11 @@ void createHT_CompareBuckets(resultList* resList,hist *histSumArrayR,hist *histS
 		}
 	}
 }
-resultList* RadixHashJoin(relation *relR,relation *relS,int32_t size_A,int32_t size_B){
+resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS,int32_t size_A,int32_t size_B){
 
 
 	hist *histSumArrayR,*histSumArrayS;
-	relation *RS,*RR;
+	oneColumnRelation *RS,*RR;
 	resultList *resList;
 
 	histSumArrayS=createSumHistArray(createHistArray(&relS));//dhmiourgia hist sum arrays
