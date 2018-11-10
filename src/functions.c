@@ -46,10 +46,10 @@ hist* createHistArray(oneColumnRelation **rel){
 		for(j=i+1;j<(*rel)->num_of_tuples;j++){
 			if((*rel)->tuples[i].value==(*rel)->tuples[j].value){
 				count++;				
-				freq[j]=0;
+				freq[j]=0;//metraw mono 1 fora ton ari8mo twn emfanisewn tou value
 			}
 		}
-		if(freq[i]!=0){
+		if(freq[i]!=0){//an den exw ksanaupologisei to sugkekrimeno value
 			freq[i]=count;
 			Hist->histArray[(*rel)->tuples[i].value%Hist->histSize].count+=freq[i];
 		}
@@ -70,15 +70,15 @@ hist* createSumHistArray(hist *array){
 		Hist->histArray[i].point=0;
 	}
 	for(i=0;i<array->histSize;i++){
-		if(i==0){
+		if(i==0){//1o bucket - vriskoume ousiastika pou 8a arxizei to epomeno bucket
 			nextBucket=array->histArray[i].count;
 			Hist->histArray[i].count=0;
 			Hist->histArray[i].point=0;
 		}
 		else{
-			Hist->histArray[i].count=nextBucket;
+			Hist->histArray[i].count=nextBucket;//pou arxizei to trexon bucket
 			Hist->histArray[i].point=nextBucket;
-			nextBucket+=array->histArray[i].count;
+			nextBucket+=array->histArray[i].count;//pou 8a arxizei to epomeno bucket
 		}
 	}
 	free(array->histArray);
