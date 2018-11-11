@@ -10,6 +10,11 @@ typedef struct bucketNode bucketNode;
 typedef struct chainNode chainNode;
 typedef struct indexHT indexHT;
 typedef struct hist hist;
+typedef struct queryDataIndex queryDataIndex;
+typedef struct ListNode ListNode;
+typedef struct RelColNode RelColNode;
+typedef struct filterPredNode filterPredNode;
+typedef struct joinPredNode joinPredNode;
 #ifndef FUNCTIONS_H_
 #define FUNCTIONS_H_
 
@@ -73,6 +78,43 @@ struct chainNode
 	int bucketPos;
 	int prevchainPosition;
 };
+
+////////////////////////////////////////////////////////
+struct RelColNode //de borw na skeftw kalo onoma
+{
+	int rel;
+	int col;
+};
+
+struct filterPredNode
+{
+	RelColNode *left;  //skalwsa-ti onoma na valw
+	char typeOper;
+	int value;
+};
+
+struct joinPredNode
+{
+	RelColNode *left;
+	RelColNode *right;
+};
+
+struct queryDataIndex
+{
+	int numRelQuery;  //posa relations aforoun to query
+	int *QueryRel;  //antistoixish relations twn predicators me ta pragmatika relations
+
+	int numPredFilter;  //posa predicators filter
+	filterPredNode *predFilter;  //pinakas me ta filter predicators
+
+	int numPredJoin;  //posa predicators join
+	joinPredNode *predJoin;  //pinakas me ta join predicators
+
+	int numViewQuery;  //posa views zhtaei to query
+	RelColNode *viewQuery;  //pinakas me ta views
+};
+///////////////////////////////////////////////////////////
+
 unsigned int hash(int32_t x,int);
 indexHT* initiliazeIndexHT(oneColumnRelation* ,int32_t);
 void createRelations(int32_t[],uint32_t,int32_t[],uint32_t,oneColumnRelation **,oneColumnRelation**);
