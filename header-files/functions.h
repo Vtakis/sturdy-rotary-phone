@@ -15,6 +15,7 @@ typedef struct ListNode ListNode;
 typedef struct RelColNode RelColNode;
 typedef struct filterPredNode filterPredNode;
 typedef struct joinPredNode joinPredNode;
+typedef struct middleResults middleResults;
 #ifndef FUNCTIONS_H_
 #define FUNCTIONS_H_
 
@@ -41,13 +42,13 @@ struct tuple
 	int32_t id;
 	int32_t value;
 };
-struct multiColumnRelation//to struct anaferetai se enan kombo , ara kanw pinaka apo tetoia
+struct multiColumnRelation	//to struct anaferetai se enan kombo , ara kanw pinaka apo tetoia
 {
 	uint32_t rowCount;
 	uint32_t colCount;
 	uint64_t **table;//
 };
-struct oneColumnRelation//to palio relation , PREPEI NA ALLAKSW PANTOU TO ONOMA
+struct oneColumnRelation	//to palio relation , PREPEI NA ALLAKSW PANTOU TO ONOMA
 {
 	tuple *tuples;
 	uint32_t num_of_tuples;
@@ -78,7 +79,11 @@ struct chainNode
 	int bucketPos;
 	int prevchainPosition;
 };
-
+struct middleResults
+{
+	int relation;
+	int *rowIds;
+};
 ////////////////////////////////////////////////////////
 struct RelColNode //de borw na skeftw kalo onoma
 {
@@ -86,10 +91,10 @@ struct RelColNode //de borw na skeftw kalo onoma
 	int col;
 };
 
-struct filterPredNode
+struct filterPredNode		//afora mono prakseis me arithmous
 {
-	RelColNode *left;  //skalwsa-ti onoma na valw
-	char typeOper;
+	RelColNode *relColumn;  //skalwsa-ti onoma na valw
+	char typeOperation;
 	int value;
 };
 
@@ -107,8 +112,11 @@ struct queryDataIndex
 	int numPredFilter;  //posa predicators filter
 	filterPredNode *predFilter;  //pinakas me ta filter predicators
 
-	int numPredJoin;  //posa predicators join
-	joinPredNode *predJoin;  //pinakas me ta join predicators
+	int numPredJoinOneRel;  //posa predicators join pou aforoun columns tou idiou relation
+	joinPredNode *oneRelationPredArray;  //pinakas me ta join predicators apo idio relation
+
+	int numPredJoinTwoRel;  //posa predicators join pou aforoun columns diaforetikou relation
+	joinPredNode *twoRelationPredArray;  //pinakas me ta join predicators apo diaforetika relations
 
 	int numViewQuery;  //posa views zhtaei to query
 	RelColNode *viewQuery;  //pinakas me ta views
@@ -132,7 +140,11 @@ void createHT_CompareBuckets(resultList* ,hist*,hist*,oneColumnRelation*,oneColu
 void writeFile(uint32_t,uint32_t);
 void readFile(int32_t[],uint32_t *,int32_t[],uint32_t *);
 void deleteResultList(resultList *);
+queryDataIndex* analyzeQuery(char * query);
 char* readWorkFile(char *filename);
+void addQueryData(char *token,int part);
+resultList* sameRelationJoin();
+void executeFilter();
 #endif /* FUNCTIONS_H_ */
 
 

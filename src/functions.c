@@ -408,8 +408,9 @@ char* readWorkFile(char *filename)
 	query_f=fopen(filename,"r");
     char c='a';
 	char *queryString;
-	int counter=0,phrase_size=100;
+	int counter=0,phrase_size=100,middleResultsSize=10;
 	queryString = malloc(phrase_size*sizeof(char));
+	middleResults *middleResArray=malloc(middleResultsSize*sizeof(middleResults));
 
     while(c!=EOF)
     {
@@ -426,13 +427,63 @@ char* readWorkFile(char *filename)
 			counter++;
 			c=fgetc(query_f);
 		}
-
-		if(strcmp(queryString,"F"))
+		queryString[counter]='\0';
+		if(strcmp(queryString,"F") && c!=EOF)
+		{
 			printf("%s\n",queryString);
+			analyzeQuery(queryString);
+
+		}
 		memset(queryString,0,strlen(queryString));
     }
 }
+queryDataIndex* analyzeQuery(char *query)
+{
+	char *token;
+	char *token1,*token2,*token3;
+	token=strtok(query,"|");
+	//if(strcmp(token,"F")==0)
+	//	continue;
+	token1=token;
+	token2=strtok(NULL,"|");
+	token3=strtok(NULL,"|");
 
+	//printf("%s | %s | %s\n",token1,token2,token3);
+	addQueryData(token1,0);
+	addQueryData(token2,1);
+	addQueryData(token3,2);
+	printf("\n");
+}
+queryDataIndex* addQueryData(char *token,int part){
+	char *temp;
+
+	if(part==0){
+		printf("rel: ");
+		temp=strtok(token," ");
+		while(temp!=NULL){
+			printf("%s ",temp);
+
+			temp=strtok(NULL," ");
+		}
+	}
+	else if(part==1){
+		printf("Pred: ");
+		temp=strtok(token,"&");
+		while(temp!=NULL){
+			printf("%s ",temp);
+			temp=strtok(NULL,"&");
+		}
+	}
+	else if(part==2){
+		printf("Views: ");
+		temp=strtok(token,"&");
+		while(temp!=NULL){
+			printf("%s ",temp);
+			temp=strtok(NULL," ");
+		}
+	}
+	printf("\n");
+}
 
 
 
