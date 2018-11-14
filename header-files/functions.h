@@ -2,6 +2,8 @@
 typedef struct tuple tuple;
 typedef struct multiColumnRelation multiColumnRelation;
 typedef struct oneColumnRelation oneColumnRelation;
+typedef struct resultListForJoin resultListForJoin;
+typedef struct resultNodeForJoin resultNodeForJoin;
 typedef struct resultList resultList;
 typedef struct resultNode resultNode;
 typedef struct rowResult rowResult;
@@ -18,6 +20,22 @@ typedef struct joinPredNode joinPredNode;
 typedef struct middleResults middleResults;
 #ifndef FUNCTIONS_H_
 #define FUNCTIONS_H_
+
+//////
+struct resultListForJoin
+{
+	resultNodeForJoin *start;
+	resultNodeForJoin *end;
+	int32_t numberOfNodes;
+	int32_t numberOfResults;
+};
+struct resultNodeForJoin
+{
+	int32_t *row_Array;
+	resultNode *next;
+	int32_t rowSize;
+};
+//////
 
 struct resultList
 {
@@ -107,10 +125,10 @@ struct joinPredNode
 struct queryDataIndex
 {
 	int numRelQuery;  //posa relations aforoun to query
-	int *QueryRel;  //antistoixish relations twn predicators me ta pragmatika relations
+	int *QueryRelArray;  //antistoixish relations twn predicators me ta pragmatika relations
 
 	int numPredFilter;  //posa predicators filter
-	filterPredNode *predFilter;  //pinakas me ta filter predicators
+	filterPredNode *predFilterArray;  //pinakas me ta filter predicators
 
 	int numPredJoinOneRel;  //posa predicators join pou aforoun columns tou idiou relation
 	joinPredNode *oneRelationPredArray;  //pinakas me ta join predicators apo idio relation
@@ -119,7 +137,7 @@ struct queryDataIndex
 	joinPredNode *twoRelationPredArray;  //pinakas me ta join predicators apo diaforetika relations
 
 	int numViewQuery;  //posa views zhtaei to query
-	RelColNode *viewQuery;  //pinakas me ta views
+	RelColNode *viewQueryArray;  //pinakas me ta views
 };
 ///////////////////////////////////////////////////////////
 
@@ -136,14 +154,19 @@ void compareRelations(indexHT *ht,oneColumnRelation *array,int32_t start,int32_t
 resultList *initializeResultList(void);
 void insertResult(resultList *list,uint32_t id1,uint32_t id2,int32_t);
 void printResults(resultList *list);
-void createHT_CompareBuckets(resultList* ,hist*,hist*,oneColumnRelation*,oneColumnRelation*,int32_t,int32_t);
+void createHT_CompareBuckets(resultList* ,hist*,hist*,oneColumnRelation*,oneColumnRelation*,int32_t,int32_t);//to last orisma einai boolean , apo poion pinaka erxete
 void writeFile(uint32_t,uint32_t);
 void readFile(int32_t[],uint32_t *,int32_t[],uint32_t *);
 void deleteResultList(resultList *);
 queryDataIndex* analyzeQuery(char * query);
 char* readWorkFile(char *filename);
-void addQueryData(char *token,int part);
-resultList* sameRelationJoin();
+queryDataIndex* addQueryData(char *token,int part);
+
+resultListForJoin* sameRelationJoin(oneColumnRelation *relR,oneColumnRelation *relS,int32_t size);
+resultListForJoin *initializeResultListForJoin(void);
+void insertResultForJoin(resultListForJoin *list,uint32_t id);
+void printResultsForJoin(resultListForJoin *list);
+
 void executeFilter();
 #endif /* FUNCTIONS_H_ */
 
