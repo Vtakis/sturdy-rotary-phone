@@ -7,7 +7,12 @@
 int main(int argc,char** argv)
 {
 
+<<<<<<< Updated upstream
+
 	uint32_t size_A=150;
+=======
+	uint32_t size_A=1000;
+>>>>>>> Stashed changes
 	int32_t A[size_A];
 	uint32_t size_B=50;
 	int32_t B[size_B];
@@ -37,7 +42,7 @@ int main(int argc,char** argv)
 
 	if (argc!=2){
 		printf("\n\nWRONG NUMBER OF ARGS!!!\n\n\n");
-		//return 1;
+		return 1;
 	}
 	filename=malloc(strlen("input-files/")+strlen(argv[1])+1);//dineis mono to arxeio , to path to ftiaxnw edw
 	strcpy(filename,"input-files/");
@@ -135,7 +140,6 @@ int main(int argc,char** argv)
 	}
 	free(relationArray);
 
-	readWorkFile(argv[2]);
 	//telos ta kainourgia ------------------------------------------------------------------------------------------
 
 	//diabazoume ta r0

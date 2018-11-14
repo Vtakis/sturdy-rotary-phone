@@ -132,6 +132,7 @@ void createHT_CompareBuckets(resultList* ,hist*,hist*,oneColumnRelation*,oneColu
 void writeFile(uint32_t,uint32_t);
 void readFile(int32_t[],uint32_t *,int32_t[],uint32_t *);
 void deleteResultList(resultList *);
+char* readWorkFile(char *filename);
 #endif /* FUNCTIONS_H_ */
 
 

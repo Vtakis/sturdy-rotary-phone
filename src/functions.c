@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include "../header-files/functions.h"
 #define bucketPosNum 50
@@ -401,7 +402,36 @@ void deleteResultList(resultList * reslist){
 
 	free(reslist);
 }
+char* readWorkFile(char *filename)
+{
+	FILE *query_f;
+	query_f=fopen(filename,"r");
+    char c='a';
+	char *queryString;
+	int counter=0,phrase_size=100;
+	queryString = malloc(phrase_size*sizeof(char));
 
+    while(c!=EOF)
+    {
+    	counter=0,phrase_size=100;
+		c=fgetc(query_f);
+		while(c!=EOF && c!='\n')
+		{
+			queryString[counter]=c;
+			if(counter==phrase_size)
+			{
+				phrase_size*=2;
+				queryString=realloc(queryString,phrase_size*sizeof(char));
+			}
+			counter++;
+			c=fgetc(query_f);
+		}
+
+		if(strcmp(queryString,"F"))
+			printf("%s\n",queryString);
+		memset(queryString,0,strlen(queryString));
+    }
+}
 
 
 
