@@ -437,67 +437,288 @@ char* readWorkFile(char *filename)
 		memset(queryString,0,strlen(queryString));
     }
 }
+
 queryDataIndex* analyzeQuery(char *query)
 {
-	char *token;
-	char *token1,*token2,*token3;
+	char *token,*token2,*token3,*temp,*tempToken;
+	char *tempView,*tok,*bufRel,*bufCol;
+	int i,j,k,index,numRel=0,numView=0;
+	int numPredFilter=0,numPredJoinOneRel=0,numPredJoinTwoRel=0;
+
 	token=strtok(query,"|");
-	//if(strcmp(token,"F")==0)
-	//	continue;
-	token1=token;
 	token2=strtok(NULL,"|");
 	token3=strtok(NULL,"|");
 
-	//printf("%s | %s | %s\n",token1,token2,token3);
-	addQueryData(token1,0);
-	addQueryData(token2,1);
-	addQueryData(token3,2);
+	tempToken=malloc(128);
+	tempView=malloc(128);
+
+	queryDataIndex *queryData;
+	queryData=malloc(sizeof(queryDataIndex));
+
+	for(i=0;i<3;i++){
+		memset(tempToken,0,128);
+		if(i==0){//1st part of query
+			token=strtok(query,"|");
+			strcat(tempToken,token);
+			temp=strtok(token," ");
+			while(temp!=NULL){
+				numRel++;
+				temp=strtok(NULL," ");
+			}
+			queryData->numRelQuery=numRel;
+			queryData->QueryRelArray=malloc(numRel*sizeof(int));
+			temp=strtok(tempToken," ");
+			for(j=0;j<numRel;j++){
+				queryData->QueryRelArray[j]=atoi(temp);
+				temp=strtok(NULL," ");
+			}
+		}
+		else if(i==1){//2nd part of query
+			strcat(tempToken,token2);
+			temp=strtok(token2,"&");
+			while(temp!=NULL){
+				memset(tempView,0,128);
+				strcat(tempView,temp);
+				temp=strtok(NULL,"&");
+				if((tok=strchr(tempView,'>'))!=NULL ||(tok=strchr(tempView,'<'))!=NULL || ( (tok=strchr(tempView,'='))!=NULL && (tok=strstr(tok,"."))==NULL) ){
+				//	printf("> or <");
+					numPredFilter++;
+				}
+				else if((tok=strchr(tempView,'='))!=NULL){//peritto else if mallon
+						numPredJoinTwoRel++;
+				}
+				else{
+					printf("wrong\n");
+				}
+			}
+			//printf("pred=%d oneR=%d twoR=%d\n",numPredFilter,numPredJoinOneRel,numPredJoinTwoRel);
+
+			queryData->numPredFilter=numPredFilter;
+			queryData->predFilterArray=malloc(queryData->numPredFilter*sizeof(filterPredNode));
+			for(k=0;k<queryData->numPredFilter;k++)
+				queryData->predFilterArray[k].relColumn=malloc(sizeof(RelColNode));
+
+			queryData->numPredJoinTwoRel=numPredJoinTwoRel;
+			queryData->twoRelationPredArray=malloc(queryData->numPredJoinTwoRel*sizeof(joinPredNode));
+			for(k=0;k<queryData->numPredJoinTwoRel;k++){
+				queryData->twoRelationPredArray[k].left=malloc(sizeof(RelColNode));
+				queryData->twoRelationPredArray[k].right=malloc(sizeof(RelColNode));
+			}
+
+
+			int countF=0,countOneR=0,countTwoR=0;
+			char oper,*bufVal,*tok2;
+			temp=strtok(tempToken,"&");
+			while(temp!=NULL){
+				memset(tempView,0,128);
+				strcat(tempView,temp);
+				temp=strtok(NULL,"&");
+				if((tok=strchr(tempView,'>'))!=NULL ||(tok=strchr(tempView,'<'))!=NULL || ( (tok=strchr(tempView,'='))!=NULL && (tok2=strstr(tok,"."))==NULL) ){
+					//printf("tok %s\n",tok);
+					index = (int)(tok - tempView);
+					oper=tempView[index];
+					bufVal=malloc(128);
+					memset(bufVal,0,128);
+					for(k=index+1;k<strlen(tempView);k++){
+						bufVal[k-index-1]=tempView[k];
+					}
+					bufVal[strlen(tempView)]='\0';
+
+					tok=strchr(tempView,'.');
+					index = (int)(tok - tempView);
+
+					bufRel=malloc(index);
+					bufCol=malloc(index);
+
+					for(k=0;k<index;k++){
+						bufRel[k]=tempView[k];
+						bufCol[k]=tempView[k+index+1];
+					}
+					bufRel[index]='\0';
+					bufCol[index]='\0';
+					//printf("R:%s C:%s\n",bufRel,bufCol);
+
+					queryData->predFilterArray[countF].relColumn->rel=atoi(bufRel);
+					queryData->predFilterArray[countF].relColumn->col=atoi(bufCol);
+					queryData->predFilterArray[countF].typeOperation=oper;
+					queryData->predFilterArray[countF].value=atoi(bufVal);
+
+					countF++;
+					free(bufVal);
+					free(bufCol);
+					free(bufRel);
+				}
+				else{//gia '='
+					tok=strchr(tempView,'=');
+					index = (int)(tok - tempView);
+					int index_e=index;
+					//printf("index=%d\n",index);
+
+					bufVal=malloc(index);
+					for(k=0;k<index;k++){
+						bufVal[k]=tempView[k];
+					}
+					bufVal[index]='\0';
+					tok=strchr(bufVal,'.');
+					index = (int)(tok - bufVal);
+
+					bufRel=malloc(index);
+					bufCol=malloc(index);
+					for(k=0;k<index;k++){
+						bufRel[k]=bufVal[k];
+						bufCol[k]=bufVal[k+index+1];
+					}
+					bufRel[index]='\0';
+					bufCol[index]='\0';
+					printf("R:%s C:%s\n",bufRel,bufCol);
+					queryData->twoRelationPredArray[countTwoR].left->rel=atoi(bufRel);
+					queryData->twoRelationPredArray[countTwoR].left->col=atoi(bufCol);
+
+					free(bufRel);
+					free(bufCol);
+					free(bufVal);
+					////////////////////////////////////////////////////////////////
+					bufVal=malloc(index_e);
+					for(k=index_e+1;k<strlen(tempView);k++){
+						bufVal[k-index_e-1]=tempView[k];
+					}
+					bufVal[index_e]='\0';
+					tok=strchr(bufVal,'.');
+					index = (int)(tok - bufVal);
+					bufRel=malloc(index);
+					bufCol=malloc(index);
+					for(k=0;k<index;k++){
+						bufRel[k]=bufVal[k];
+						bufCol[k]=bufVal[k+index+1];
+					}
+					bufRel[index]='\0';
+					bufCol[index]='\0';
+					printf("R:%s C:%s\n",bufRel,bufCol);
+					queryData->twoRelationPredArray[countTwoR].right->rel=atoi(bufRel);
+					queryData->twoRelationPredArray[countTwoR].right->col=atoi(bufCol);
+					//////////////////////////////////////////////////////////////
+					countTwoR++;
+					free(bufRel);
+					free(bufCol);
+					free(bufVal);
+
+				}
+			}
+		}
+		else{//3rd part of query
+			//printf("View: ");
+			strcat(tempToken,token3);
+			temp=strtok(token3," ");
+			while(temp!=NULL){
+				numView++;
+				temp=strtok(NULL," ");
+			}
+			queryData->numViewQuery=numView;
+			queryData->viewQueryArray=malloc(numView*sizeof(RelColNode));
+			temp=strtok(tempToken," ");
+			for(j=0;j<numView;j++){
+				memset(tempView,0,128);
+				strcat(tempView,temp);
+				temp=strtok(NULL," ");
+
+				tok = strchr(tempView, '.');
+				index = (int)(tok - tempView);
+
+				bufRel=malloc(index);
+				bufCol=malloc(index);
+
+				for(k=0;k<index;k++){
+					bufRel[k]=tempView[k];
+					bufCol[k]=tempView[k+index+1];
+				}
+				bufRel[index]='\0';
+				bufCol[index]='\0';
+				queryData->viewQueryArray[j].rel=atoi(bufRel);
+				queryData->viewQueryArray[j].col=atoi(bufCol);
+				free(bufCol);
+				free(bufRel);
+			}
+		}
+	}
+
+	free(tempToken);
+	free(tempView);
 	printf("\n");
-}
-queryDataIndex* addQueryData(char *token,int part){
-	char *temp;
-
-	if(part==0){
-		printf("rel: ");
-		temp=strtok(token," ");
-		while(temp!=NULL){
-			printf("%s ",temp);
-
-			temp=strtok(NULL," ");
-		}
-	}
-	else if(part==1){
-		printf("Pred: ");
-		temp=strtok(token,"&");
-		while(temp!=NULL){
-			printf("%s ",temp);
-			temp=strtok(NULL,"&");
-		}
-	}
-	else if(part==2){
-		printf("Views: ");
-		temp=strtok(token,"&");
-		while(temp!=NULL){
-			printf("%s ",temp);
-			temp=strtok(NULL," ");
-		}
-	}
-	printf("\n");
+	return queryData;
 }
 
 
+/////////////////////////////////////////////////
 
+resultListForJoin* sameRelationJoin(oneColumnRelation *relR,oneColumnRelation *relS,int32_t size){//exoun to idio size
+	int i;
+	resultListForJoin *resList;
 
+	resList=initializeResultListForJoin();
 
+	for(i=0;i<size;i++){
+		if(relR->tuples[i].value==relS->tuples[i].value){//prepei ta id na einai ta idia
+			//printf("relR->tuples[i].id = %d\n",relR->tuples[i].id);
+			insertResultForJoin(resList,relR->tuples[i].id);
+		}
+	}
+	return resList;
+}
 
+resultListForJoin *initializeResultListForJoin(void){
+	resultListForJoin *list=malloc(sizeof(resultListForJoin));
+	list->start=NULL;
+	list->end=NULL;
+	list->numberOfNodes=0;
+	list->numberOfResults=0;
+	return list;
+}
 
+void insertResultForJoin(resultListForJoin *list,uint32_t id){
+	int32_t numberoftuples=(1024*1024)/sizeof(int32_t);
+	//printf("numberOfResults=%d  %ld\n",numberoftuples,sizeof(int32_t));
+	if(list->end==NULL){//kenh lista
+		list->start=malloc(sizeof(resultNodeForJoin));
+		list->end=list->start;
+		list->numberOfNodes=1;
+		list->numberOfResults=1;
 
+		list->start->row_Array=malloc(numberoftuples*sizeof(int32_t));
+		list->start->next=NULL;
+		list->start->rowSize=1;
 
+		list->start->row_Array[0]=id;
+	}
+	else{
+		list->numberOfResults++;
+		if( numberoftuples > list->end->rowSize ){//exei xwro
 
+			list->end->row_Array[list->end->rowSize]=id;
+			list->end->rowSize++;
+		}
+		else{//ftiaxnw neo kombo
+			list->end->next=malloc(sizeof(resultNodeForJoin));
+			list->end=list->end->next;
+			list->numberOfNodes++;
 
+			list->end->row_Array=malloc(numberoftuples*sizeof(int32_t));
+			list->end->next=NULL;
+			list->end->rowSize=1;
 
+			list->end->row_Array[0]=id;
+		}
+	}
+}
 
-
-
-
-
+void printResultsForJoin(resultListForJoin *list){
+	resultNodeForJoin *temp;
+	temp =list->start;
+	printf("\nRowid\n");
+	while(temp!=NULL){
+		for(int i=0;i<temp->rowSize;i++){
+			printf("%d\n",temp->row_Array[i]);
+		}
+		temp=temp->next;
+	}
+	printf("\n%d Results\n\n",list->numberOfResults);
+}

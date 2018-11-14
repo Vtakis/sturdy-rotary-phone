@@ -107,10 +107,10 @@ struct joinPredNode
 struct queryDataIndex
 {
 	int numRelQuery;  //posa relations aforoun to query
-	int *QueryRel;  //antistoixish relations twn predicators me ta pragmatika relations
+	int *QueryRelArray;  //antistoixish relations twn predicators me ta pragmatika relations
 
 	int numPredFilter;  //posa predicators filter
-	filterPredNode *predFilter;  //pinakas me ta filter predicators
+	filterPredNode *predFilterArray;  //pinakas me ta filter predicators
 
 	int numPredJoinOneRel;  //posa predicators join pou aforoun columns tou idiou relation
 	joinPredNode *oneRelationPredArray;  //pinakas me ta join predicators apo idio relation
@@ -119,7 +119,7 @@ struct queryDataIndex
 	joinPredNode *twoRelationPredArray;  //pinakas me ta join predicators apo diaforetika relations
 
 	int numViewQuery;  //posa views zhtaei to query
-	RelColNode *viewQuery;  //pinakas me ta views
+	RelColNode *viewQueryArray;  //pinakas me ta views
 };
 ///////////////////////////////////////////////////////////
 
@@ -142,7 +142,7 @@ void readFile(int32_t[],uint32_t *,int32_t[],uint32_t *);
 void deleteResultList(resultList *);
 queryDataIndex* analyzeQuery(char * query);
 char* readWorkFile(char *filename);
-void addQueryData(char *token,int part);
+queryDataIndex* addQueryData(char *token,int part);
 resultList* sameRelationJoin();
 void executeFilter();
 #endif /* FUNCTIONS_H_ */
