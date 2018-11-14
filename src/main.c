@@ -136,6 +136,29 @@ int main(int argc,char** argv)
 	free(relationArray);
 
 	readWorkFile(argv[2]);
+
+	//test to aplo join
+	printf("\n\nAPLO JOIN\n\n");
+	uint32_t size=20;
+	int32_t qwerty[size];
+	int32_t zxcvb[size];
+	oneColumnRelation *S2,*R2;
+
+	for(i=0;i<size;i++){
+		qwerty[i]=i;
+	}
+	for(i=0;i<size;i++){
+		zxcvb[i]=i;
+	}
+
+	resultListForJoin *resListForJoin;
+	createRelations(qwerty,size,zxcvb,size,&S2,&R2);
+	resListForJoin=sameRelationJoin(R2,S2,size);
+	printResultsForJoin(resListForJoin);
+
+
+
+
 	//telos ta kainourgia ------------------------------------------------------------------------------------------
 
 	//diabazoume ta r0
