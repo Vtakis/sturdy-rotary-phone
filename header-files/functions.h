@@ -161,16 +161,12 @@ void deleteResultList(resultList *);
 queryDataIndex* analyzeQuery(char * query);
 char* readWorkFile(char *filename);
 queryDataIndex* addQueryData(char *token,int part);
-<<<<<<< HEAD
-resultList* sameRelationJoin();
-=======
 
 resultListForJoin* sameRelationJoin(oneColumnRelation *relR,oneColumnRelation *relS,int32_t size);
 resultListForJoin *initializeResultListForJoin(void);
 void insertResultForJoin(resultListForJoin *list,uint32_t id);
 void printResultsForJoin(resultListForJoin *list);
 
->>>>>>> 1aad4910620f8c239c2a9b0ae62c26f39985f640
 void executeFilter();
 #endif /* FUNCTIONS_H_ */
 

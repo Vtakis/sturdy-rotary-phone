@@ -649,32 +649,6 @@ queryDataIndex* analyzeQuery(char *query)
 
 /////////////////////////////////////////////////
 
-<<<<<<< HEAD
-/////////////////////////////////////////////////
-
-resultListForJoin* sameRelationJoin(oneColumnRelation *relR,oneColumnRelation *relS,int32_t size){//exoun to idio size
-	int i;
-	resultListForJoin *resList;
-
-	resList=initializeResultListForJoin();
-
-	for(i=0;i<size;i++){
-		if(relR->tuples[i].value==relS->tuples[i].value){//prepei ta id na einai ta idia
-			//printf("relR->tuples[i].id = %d\n",relR->tuples[i].id);
-			insertResultForJoin(resList,relR->tuples[i].id);
-		}
-	}
-	return resList;
-}
-
-resultListForJoin *initializeResultListForJoin(void){
-	resultListForJoin *list=malloc(sizeof(resultListForJoin));
-	list->start=NULL;
-	list->end=NULL;
-	list->numberOfNodes=0;
-	list->numberOfResults=0;
-	return list;
-=======
 resultListForJoin* sameRelationJoin(oneColumnRelation *relR,oneColumnRelation *relS,int32_t size){//exoun to idio size
 	int i;
 	resultListForJoin *resList;
@@ -746,54 +720,15 @@ void printResultsForJoin(resultListForJoin *list){
 		temp=temp->next;
 	}
 	printf("\n%d Results\n\n",list->numberOfResults);
->>>>>>> 1aad4910620f8c239c2a9b0ae62c26f39985f640
 }
 
-void insertResultForJoin(resultListForJoin *list,uint32_t id){
-	int32_t numberoftuples=(1024*1024)/sizeof(int32_t);
-	//printf("numberOfResults=%d  %ld\n",numberoftuples,sizeof(int32_t));
-	if(list->end==NULL){//kenh lista
-		list->start=malloc(sizeof(resultNodeForJoin));
-		list->end=list->start;
-		list->numberOfNodes=1;
-		list->numberOfResults=1;
 
-		list->start->row_Array=malloc(numberoftuples*sizeof(int32_t));
-		list->start->next=NULL;
-		list->start->rowSize=1;
 
-		list->start->row_Array[0]=id;
-	}
-	else{
-		list->numberOfResults++;
-		if( numberoftuples > list->end->rowSize ){//exei xwro
 
-			list->end->row_Array[list->end->rowSize]=id;
-			list->end->rowSize++;
-		}
-		else{//ftiaxnw neo kombo
-			list->end->next=malloc(sizeof(resultNodeForJoin));
-			list->end=list->end->next;
-			list->numberOfNodes++;
 
-			list->end->row_Array=malloc(numberoftuples*sizeof(int32_t));
-			list->end->next=NULL;
-			list->end->rowSize=1;
 
-			list->end->row_Array[0]=id;
-		}
-	}
-}
 
-void printResultsForJoin(resultListForJoin *list){
-	resultNodeForJoin *temp;
-	temp =list->start;
-	printf("\nRowid\n");
-	while(temp!=NULL){
-		for(int i=0;i<temp->rowSize;i++){
-			printf("%d\n",temp->row_Array[i]);
-		}
-		temp=temp->next;
-	}
-	printf("\n%d Results\n\n",list->numberOfResults);
-}
+
+
+
+
