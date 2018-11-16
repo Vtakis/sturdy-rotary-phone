@@ -722,7 +722,15 @@ void printResultsForJoin(resultListForJoin *list){
 	printf("\n%d Results\n\n",list->numberOfResults);
 }
 
+int64_t SumOneColumnRelation(oneColumnRelation *R){
+	int sum=0,i;
 
+	for(i=0;i<R->num_of_tuples;i++){
+		sum+=R->tuples[i].value;
+	}
+
+	return sum;
+}
 
 
 

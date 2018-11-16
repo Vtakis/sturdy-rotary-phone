@@ -157,7 +157,7 @@ int main(int argc,char** argv)
 	printResultsForJoin(resListForJoin);
 
 
-
+	printf("\n\nSumOneColumnRelation=%ld\n\n",SumOneColumnRelation(R2));
 
 	//telos ta kainourgia ------------------------------------------------------------------------------------------
 

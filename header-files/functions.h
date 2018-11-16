@@ -168,6 +168,7 @@ void insertResultForJoin(resultListForJoin *list,uint32_t id);
 void printResultsForJoin(resultListForJoin *list);
 
 void executeFilter();
+int64_t SumOneColumnRelation(oneColumnRelation *R);
 #endif /* FUNCTIONS_H_ */
 
 
