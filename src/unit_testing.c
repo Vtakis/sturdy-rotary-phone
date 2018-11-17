@@ -24,7 +24,7 @@ int main()
 	}
 
 	createRelations(A,size_A,B,size_B,&S,&R);
-	resList = RadixHashJoin(R,S,size_A,size_B);
+	resList = RadixHashJoin(R,S);
 	printResults(resList);
 	if(resList->numberOfResults == size_A*size_B){
 		printf("Successful Join!\n");
@@ -44,7 +44,7 @@ int main()
 	}
 
 	createRelations(A,size_A,B,size_B,&S,&R);
-	resList = RadixHashJoin(R,S,size_A,size_B);
+	resList = RadixHashJoin(R,S);
 	printResults(resList);
 	if(resList->numberOfResults == 0){
 		printf("Successful Join!\n");
@@ -64,7 +64,7 @@ int main()
 	}
 
 	createRelations(A,size_A,B,size_B,&S,&R);
-	resList = RadixHashJoin(R,S,size_A,size_B);
+	resList = RadixHashJoin(R,S);
 	printResults(resList);
 	int32_t forcompare;
 	if(size_A <=size_B){
@@ -91,7 +91,7 @@ int main()
 		B[i]=i%mod;
 	}
 	createRelations(A,size_A,B,size_B,&S,&R);
-	resList = RadixHashJoin(R,S,size_A,size_B);
+	resList = RadixHashJoin(R,S);
 	printResults(resList);
 	if(resList->numberOfResults == mod*((size_A/mod)*(size_B/mod))){
 		printf("Successful Join!\n");

@@ -435,17 +435,16 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 		queryString[counter]='\0';
 		if(strcmp(queryString,"F") && c!=EOF)
 		{
-			oneColumnRelation *column;
 			printf("\n\n%s",queryString);
 			data=analyzeQuery(queryString);
 		//	getchar();
 
 			if(data->numPredFilter>0)				//kanoume prwta tis prakseis me arithmous
 			{
-			/*	printf("Filters=%d\n",data->numPredFilter);
+				printf("Filters=%d\n",data->numPredFilter);
 				for(i=0;i<data->numPredFilter;i++)		//apo 0 mexri ton arithmo twn filtrwn pou uparxoun//
 				{
-
+					oneColumnRelation *column;
 					relationIndex = data->predFilterArray[i].relColumn->rel;
 					columnIndx= data->predFilterArray[i].relColumn->col;
 					relationIndex = data->QueryRelArray[relationIndex];
@@ -489,9 +488,9 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 					//printf("After\n");
 					//printMiddleArray(middleResArray,middleResultsCounter);
 					printf("Filter[%d]-->%d/%d\n",i,middleResArray[middleResultsCounter-1].rowIdsNum,relationArray[relationIndex].rowCount);
-				}*/
+				}
 			}
-			if(data->numPredJoinTwoRel>0)			//join 2 columns//
+			if(data->numPredJoinTwoRel>0)			//join 2 relations//
 			{
 
 				for(i=0;i<data->numPredJoinTwoRel;i++)
@@ -499,7 +498,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 					oneColumnRelation *leftColumn;
 					oneColumnRelation *rightColumn;
 
-					leftRelationIndx = data->twoRelationPredArray[i].left->rel;					//pernoume ta stoixeia apo thn domh pou krataei ta predications data //
+					leftRelationIndx = data->twoRelationPredArray[i].left->rel;					///pernoume ta stoixeia apo thn domh pou krataei ta predications data //
 					leftColumnIndx =data->twoRelationPredArray[i].left->col;
 					rightRelationIndx = data->twoRelationPredArray[i].right->rel;
 					rightColumnIndx= data->twoRelationPredArray[i].right->col;
@@ -507,8 +506,6 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 					leftRelationIndx = data->QueryRelArray[leftRelationIndx];
 					rightRelationIndx = data->QueryRelArray[rightRelationIndx];
 					//printf("%d.%d = %d.%d  ,,,%d\n",leftRelationIndx,leftColumnIndx,rightRelationIndx,rightColumnIndx,middleResultsCounter);
-
-
 
 					int leftColumnPosInMiddleArray=-1,rightColumnPosInMiddleArray=-1;
 					if(middleResultsCounter>0)			//exoume endiamesa apotelesmata
@@ -536,10 +533,10 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 
 
 					resultList *resultList1,*resultList2;
-					if(leftRelationIndx==rightRelationIndx)			//JoinoneRelationArray
+					if(leftRelationIndx==rightRelationIndx)			//oneRelationArray
 					{
 						printf("Before Join\n");
-						//printMiddleArray(middleResArray,middleResultsCounter);
+						printMiddleArray(middleResArray,middleResultsCounter);
 						resultList1=sameRelationJoin(leftColumn,rightColumn);
 						printf("%d middle %d left %d right\n",middleResultsCounter,leftColumnPosInMiddleArray,rightColumnPosInMiddleArray);
 						if(leftColumnPosInMiddleArray==-1)			//an den uparxei to left column ston middle array
@@ -549,13 +546,13 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 							setResultsToMiddleArray(resultList1,middleResArray,middleResultsCounter,"left");
 							middleResultsCounter++;
 						}
-						/*if(rightColumnPosInMiddleArray==-1)			//an den uparxei to right column ston middle array
+						if(rightColumnPosInMiddleArray==-1)			//an den uparxei to right column ston middle array
 						{
 							printf("right -1\n");
 							middleResArray[middleResultsCounter].relation=rightRelationIndx;
 							setResultsToMiddleArray(resultList1,middleResArray,middleResultsCounter,"right");
 							middleResultsCounter++;
-						}*/
+						}
 						if(leftColumnPosInMiddleArray!=-1)			//an uparxei to left column ston middle array
 						{
 							printf("left +1\n");
@@ -563,18 +560,18 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 							middleResArray[leftColumnPosInMiddleArray].relation=leftRelationIndx;
 							setResultsToMiddleArray(resultList1,middleResArray,leftColumnPosInMiddleArray,"left");
 						}
-						/*if(rightColumnPosInMiddleArray!=-1)			//an uparxei to right column ston middle array
+						if(rightColumnPosInMiddleArray!=-1)			//an uparxei to right column ston middle array
 						{
 							printf("right +1\n");
 							free(middleResArray[rightColumnPosInMiddleArray].rowIds);
 							middleResArray[rightColumnPosInMiddleArray].relation=rightRelationIndx;
 							setResultsToMiddleArray(resultList1,middleResArray,rightColumnPosInMiddleArray,"right");
-						}*/
+						}
 						printf("After Join\n");
-						//printMiddleArray(middleResArray,middleResultsCounter);
+						printMiddleArray(middleResArray,middleResultsCounter);
 						//printResults(resultList2);
 					}
-					else											//JointwoRelationArray
+					else											//twoRelationArray
 					{
 						printf("Before Join\n");
 						printMiddleArray(middleResArray,middleResultsCounter);
@@ -617,29 +614,9 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 
 				}
 			}
-
+			middleResultsCounter=0;
 			//free(middleResArray->rowIds);
 			//free(middleResArray);
-			/*printf("SUms-->%d\n",data->numViewQuery);
-			if(data->numViewQuery>0)
-			{
-				for(i=0;i<data->numViewQuery;i++)
-				{
-					columnIndx = data->viewQueryArray[i].col;
-					relationIndex =data->viewQueryArray[i].rel;
-					relationIndex = data->QueryRelArray[relationIndex];
-					for(j=0;j<middleResultsCounter;j++)
-					{
-						if(middleResArray[j].relation==relationIndex)
-						{
-							column=setColumnFromMiddleArray(middleResArray,relationIndex,columnIndx,j,relationArray);
-							printf("Sum=%ld\n",SumOneColumnRelation(column));
-						}
-					}
-
-				}
-			}*/
-			middleResultsCounter=0;
 		}
 		memset(queryString,0,strlen(queryString));
     }
@@ -1014,9 +991,13 @@ void printResultsForJoin(resultListForJoin *list){
 	}
 	printf("\n%d Results\n\n",list->numberOfResults);
 }
-*/
+<<<<<<< Updated upstream
+
 int64_t SumOneColumnRelation(oneColumnRelation *R){
 	int sum=0,i;
+=======
+*/
+>>>>>>> Stashed changes
 
 	for(i=0;i<R->num_of_tuples;i++){
 		sum+=R->tuples[i].value;

@@ -99,7 +99,6 @@ struct chainNode
 };
 struct middleResults
 {
-	int team;
 	int relation;
 	int *rowIds;
 	int rowIdsNum;
@@ -172,7 +171,11 @@ resultListForJoin *initializeResultListForJoin(void);
 void insertResultForJoin(resultListForJoin *list,uint32_t id);
 void printResultsForJoin(resultListForJoin *list);
 
+<<<<<<< Updated upstream
+void executeFilter();
 int64_t SumOneColumnRelation(oneColumnRelation *R);
+=======
+>>>>>>> Stashed changes
 #endif /* FUNCTIONS_H_ */
 
 
