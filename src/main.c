@@ -7,9 +7,9 @@
 int main(int argc,char** argv)
 {
 
-	uint32_t size_A=100;
+	uint32_t size_A=6;
 	int32_t A[size_A];
-	uint32_t size_B=10;
+	uint32_t size_B=7;
 	int32_t B[size_B];
 
 	writeFile(size_A,size_B);
@@ -25,6 +25,7 @@ int main(int argc,char** argv)
 
 	deleteResultList(resList);
 
+	//return 1;
 
 	//ta kainourgia -----------------------------------------------------------------------------------------------
 
@@ -45,7 +46,7 @@ int main(int argc,char** argv)
 
 	printf("filename=%s\n",filename);
 
-	fp=fopen(filename,"rb");
+	fp=fopen(filename,"r");
 
 	fseek(fp,0,SEEK_END);
 	fsize = ftell(fp);
@@ -53,7 +54,7 @@ int main(int argc,char** argv)
 	paths=malloc(fsize+1);
 	fread(paths,fsize,1,fp);
 	fclose(fp);
-	paths[fsize-1]='\0';
+	paths[fsize]='\0';
 	
 	printf("paths:\n%s\n",paths);
 
@@ -88,13 +89,19 @@ int main(int argc,char** argv)
 		printf("onepath :%s...\n",onepath);
 
 		fp=fopen(onepath,"rb");
-
+		//fp=fopen(onepath,"r");
 		uint64_t temp;
-		
+		char cols[100],rows[100];
+		int a,b;
+		//fscanf(fp,"%s %[^\n]s",rows,cols);
 		fread(&temp,sizeof(uint64_t),1,fp);
+		//printf("temnp=%s %s\n",cols,rows);
+
 		relationArray[i].rowCount=temp;
+		//relationArray[i].rowCount=atoi(rows);
 		fread(&temp,sizeof(uint64_t),1,fp);
 		relationArray[i].colCount=temp;
+		//relationArray[i].colCount=atoi(cols);
 
 		relationArray[i].table=malloc(relationArray[i].colCount*sizeof(uint64_t *));
 
@@ -102,6 +109,7 @@ int main(int argc,char** argv)
 			relationArray[i].table[j]=malloc(relationArray[i].rowCount*sizeof(uint64_t));//mporei na prepei na bgoun eksw
 			for(k=0;k<relationArray[i].rowCount;k++){
 				fread(&temp,sizeof(uint64_t),1,fp);
+				//fscanf(fp,"%ld|",&temp);
 				//for(int k=0;k<sizeof(uint64_t);k++){
 					//printf("%ld ",temp);
 				//}
@@ -118,9 +126,10 @@ int main(int argc,char** argv)
 			for(k=0;k<relationArray[i].rowCount;k++){
 				printf("%ld ",relationArray[i].table[j][k]);
 			}
-			printf("\n\nend of %d\n\n",i);
+			printf("\n%d\n",i);
 		}
-		sleep(20);
+		printf("\n");
+		sleep(2);
 	}*/
 
 	free(filename);

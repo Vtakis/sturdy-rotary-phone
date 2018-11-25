@@ -66,7 +66,7 @@ struct multiColumnRelation	//to struct anaferetai se enan kombo , ara kanw pinak
 	uint32_t colCount;
 	uint64_t **table;//
 };
-struct oneColumnRelation	//to palio relation , PREPEI NA ALLAKSW PANTOU TO ONOMA
+struct oneColumnRelation
 {
 	tuple *tuples;
 	uint32_t num_of_tuples;
@@ -103,6 +103,7 @@ struct middleResults
 	int relation;
 	int *rowIds;
 	int rowIdsNum;
+	int fromArray;
 };
 ////////////////////////////////////////////////////////
 struct RelColNode //de borw na skeftw kalo onoma
@@ -142,7 +143,7 @@ struct queryDataIndex
 	RelColNode *viewQueryArray;  //pinakas me ta views
 };
 ///////////////////////////////////////////////////////////
-void setResultsToMiddleArray(resultList *list,middleResults *middleResultsArray,int index,char* direction);
+void setResultsToMiddleArray(resultList *list,middleResults *middleResultsArray,int index,int direction,int );
 void printMiddleArray(middleResults *array,int size);
 oneColumnRelation* setColumnFromMiddleArray(middleResults* middleResArray,int relationIndx,int columnIndx,int arrayIndx,multiColumnRelation* relationArray);
 oneColumnRelation* setColumnFromFirstArray(multiColumnRelation* relationArray,int relationIndx,int columnIndx);
@@ -171,7 +172,7 @@ resultList* sameRelationJoin(oneColumnRelation *relR,oneColumnRelation *relS);
 resultListForJoin *initializeResultListForJoin(void);
 void insertResultForJoin(resultListForJoin *list,uint32_t id);
 void printResultsForJoin(resultListForJoin *list);
-
+void changeRowIdNumOfTeam(middleResults*,int,int,int);
 int64_t SumOneColumnRelation(oneColumnRelation *R);
 #endif /* FUNCTIONS_H_ */
 
