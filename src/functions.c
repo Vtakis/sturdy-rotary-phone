@@ -437,7 +437,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 	query_f=fopen(filename,"r");
     char c='a';
 	char *queryString;
-	int teamCounter=1,counter=0,phrase_size=100,middleResultsSize=100,i,columnIndx,relationIndex,flag=0,middleResultsCounter=0,j,leftRelationIndx,leftTeam=0,rightTeam=0,rightRelationIndx,leftColumnIndx,rightColumnIndx;
+	int teamCounter=1,counter=0,phrase_size=100,middleResultsSize=100,i,columnIndx,relationId,relationIndex,flag=0,middleResultsCounter=0,j,leftRelationId,rightRelationId,leftRelationIndx,leftTeam=0,rightTeam=0,rightRelationIndx,leftColumnIndx,rightColumnIndx;
 	queryString = malloc(phrase_size*sizeof(char));
 	middleResults *middleResArray=malloc(middleResultsSize*sizeof(middleResults));
 	for(i=0;i<middleResultsSize;i++){
@@ -445,8 +445,10 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 		middleResArray[i].relation=-1;
 		middleResArray[i].rowIdsNum=0;
 		middleResArray[i].fromArray=-1;
+		middleResArray[i].relation_id=-1;
 	}
 	queryDataIndex *data;
+	int y=1;
     while(c!=EOF)
     {
     	counter=0,phrase_size=100;
@@ -466,19 +468,21 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 		if(strcmp(queryString,"F") && c!=EOF)
 		{
 			oneColumnRelation *column;
-			printf("\n\n%s",queryString);
+			//printf("\n\n%d)%s",y,queryString);
+			y++;
 			data=analyzeQuery(queryString);
 			//getchar();
 
 			if(data->numPredFilter>0)				//kanoume prwta tis prakseis me arithmous
 			{
-				printf("Filters=%d\n",data->numPredFilter);
+				//printf("Filters=%d\n",data->numPredFilter);
 				for(i=0;i<data->numPredFilter;i++)		//apo 0 mexri ton arithmo twn filtrwn pou uparxoun//
 				{
 
-					relationIndex = data->predFilterArray[i].relColumn->rel;
+					relationId = data->predFilterArray[i].relColumn->rel;
+					//printf("%d\n",relationIndex);
 					columnIndx= data->predFilterArray[i].relColumn->col;
-					relationIndex = data->QueryRelArray[relationIndex];
+					relationIndex = data->QueryRelArray[relationId];
 					flag=0;
 					if(middleResultsCounter>0)			//exoume endiamesa apotelesmata
 					{
@@ -493,12 +497,14 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 								int team =middleResArray[j].team;
 								middleResArray[j]=executeFilter(column,data->predFilterArray[i].value,data->predFilterArray[i].typeOperation,relationIndex);
 								middleResArray[j].team=team;
-								printMiddleArray(middleResArray,middleResultsCounter);
-								/*if(middleResArray[middleResultsCounter].relation==-1)
+								middleResArray[j].relation_id=data->predFilterArray[i].relColumn->rel;
+							//	printf("%d\n",middleResArray[j].relation_id);
+								//printMiddleArray(middleResArray,middleResultsCounter);
+								///if(middleResArray[middleResultsCounter].relation==-1)
 								{
-									free(middleResArray[middleResultsCounter].rowIds);
-									middleResultsCounter--;
-								}*/
+									//free(middleResArray[middleResultsCounter].rowIds);
+									//middleResultsCounter--;
+								}
 								//printf("After 1\n");
 								//printMiddleArray(middleResArray,middleResultsCounter);
 								//printf("Filter[%d]-->%d/%d\n",i,middleResArray[middleResultsCounter-1].rowIdsNum,relationArray[relationIndex].rowCount);
@@ -518,9 +524,10 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 					}
 					//printMiddleArray(middleResArray,middleResultsCounter);
 					middleResArray[middleResultsCounter++]=executeFilter(column,data->predFilterArray[i].value,data->predFilterArray[i].typeOperation,relationIndex);
+					middleResArray[middleResultsCounter-1].relation_id=data->predFilterArray[i].relColumn->rel;
 					middleResArray[middleResultsCounter-1].team=teamCounter++;
 
-					printMiddleArray(middleResArray,middleResultsCounter);
+				//	printMiddleArray(middleResArray,middleResultsCounter);
 					middleResArray[middleResultsCounter-1].fromArray=0;
 					if(middleResArray[middleResultsCounter-1].relation==-1)
 					{
@@ -530,24 +537,26 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 					}
 					//printf("After\n");
 					//printMiddleArray(middleResArray,middleResultsCounter);
-					printf("Filter[%d]-->%d/%d\n",i,middleResArray[middleResultsCounter-1].rowIdsNum,relationArray[relationIndex].rowCount);
+					//printf("Filter[%d]-->%d/%d\n",i,middleResArray[middleResultsCounter-1].rowIdsNum,relationArray[relationIndex].rowCount);
 				}
 			}
 			if(data->numPredJoinTwoRel>0)			//join 2 columns//
 			{
 
+				leftTeam=0;
+				rightTeam=0;
 				for(i=0;i<data->numPredJoinTwoRel;i++)
 				{
 					oneColumnRelation *leftColumn;
 					oneColumnRelation *rightColumn;
 
-					leftRelationIndx = data->twoRelationPredArray[i].left->rel;					//pernoume ta stoixeia apo thn domh pou krataei ta predications data //
+					leftRelationId = data->twoRelationPredArray[i].left->rel;					//pernoume ta stoixeia apo thn domh pou krataei ta predications data //
 					leftColumnIndx =data->twoRelationPredArray[i].left->col;
-					rightRelationIndx = data->twoRelationPredArray[i].right->rel;
+					rightRelationId = data->twoRelationPredArray[i].right->rel;
 					rightColumnIndx= data->twoRelationPredArray[i].right->col;
 					//printf("%d.%d = %d.%d  \n",leftRelationIndx,leftColumnIndx,rightRelationIndx,rightColumnIndx);
-					leftRelationIndx = data->QueryRelArray[leftRelationIndx];
-					rightRelationIndx = data->QueryRelArray[rightRelationIndx];
+					leftRelationIndx = data->QueryRelArray[leftRelationId];
+					rightRelationIndx = data->QueryRelArray[rightRelationId];
 					//printf("%d.%d = %d.%d  ,,,%d\n",leftRelationIndx,leftColumnIndx,rightRelationIndx,rightColumnIndx,middleResultsCounter);
 
 
@@ -557,7 +566,8 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 					{
 						for(j=0;j<middleResultsCounter;j++)			//trexoume ton pinaka me ta relations kai psaxnoume an uparxei antistoixia//
 						{
-							if(middleResArray[j].relation==leftRelationIndx)
+							//printf("LEFT %d==%d   %d==%d\n",middleResArray[j].relation,leftRelationIndx,middleResArray[j].relation_id,leftRelationId);
+							if(middleResArray[j].relation==leftRelationIndx && middleResArray[j].relation_id==leftRelationId)
 							{
 								//printf("leftRelationIndex=%d leftColumnIndx=%d j=%d\n",leftRelationIndx,leftColumnIndx,j);
 								leftColumn=setColumnFromMiddleArray(middleResArray,leftRelationIndx,leftColumnIndx,j,relationArray);	//dhmiourgia aristerhs sthlhs apo to middle results
@@ -565,16 +575,19 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 								middleResArray[j].fromArray=1;
 								leftTeam=middleResArray[j].team;
 							}
-							if(middleResArray[j].relation==rightRelationIndx)
+							//printf("RIGHT %d==%d   %d==%d\n",middleResArray[j].relation,rightRelationIndx,middleResArray[j].relation_id,rightRelationId);
+							if(middleResArray[j].relation==rightRelationIndx && middleResArray[j].relation_id==rightRelationId)
 							{
-								//printf("rightRelationIndex=%d rightColumnIndx=%d j=%d\n",rightRelationIndx,rightColumnIndx,j);
+							//	printf("rightRelationIndex=%d rightColumnIndx=%d j=%d\n",rightRelationIndx,rightColumnIndx,j);
 								rightColumn=setColumnFromMiddleArray(middleResArray,rightRelationIndx,rightColumnIndx,j,relationArray);	//dhmiourgia deksias sthlhs apo to middle results
 								rightColumnPosInMiddleArray=j;			//h thesh ths deksias sthlhs mesa ston middleArray
 								middleResArray[j].fromArray=1;
 								rightTeam=middleResArray[j].team;
+								//printf("%d  %d  %d  %d\n",leftRelationId,rightRelationId,leftTeam,rightTeam);
 							}
 						}
 					}
+
 					//printf("lefColInMiddleArray=%d rightCOlInMiddleArray=%d\n",leftColumnPosInMiddleArray,rightColumnPosInMiddleArray);
 					if(leftColumnPosInMiddleArray==-1)
 					{
@@ -601,10 +614,12 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 						printf("[%d]  id->%d value->%d  tuples=%d\n",j,rightColumn->tuples[j].id,rightColumn->tuples[j].value,rightColumn->num_of_tuples);
 					}
 					printf("%d %d %d %d\n",leftTeam,rightTeam,leftRelationIndx,rightRelationIndx);*/
+					//printf("%d  %d  %d  %d\n",leftRelationId,rightRelationId,leftTeam,rightTeam);
+					//printMiddleArray(middleResArray,middleResultsCounter);
 					resultList *resultList1,*resultList2;
-					if(leftRelationIndx==rightRelationIndx || (leftTeam==rightTeam && leftColumnPosInMiddleArray!=-1 && rightColumnPosInMiddleArray!=-1))			//JoinOneRelationArray
+					if(leftRelationId==rightRelationId || (leftTeam==rightTeam && leftColumnPosInMiddleArray!=-1 && rightColumnPosInMiddleArray!=-1))			//JoinOneRelationArray
 					{
-						//printf("Before Join1\n");
+						//printf("One Relation Join\n");
 						//printMiddleArray(middleResArray,middleResultsCounter);
 						resultList1=sameRelationJoin(leftColumn,rightColumn);
 						//printResults(resultList1);
@@ -629,7 +644,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 						//printMiddleArray(middleResArray,middleResultsCounter);
 						//printf("After Join\n");
 						//printMiddleArray(middleResArray,middleResultsCounter);
-						//printResults(resultList2);
+						//printResults(resultList1);
 						deleteResultList(resultList1);
 					}
 					else											//JointwoRelationArray
@@ -638,7 +653,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 						//printMiddleArray(middleResArray,middleResultsCounter);
 						//printf("vgika\n");
 						//if(leftColumn->num_of_tuples!=0 && rightColumn->num_of_tuples!=0){
-							resultList2=RadixHashJoin(leftColumn,rightColumn);
+						resultList2=RadixHashJoin(leftColumn,rightColumn);
 						//}
 						//else{
 
@@ -649,12 +664,14 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 
 							middleResArray[middleResultsCounter].relation=leftRelationIndx;
 							middleResArray[middleResultsCounter].fromArray=0;
+							middleResArray[middleResultsCounter].relation_id=leftRelationId;
 							setResultsToMiddleArray(resultList2,middleResArray,middleResultsCounter,0,middleResultsCounter);
 							middleResultsCounter++;
 							//printMiddleArray(middleResArray,middleResultsCounter);
 
 							middleResArray[middleResultsCounter].relation=rightRelationIndx;
 							middleResArray[middleResultsCounter].fromArray=0;
+							middleResArray[middleResultsCounter].relation_id=rightRelationId;
 							setResultsToMiddleArray(resultList2,middleResArray,middleResultsCounter,1,middleResultsCounter);
 							middleResultsCounter++;
 							//printMiddleArray(middleResArray,middleResultsCounter);
@@ -665,9 +682,12 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 						else if(leftColumnPosInMiddleArray==-1 && rightColumnPosInMiddleArray!=-1){ //an uparxei team gia right column
 							middleResArray[middleResultsCounter].relation=leftRelationIndx;
 							middleResArray[middleResultsCounter].fromArray=0;
+							middleResArray[middleResultsCounter].relation_id=leftRelationId;
 							setResultsToMiddleArray(resultList2,middleResArray,middleResultsCounter,0,middleResultsCounter);
+
 							middleResultsCounter++;
 							middleResArray[rightColumnPosInMiddleArray].relation=rightRelationIndx;
+							middleResArray[rightColumnPosInMiddleArray].relation_id=rightRelationId;
 							setResultsToMiddleArray(resultList2,middleResArray,rightColumnPosInMiddleArray,1,middleResultsCounter);
 							middleResArray[middleResultsCounter-1].team = middleResArray[rightColumnPosInMiddleArray].team;
 							changeRowIdNumOfTeam(middleResArray,middleResArray[rightColumnPosInMiddleArray].team,resultList2->numberOfResults,middleResultsCounter);
@@ -678,11 +698,13 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 							//printResults(resultList2);
 
 							middleResArray[leftColumnPosInMiddleArray].relation=leftRelationIndx;
+							middleResArray[leftColumnPosInMiddleArray].relation_id=leftRelationId;
 							setResultsToMiddleArray(resultList2,middleResArray,leftColumnPosInMiddleArray,0,middleResultsCounter);
 							//printMiddleArray(middleResArray,middleResultsCounter);
 
 							middleResArray[middleResultsCounter].relation=rightRelationIndx;
 							middleResArray[middleResultsCounter].fromArray=0;
+							middleResArray[middleResultsCounter].relation_id=rightRelationId;
 							setResultsToMiddleArray(resultList2,middleResArray,middleResultsCounter,1,middleResultsCounter);
 							middleResultsCounter++;
 
@@ -693,8 +715,10 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 						}
 						else{  //uparxei team kai gia ta 2 column --- psaxnoume gia mikrotero # of team
 							middleResArray[leftColumnPosInMiddleArray].relation=leftRelationIndx;
+							middleResArray[leftColumnPosInMiddleArray].relation_id=leftRelationId;
 							setResultsToMiddleArray(resultList2,middleResArray,leftColumnPosInMiddleArray,0,middleResultsCounter);
 							middleResArray[rightColumnPosInMiddleArray].relation=rightRelationIndx;
+							middleResArray[rightColumnPosInMiddleArray].relation_id=rightRelationId;
 							setResultsToMiddleArray(resultList2,middleResArray,rightColumnPosInMiddleArray,1,middleResultsCounter);
 
 							if(middleResArray[leftColumnPosInMiddleArray].team <= middleResArray[rightColumnPosInMiddleArray].team){
@@ -736,19 +760,27 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 						for(i=0;i<data->numViewQuery;i++)
 						{
 							columnIndx = data->viewQueryArray[i].col;
-							relationIndex =data->viewQueryArray[i].rel;
-							relationIndex = data->QueryRelArray[relationIndex];
+							relationId =data->viewQueryArray[i].rel;
+							relationIndex = data->QueryRelArray[relationId];
 							//printf("%d %d\n",columnIndx,relationIndex);
 							//printf("%d\n",middleResultsCounter);
 							for(j=0;j<middleResultsCounter;j++)
 							{
-								//printf("==%d\n",middleResArray[j].relation);
-								if(middleResArray[j].relation==relationIndex)
+								//printf("%d==%d\n",middleResArray[j].relation,relationIndex);
+								if(middleResArray[j].relation==relationIndex && middleResArray[j].relation_id==relationId)
 								{
 									//printf("sahdhsa\n");
 									column=setColumnFromMiddleArray(middleResArray,relationIndex,columnIndx,j,relationArray);
-
-									printf("%ld ",SumOneColumnRelation(column));
+									/*printf("Column\n");
+									for(int j=0;j<column->num_of_tuples;j++)
+									{
+										printf("[%d]  id->%d value->%d  tuples=%d\n",j,column->tuples[j].id,column->tuples[j].value,column->num_of_tuples);
+									}*/
+									long sum=SumOneColumnRelation(column);
+									if(sum==0)
+										printf("NULL ");
+									else
+									printf("%ld",sum);
 								}
 							}
 
@@ -756,15 +788,16 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 						printf("\n");
 					}
 				}
-					for(j=0;j<middleResultsCounter;j++){
-						//printf("%d\n",middleResArray[j].relation);
-						free(middleResArray[j].rowIds);
-						//printf("%d\n",middleResArray[j].relation);
-						middleResArray[j].relation=-1;
-						middleResArray[j].rowIdsNum=0;
-						middleResArray[j].team=0;
-						middleResArray[j].fromArray=-1;
-					}
+				for(j=0;j<middleResultsCounter;j++){
+					//printf("%d\n",middleResArray[j].relation);
+					free(middleResArray[j].rowIds);
+					//printf("%d\n",middleResArray[j].relation);
+					middleResArray[j].relation=-1;
+					middleResArray[j].rowIdsNum=0;
+					middleResArray[j].team=0;
+					middleResArray[j].fromArray=-1;
+					middleResArray[i].relation_id=-1;
+				}
 
 				//free(middleResArray);
 			}
@@ -792,10 +825,10 @@ void printMiddleArray(middleResults *array,int size)
 {
 	for(int i=0;i<size;i++)
 	{
-		printf("Relation[%d]-->%d  Rows %d  Teams %d\n",i,array[i].relation,array[i].rowIdsNum,array[i].team);
+		printf("Relation[%d]-->%d  RelationID %d  Rows %d  Teams %d\n",i,array[i].relation,array[i].relation_id,array[i].rowIdsNum,array[i].team);
 		for(int j=0;j<array[i].rowIdsNum;j++)
 		{
-		//	printf("Row[%d]=%d\n",j,array[i].rowIds[j]);
+			//printf("Row[%d]=%d\n",j,array[i].rowIds[j]);
 		}
 		//printf("\n");
 	}
@@ -1187,8 +1220,8 @@ resultList* sameRelationJoin(oneColumnRelation *relR,oneColumnRelation *relS){//
 
 	for(i=0;i<relR->num_of_tuples;i++){
 		if(relR->tuples[i].value==relS->tuples[i].value){//prepei ta id na einai ta idia
-			//printf("relR->tuples[i].id = %d\n",relR->tuples[i].id);
-			insertResult(resList,relR->tuples[i].id,relR->tuples[i].id,2);			//2 sto teleutaio orisma shmainei oti exoume join apo idio relation
+		//	printf("%d == %d-->id=%d  %d\n",relR->tuples[i].value,relS->tuples[i].value,relR->tuples[i].id,relS->tuples[i].id);
+			insertResult(resList,relR->tuples[i].id,relR->tuples[i].id,1);			//2 sto teleutaio orisma shmainei oti exoume join apo idio relation
 		}
 	}
 	return resList;

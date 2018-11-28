@@ -7,7 +7,7 @@
 int main(int argc,char** argv)
 {
 
-	uint32_t size_A=6;
+	/*uint32_t size_A=6;
 	int32_t A[size_A];
 	uint32_t size_B=7;
 	int32_t B[size_B];
@@ -23,28 +23,28 @@ int main(int argc,char** argv)
 	resList = RadixHashJoin(R,S);
 	printResults(resList);
 
-	deleteResultList(resList);
+	deleteResultList(resList);*/
 
 	//return 1;
 
 	//ta kainourgia -----------------------------------------------------------------------------------------------
 
 
-	printf("\n\n/////////////////////////////////////\n\n\n");
+	//printf("\n\n/////////////////////////////////////\n\n\n");
 	char *filename,*paths,*onepath;
 	FILE *fp;
 	int fsize,i,j,k,pointer,number_of_files;
 	multiColumnRelation *relationArray;
 
 	if (argc!=2){
-		printf("\n\nWRONG NUMBER OF ARGS!!!\n\n\n");
+		//printf("\n\nWRONG NUMBER OF ARGS!!!\n\n\n");
 		//return 1;
 	}
 	filename=malloc(strlen("input-files/")+strlen(argv[1])+1);//dineis mono to arxeio , to path to ftiaxnw edw
 	strcpy(filename,"input-files/");
 	strcat(filename,argv[1]);
 
-	printf("filename=%s\n",filename);
+	//printf("filename=%s\n",filename);
 
 	fp=fopen(filename,"r");
 
@@ -56,7 +56,7 @@ int main(int argc,char** argv)
 	fclose(fp);
 	paths[fsize]='\0';
 	
-	printf("paths:\n%s\n",paths);
+	//printf("paths:\n%s\n",paths);
 
 	//koitazw posa arxeia exw
 	if(fsize==0){//na to dw pali
@@ -69,7 +69,7 @@ int main(int argc,char** argv)
 			number_of_files++;
 		}
 	}
-	printf("number_of_files=%d\n",number_of_files);
+	//printf("number_of_files=%d\n",number_of_files);
 
 	//ftiaxnw ton pinaka relationArray kai pairnw ta data apo ka8e arxeio
 	relationArray=malloc(number_of_files*sizeof(multiColumnRelation));
@@ -86,7 +86,7 @@ int main(int argc,char** argv)
 			pointer++;
 		}
 		pointer++;
-		printf("onepath :%s...\n",onepath);
+		//printf("onepath :%s...\n",onepath);
 
 		fp=fopen(onepath,"rb");
 		//fp=fopen(onepath,"r");
@@ -124,14 +124,15 @@ int main(int argc,char** argv)
 	/*for(i=0;i<number_of_files;i++){
 		for(j=0;j<relationArray[i].colCount;j++){
 			for(k=0;k<relationArray[i].rowCount;k++){
+				if(i==13)
 				printf("%ld ",relationArray[i].table[j][k]);
 			}
 			printf("\n%d\n",i);
 		}
 		printf("\n");
-		sleep(2);
-	}*/
-
+		//sleep(2);
+	}
+*/
 	free(filename);
 	free(onepath);
 	free(paths);

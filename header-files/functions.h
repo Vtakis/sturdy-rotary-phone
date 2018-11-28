@@ -101,6 +101,7 @@ struct middleResults
 {
 	int team;
 	int relation;
+	int relation_id;
 	int *rowIds;
 	int rowIdsNum;
 	int fromArray;
