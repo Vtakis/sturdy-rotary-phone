@@ -437,7 +437,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 	query_f=fopen(filename,"r");
     char c='a';
 	char *queryString;
-	int teamCounter=1,counter=0,phrase_size=100,middleResultsSize=100,i,columnIndx,relationId,relationIndex,flag=0,middleResultsCounter=0,j,leftRelationId,rightRelationId,leftRelationIndx,leftTeam=0,rightTeam=0,rightRelationIndx,leftColumnIndx,rightColumnIndx;
+	int teamCounter=1,counter=0,phrase_size=100,middleResultsSize=100,i,k,columnIndx,relationId,relationIndex,flag=0,middleResultsCounter=0,j,leftRelationId,rightRelationId,leftRelationIndx,leftTeam=0,rightTeam=0,rightRelationIndx,leftColumnIndx,rightColumnIndx;
 	queryString = malloc(phrase_size*sizeof(char));
 	middleResults *middleResArray=malloc(middleResultsSize*sizeof(middleResults));
 	for(i=0;i<middleResultsSize;i++){
@@ -542,51 +542,83 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 			}
 			if(data->numPredJoinTwoRel>0)			//join 2 columns//
 			{
-
 				leftTeam=0;
 				rightTeam=0;
+				int leftColumnPosInMiddleArray=-1,rightColumnPosInMiddleArray=-1;
 				for(i=0;i<data->numPredJoinTwoRel;i++)
 				{
 					oneColumnRelation *leftColumn;
 					oneColumnRelation *rightColumn;
+					int chosen,joinFlag=0;//gia to joinflag 2=Radix 1=samejoin
+					for(k=0;k<data->numPredJoinTwoRel;k++){
+						if(data->twoRelationPredArray[k].selected==0){
+							
 
-					leftRelationId = data->twoRelationPredArray[i].left->rel;					//pernoume ta stoixeia apo thn domh pou krataei ta predications data //
-					leftColumnIndx =data->twoRelationPredArray[i].left->col;
-					rightRelationId = data->twoRelationPredArray[i].right->rel;
-					rightColumnIndx= data->twoRelationPredArray[i].right->col;
-					//printf("%d.%d = %d.%d  \n",leftRelationIndx,leftColumnIndx,rightRelationIndx,rightColumnIndx);
-					leftRelationIndx = data->QueryRelArray[leftRelationId];
-					rightRelationIndx = data->QueryRelArray[rightRelationId];
+							leftRelationId = data->twoRelationPredArray[k].left->rel;					//pernoume ta stoixeia apo thn domh pou krataei ta predications data //
+							leftColumnIndx =data->twoRelationPredArray[k].left->col;
+							rightRelationId = data->twoRelationPredArray[k].right->rel;
+							rightColumnIndx= data->twoRelationPredArray[k].right->col;
+							//printf("%d.%d = %d.%d  \n",leftRelationIndx,leftColumnIndx,rightRelationIndx,rightColumnIndx);
+							leftRelationIndx = data->QueryRelArray[leftRelationId];
+							rightRelationIndx = data->QueryRelArray[rightRelationId];
+
+							if(leftRelationId==rightRelationId){
+								chosen=k;
+								data->twoRelationPredArray[k].selected=1;
+								joinFlag=1;
+								break;
+							}
+
+							leftColumnPosInMiddleArray=-1;
+							rightColumnPosInMiddleArray=-1;
+							if(middleResultsCounter>0)			//exoume endiamesa apotelesmata
+							{
+								for(j=0;j<middleResultsCounter;j++)			//trexoume ton pinaka me ta relations kai psaxnoume an uparxei antistoixia//
+								{
+									//printf("LEFT %d==%d   %d==%d\n",middleResArray[j].relation,leftRelationIndx,middleResArray[j].relation_id,leftRelationId);
+									if(middleResArray[j].relation==leftRelationIndx && middleResArray[j].relation_id==leftRelationId)
+									{
+										//printf("leftRelationIndex=%d leftColumnIndx=%d j=%d\n",leftRelationIndx,leftColumnIndx,j);
+										leftColumn=setColumnFromMiddleArray(middleResArray,leftRelationIndx,leftColumnIndx,j,relationArray);	//dhmiourgia aristerhs sthlhs apo to middle results
+										leftColumnPosInMiddleArray=j;			//h thesh ths aristerhs sthlhs mesa ston middleArray
+										middleResArray[j].fromArray=1;
+										leftTeam=middleResArray[j].team;
+									}
+									//printf("RIGHT %d==%d   %d==%d\n",middleResArray[j].relation,rightRelationIndx,middleResArray[j].relation_id,rightRelationId);
+									if(middleResArray[j].relation==rightRelationIndx && middleResArray[j].relation_id==rightRelationId)
+									{
+									//	printf("rightRelationIndex=%d rightColumnIndx=%d j=%d\n",rightRelationIndx,rightColumnIndx,j);
+										rightColumn=setColumnFromMiddleArray(middleResArray,rightRelationIndx,rightColumnIndx,j,relationArray);	//dhmiourgia deksias sthlhs apo to middle results
+										rightColumnPosInMiddleArray=j;			//h thesh ths deksias sthlhs mesa ston middleArray
+										middleResArray[j].fromArray=1;
+										rightTeam=middleResArray[j].team;
+										//printf("%d  %d  %d  %d\n",leftRelationId,rightRelationId,leftTeam,rightTeam);
+									}
+								}
+							}
+							if(leftTeam==rightTeam && leftColumnPosInMiddleArray!=-1 && rightColumnPosInMiddleArray!=-1)			//JoinOneRelationArray
+							{
+								chosen=k;
+								data->twoRelationPredArray[k].selected=1;
+								joinFlag=1;
+								break;
+							}
+							else{
+								chosen=k;
+								data->twoRelationPredArray[k].selected=1;
+								joinFlag=2;
+								break;
+							}
+						}
+					}
+					
+
+					
 					//printf("%d.%d = %d.%d  ,,,%d\n",leftRelationIndx,leftColumnIndx,rightRelationIndx,rightColumnIndx,middleResultsCounter);
 
 
 					//printf("%d.%d = %d.%d  \n",leftRelationIndx,leftColumnIndx,rightRelationIndx,rightColumnIndx);
-					int leftColumnPosInMiddleArray=-1,rightColumnPosInMiddleArray=-1;
-					if(middleResultsCounter>0)			//exoume endiamesa apotelesmata
-					{
-						for(j=0;j<middleResultsCounter;j++)			//trexoume ton pinaka me ta relations kai psaxnoume an uparxei antistoixia//
-						{
-							//printf("LEFT %d==%d   %d==%d\n",middleResArray[j].relation,leftRelationIndx,middleResArray[j].relation_id,leftRelationId);
-							if(middleResArray[j].relation==leftRelationIndx && middleResArray[j].relation_id==leftRelationId)
-							{
-								//printf("leftRelationIndex=%d leftColumnIndx=%d j=%d\n",leftRelationIndx,leftColumnIndx,j);
-								leftColumn=setColumnFromMiddleArray(middleResArray,leftRelationIndx,leftColumnIndx,j,relationArray);	//dhmiourgia aristerhs sthlhs apo to middle results
-								leftColumnPosInMiddleArray=j;			//h thesh ths aristerhs sthlhs mesa ston middleArray
-								middleResArray[j].fromArray=1;
-								leftTeam=middleResArray[j].team;
-							}
-							//printf("RIGHT %d==%d   %d==%d\n",middleResArray[j].relation,rightRelationIndx,middleResArray[j].relation_id,rightRelationId);
-							if(middleResArray[j].relation==rightRelationIndx && middleResArray[j].relation_id==rightRelationId)
-							{
-							//	printf("rightRelationIndex=%d rightColumnIndx=%d j=%d\n",rightRelationIndx,rightColumnIndx,j);
-								rightColumn=setColumnFromMiddleArray(middleResArray,rightRelationIndx,rightColumnIndx,j,relationArray);	//dhmiourgia deksias sthlhs apo to middle results
-								rightColumnPosInMiddleArray=j;			//h thesh ths deksias sthlhs mesa ston middleArray
-								middleResArray[j].fromArray=1;
-								rightTeam=middleResArray[j].team;
-								//printf("%d  %d  %d  %d\n",leftRelationId,rightRelationId,leftTeam,rightTeam);
-							}
-						}
-					}
+					
 
 					//printf("lefColInMiddleArray=%d rightCOlInMiddleArray=%d\n",leftColumnPosInMiddleArray,rightColumnPosInMiddleArray);
 					if(leftColumnPosInMiddleArray==-1)
@@ -617,7 +649,8 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 					//printf("%d  %d  %d  %d\n",leftRelationId,rightRelationId,leftTeam,rightTeam);
 					//printMiddleArray(middleResArray,middleResultsCounter);
 					resultList *resultList1,*resultList2;
-					if(leftRelationId==rightRelationId || (leftTeam==rightTeam && leftColumnPosInMiddleArray!=-1 && rightColumnPosInMiddleArray!=-1))			//JoinOneRelationArray
+					//if(leftRelationId==rightRelationId || (leftTeam==rightTeam && leftColumnPosInMiddleArray!=-1 && rightColumnPosInMiddleArray!=-1))			//JoinOneRelationArray
+					if(joinFlag==1)
 					{
 						//printf("One Relation Join\n");
 						//printMiddleArray(middleResArray,middleResultsCounter);
@@ -647,7 +680,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 						//printResults(resultList1);
 						deleteResultList(resultList1);
 					}
-					else											//JointwoRelationArray
+					else if(joinFlag==2)										//JointwoRelationArray
 					{
 						//printf("Before Join\n");
 						//printMiddleArray(middleResArray,middleResultsCounter);
@@ -780,7 +813,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 									if(sum==0)
 										printf("NULL ");
 									else
-									printf("%ld",sum);
+									printf("%ld ",sum);
 								}
 							}
 
@@ -1070,6 +1103,7 @@ queryDataIndex* analyzeQuery(char *query)
 			for(k=0;k<queryData->numPredJoinTwoRel;k++){
 				queryData->twoRelationPredArray[k].left=malloc(sizeof(RelColNode));
 				queryData->twoRelationPredArray[k].right=malloc(sizeof(RelColNode));
+				queryData->twoRelationPredArray[k].selected=0;
 			}
 
 
@@ -1327,8 +1361,6 @@ int64_t SumOneColumnRelation(oneColumnRelation *R){
 
 	return sum;
 }
-
-
 
 
 

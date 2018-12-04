@@ -104,6 +104,7 @@ int main(int argc,char** argv)
 		//relationArray[i].colCount=atoi(cols);
 
 		relationArray[i].table=malloc(relationArray[i].colCount*sizeof(uint64_t *));
+		relationArray[i].stats=malloc(relationArray[i].colCount*sizeof(statistics));
 
 		for(j=0;j<relationArray[i].colCount;j++){
 			relationArray[i].table[j]=malloc(relationArray[i].rowCount*sizeof(uint64_t));//mporei na prepei na bgoun eksw
@@ -114,8 +115,23 @@ int main(int argc,char** argv)
 					//printf("%ld ",temp);
 				//}
 				relationArray[i].table[j][k]=temp;
+
+				//briskw min kai max
+				if(k==0){
+					relationArray[i].stats[j].min=temp;
+					relationArray[i].stats[j].max=temp;
+				}
+				else{
+					if(relationArray[i].stats[j].min>temp){
+						relationArray[i].stats[j].min=temp;
+					}
+
+					if(relationArray[i].stats[j].max<temp){
+						relationArray[i].stats[j].max=temp;
+					}
+				}
 			}
-			//printf("\n");
+			printf("min=%ld max=%ld\n",relationArray[i].stats[j].min,relationArray[i].stats[j].max);
 		}
 
 		fclose(fp);

@@ -18,6 +18,7 @@ typedef struct RelColNode RelColNode;
 typedef struct filterPredNode filterPredNode;
 typedef struct joinPredNode joinPredNode;
 typedef struct middleResults middleResults;
+typedef struct statistics statistics;
 #ifndef FUNCTIONS_H_
 #define FUNCTIONS_H_
 
@@ -60,11 +61,17 @@ struct tuple
 	int32_t id;
 	int32_t value;
 };
+struct statistics
+{
+	uint64_t min;
+	uint64_t max;
+};
 struct multiColumnRelation	//to struct anaferetai se enan kombo , ara kanw pinaka apo tetoia
 {
 	uint32_t rowCount;
 	uint32_t colCount;
-	uint64_t **table;//
+	uint64_t **table;
+	statistics *stats;
 };
 struct oneColumnRelation
 {
@@ -124,6 +131,7 @@ struct joinPredNode
 {
 	RelColNode *left;
 	RelColNode *right;
+	int selected;
 };
 
 struct queryDataIndex
@@ -176,9 +184,3 @@ void printResultsForJoin(resultListForJoin *list);
 void changeRowIdNumOfTeam(middleResults*,int,int,int);
 int64_t SumOneColumnRelation(oneColumnRelation *R);
 #endif /* FUNCTIONS_H_ */
-
-
-
-
-
-
