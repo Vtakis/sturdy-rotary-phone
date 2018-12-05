@@ -10,7 +10,7 @@ FLAGS=-g -c -Wall
 
 all:$(OBJS) $(OBJS2)
 	$(CC) -g $(SOURCE) -o $(OUT)
-	$(CC) -g $(SOURCE2) -o $(OUT2)
+	$(CC) -g $(SOURCE2) -o $(OUT2) -lcunit
 
 src/main.o: src/main.c
 	$(CC) $(FLAGS) src/main.c

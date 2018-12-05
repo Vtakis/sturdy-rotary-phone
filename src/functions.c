@@ -187,7 +187,7 @@ void compareRelations(indexHT *ht,oneColumnRelation *array,int32_t start,int32_t
 			while(1){
 				//printf("%d %d\n",array->tuples[i].value,hashedArray->tuples[bucket_offset].value);
 				if(array->tuples[i].value==hashedArray->tuples[bucket_offset].value){//elegxoume an exoun idio value
-					insertResult(resList,hashedArray->tuples[bucket_offset].id,array->tuples[i].id,fromArray);
+					insertResult(resList,hashedArray->tuples[bucket_offset],array->tuples[i],fromArray);
 				}
 				chain_offset=ht->chainNode[chain_offset].prevchainPosition;//to neo offset einai apo to prevchainPosition
 				if(chain_offset==-1)break;//den exei alla stoixeia na doume
@@ -203,9 +203,11 @@ resultList *initializeResultList(void){
 	list->end=NULL;
 	list->numberOfNodes=0;
 	list->numberOfResults=0;
+	list->leftStats.average=0;
+	list->rightStats.average=0;
 	return list;
 }
-void insertResult(resultList *list,uint32_t id1,uint32_t id2,int32_t fromArray){
+void insertResult(resultList *list,tuple col1,tuple col2,int32_t fromArray){
 	int32_t numberoftuples=(1024*1024)/sizeof(rowResult);
 	//printf("numberOfResults=%d  %ld\n",numberoftuples,sizeof(rowResult));
 	if(list->end==NULL){//kenh lista
@@ -214,18 +216,36 @@ void insertResult(resultList *list,uint32_t id1,uint32_t id2,int32_t fromArray){
 		list->numberOfNodes=1;
 		list->numberOfResults=1;
 
+
+
 		list->start->row_Array=malloc(numberoftuples*sizeof(rowResult));
 		list->start->next=NULL;
 		list->start->rowSize=1;
 
 		if(fromArray == 0){
-			list->start->row_Array[0].idR=id1;
-			list->start->row_Array[0].idS=id2;
+			list->start->row_Array[0].idR=col1.id;
+			list->start->row_Array[0].idS=col2.id;
+
+			list->leftStats.max=col1.value;
+			list->leftStats.min=col1.value;
+			list->leftStats.average+=col1.value;
+
+			list->rightStats.max=col2.value;
+			list->rightStats.min=col2.value;
+			list->rightStats.average+=col2.value;
 		}else if(fromArray==1){
-			list->start->row_Array[0].idR=id2;
-			list->start->row_Array[0].idS=id1;
+			list->start->row_Array[0].idR=col2.id;
+			list->start->row_Array[0].idS=col1.id;
+
+			list->leftStats.max=col2.value;
+			list->leftStats.min=col2.value;
+			list->leftStats.average+=col2.value;
+
+			list->rightStats.max=col1.value;
+			list->rightStats.min=col1.value;
+			list->rightStats.average+=col1.value;
 		}else{
-			list->start->row_Array[0].idR=id1;
+			list->start->row_Array[0].idR=col1.id;
 		}
 	}
 	else{
@@ -233,13 +253,51 @@ void insertResult(resultList *list,uint32_t id1,uint32_t id2,int32_t fromArray){
 		if( numberoftuples > list->end->rowSize ){//exei xwro
 
 			if(fromArray == 0){
-				list->end->row_Array[list->end->rowSize].idR=id1;
-				list->end->row_Array[list->end->rowSize].idS=id2;
+				list->end->row_Array[list->end->rowSize].idR=col1.id;
+				list->end->row_Array[list->end->rowSize].idS=col2.id;
+				////////////////////////////////////////////
+				if(list->leftStats.max<col1.value){
+					list->leftStats.max=col1.value;
+				}
+				if(list->leftStats.min>col1.value){
+					list->leftStats.min=col1.value;
+				}
+				list->leftStats.average+=col1.value;
+				////////////////////////////////////////////
+				////////////////////////////////////////////
+				if(list->rightStats.max<col2.value)
+				{
+					list->rightStats.max=col2.value;
+				}
+				if(list->rightStats.min>col2.value){
+					list->rightStats.min=col2.value;
+				}
+				list->rightStats.average+=col2.value;
+				////////////////////////////////////////////
 			}else if(fromArray==1){
-				list->end->row_Array[list->end->rowSize].idR=id2;
-				list->end->row_Array[list->end->rowSize].idS=id1;
+				list->end->row_Array[list->end->rowSize].idR=col2.id;
+				list->end->row_Array[list->end->rowSize].idS=col1.id;
+				////////////////////////////////////////////
+				if(list->leftStats.max<col2.value){
+					list->leftStats.max=col2.value;
+				}
+				if(list->leftStats.min>col2.value){
+					list->leftStats.min=col2.value;
+				}
+				list->leftStats.average+=col2.value;
+				////////////////////////////////////////////
+				////////////////////////////////////////////
+				if(list->rightStats.max<col1.value)
+				{
+					list->rightStats.max=col1.value;
+				}
+				if(list->rightStats.min>col1.value){
+					list->rightStats.min=col1.value;
+				}
+				list->rightStats.average+=col1.value;
+				////////////////////////////////////////////
 			}else{
-				list->start->row_Array[0].idR=id1;
+				list->start->row_Array[0].idR=col1.id;
 			}
 			list->end->rowSize++;
 		}
@@ -253,13 +311,52 @@ void insertResult(resultList *list,uint32_t id1,uint32_t id2,int32_t fromArray){
 			list->end->rowSize=1;
 
 			if(fromArray == 0){
-				list->end->row_Array[0].idR=id1;
-				list->end->row_Array[0].idS=id2;
+				list->end->row_Array[0].idR=col1.id;
+				list->end->row_Array[0].idS=col2.id;
+
+				////////////////////////////////////////////
+				if(list->leftStats.max<col1.value){
+					list->leftStats.max=col1.value;
+				}
+				if(list->leftStats.min>col1.value){
+					list->leftStats.min=col1.value;
+				}
+				list->leftStats.average+=col1.value;
+				////////////////////////////////////////////
+				////////////////////////////////////////////
+				if(list->rightStats.max<col2.value)
+				{
+					list->rightStats.max=col2.value;
+				}
+				if(list->rightStats.min>col2.value){
+					list->rightStats.min=col2.value;
+				}
+				list->rightStats.average+=col2.value;
+				////////////////////////////////////////////
 			}else if(fromArray==1){
-				list->end->row_Array[0].idR=id2;
-				list->end->row_Array[0].idS=id1;
+				list->end->row_Array[0].idR=col2.id;
+				list->end->row_Array[0].idS=col1.id;
+				////////////////////////////////////////////
+				if(list->leftStats.max<col2.value){
+					list->leftStats.max=col2.value;
+				}
+				if(list->leftStats.min>col2.value){
+					list->leftStats.min=col2.value;
+				}
+				list->leftStats.average+=col2.value;
+				////////////////////////////////////////////
+				////////////////////////////////////////////
+				if(list->rightStats.max<col1.value)
+				{
+					list->rightStats.max=col1.value;
+				}
+				if(list->rightStats.min>col1.value){
+					list->rightStats.min=col1.value;
+				}
+				list->rightStats.average+=col1.value;
+				////////////////////////////////////////////
 			}else{
-				list->start->row_Array[0].idR=id1;
+				list->start->row_Array[0].idR=col1.id;
 			}
 		}
 	}
@@ -268,9 +365,11 @@ void printResults(resultList *list){
 	resultNode *temp;
 	temp =list->start;
 	printf("\nRowidR\t\tRowidS\n");
+	printf("LEFT MAX=%ld MIN=%ld AVRG=%ld\n",list->leftStats.max,list->leftStats.min,list->leftStats.average);
+	printf("RIGHT MAX=%ld MIN=%ld AVRG=%ld\n",list->rightStats.max,list->rightStats.min,list->rightStats.average);
 	while(temp!=NULL){
 		for(int i=0;i<temp->rowSize;i++){
-			printf("%d\t\t%d\n",temp->row_Array[i].idR,temp->row_Array[i].idS);
+		//	printf("%d\t\t%d\n",temp->row_Array[i].idR,temp->row_Array[i].idS);
 		}
 		temp=temp->next;
 	}
@@ -395,7 +494,7 @@ void writeFile(uint32_t size_A,uint32_t size_B){
 	fprintf(fp,"\n");
 	for(int32_t i=0;i<size_B;i++)
 	{
-		fprintf(fp,"%d,",size_B-i);
+		fprintf(fp,"%d,",i);
 	}
 	fclose(fp);
 }
@@ -464,6 +563,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 			counter++;
 			c=fgetc(query_f);
 		}
+		statisticsArray* statsArray;
 		queryString[counter]='\0';
 		if(strcmp(queryString,"F") && c!=EOF)
 		{
@@ -471,6 +571,18 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 			printf("\n\n%d)%s\n",y,queryString);
 			y++;
 			data=analyzeQuery(queryString);
+			/*statsArray =malloc(data->numRelQuery*sizeof(statsArray));
+			for(i=0;i<data->numRelQuery;i++)
+			{
+				statsArray[i].relationId=data->QueryRelArray[i];
+			}
+			for(i=0;i<data->numPredFilter;i++)
+			{
+				//if(data->predFilterArray[i].relColumn->rel)
+				statsArray[i].relationId=data->QueryRelArray[i];
+			}*/
+
+
 			//getchar();
 
 			if(data->numPredFilter>0)				//kanoume prwta tis prakseis me arithmous
@@ -480,7 +592,6 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 				{
 
 					relationId = data->predFilterArray[i].relColumn->rel;
-					//printf("%d\n",relationIndex);
 					columnIndx= data->predFilterArray[i].relColumn->col;
 					relationIndex = data->QueryRelArray[relationId];
 					flag=0;
@@ -536,28 +647,34 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 						free(middleResArray[middleResultsCounter-1].rowIds);
 						middleResultsCounter--;
 					}
+					free(column->tuples);
+					free(column);
 					//printf("After\n");
 					//printMiddleArray(middleResArray,middleResultsCounter);
 					//printf("Filter[%d]-->%d/%d\n",i,middleResArray[middleResultsCounter-1].rowIdsNum,relationArray[relationIndex].rowCount);
 					//printMiddleArray(middleResArray,middleResultsCounter);
 				}
-				printMiddleArray(middleResArray,middleResultsCounter);
 			}
+
+
+
 			if(data->numPredJoinTwoRel>0)			//join 2 columns//
 			{
-				printMiddleArray(middleResArray,middleResultsCounter);
 
 				leftTeam=0;
 				rightTeam=0;
 				int leftColumnPosInMiddleArray=-1,rightColumnPosInMiddleArray=-1;
 				for(i=0;i<data->numPredJoinTwoRel;i++)
 				{
+					printMiddleArray(middleResArray,middleResultsCounter);
 					oneColumnRelation *leftColumn;
 					oneColumnRelation *rightColumn;
 					int chosen=-1,joinFlag=0;//gia to joinflag 2=Radix 1=samejoin
+
 					for(k=0;k<data->numPredJoinTwoRel;k++){
+
 						if(data->twoRelationPredArray[k].selected==0){
-							
+
 
 							leftRelationId = data->twoRelationPredArray[k].left->rel;					//pernoume ta stoixeia apo thn domh pou krataei ta predications data //
 							leftColumnIndx =data->twoRelationPredArray[k].left->col;
@@ -566,16 +683,20 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 							//printf("%d.%d = %d.%d  \n",leftRelationIndx,leftColumnIndx,rightRelationIndx,rightColumnIndx);
 							leftRelationIndx = data->QueryRelArray[leftRelationId];
 							rightRelationIndx = data->QueryRelArray[rightRelationId];
+							leftColumnPosInMiddleArray=-1;
+							rightColumnPosInMiddleArray=-1;
 
-							if(leftRelationId==rightRelationId){
+							printf("Left stats min=%ld max=%ld average=%ld\n",relationArray[leftRelationIndx].stats[leftColumnIndx].min,relationArray[leftRelationIndx].stats[leftColumnIndx].max,relationArray[leftRelationIndx].stats[leftColumnIndx].average);
+							printf("Right stats min=%ld max=%ld average=%ld\n\n",relationArray[rightRelationIndx].stats[rightColumnIndx].min,relationArray[rightRelationIndx].stats[rightColumnIndx].max,relationArray[rightRelationIndx].stats[rightColumnIndx].average);
+
+
+							/*if(leftRelationId==rightRelationId){
 								chosen=k;
 								data->twoRelationPredArray[k].selected=1;
 								joinFlag=1;
 								break;
-							}
+							}*/
 
-							leftColumnPosInMiddleArray=-1;
-							rightColumnPosInMiddleArray=-1;
 							if(middleResultsCounter>0)			//exoume endiamesa apotelesmata
 							{
 								for(j=0;j<middleResultsCounter;j++)			//trexoume ton pinaka me ta relations kai psaxnoume an uparxei antistoixia//
@@ -601,14 +722,14 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 									}
 								}
 							}
-							if(leftTeam==rightTeam && leftColumnPosInMiddleArray!=-1 && rightColumnPosInMiddleArray!=-1)			//JoinOneRelationArray
+							if(leftRelationId==rightRelationId || (leftTeam==rightTeam && leftColumnPosInMiddleArray!=-1 && rightColumnPosInMiddleArray!=-1))			//JoinOneRelationArray
 							{
 								chosen=k;
 								data->twoRelationPredArray[k].selected=1;
 								joinFlag=1;
 								break;
 							}
-							
+
 							else{
 								chosen=k;
 								data->twoRelationPredArray[k].selected=1;
@@ -616,10 +737,9 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 								break;
 							}
 						}
-						printMiddleArray(middleResArray,middleResultsCounter);
 					}
-					
-					
+					//printMiddleArray(middleResArray,middleResultsCounter);
+
 					//
 					/*printf("before chosen=%d joinFlag=%d\n",chosen,joinFlag);
 					if(chosen==-1)			//Radix
@@ -635,13 +755,13 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 						}
 					}*/
 					//
-					printf("after chosen=%d joinFlag=%d\n",chosen,joinFlag);
-					
+					//printf("after chosen=%d joinFlag=%d\n",chosen,joinFlag);
+
 					//printf("%d.%d = %d.%d  ,,,%d\n",leftRelationIndx,leftColumnIndx,rightRelationIndx,rightColumnIndx,middleResultsCounter);
 
 
 					//printf("%d.%d = %d.%d  \n",leftRelationIndx,leftColumnIndx,rightRelationIndx,rightColumnIndx);
-					
+
 
 					//printf("lefColInMiddleArray=%d rightCOlInMiddleArray=%d\n",leftColumnPosInMiddleArray,rightColumnPosInMiddleArray);
 					if(leftColumnPosInMiddleArray==-1)
@@ -660,7 +780,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 
 					/////////////
 					printf("left stats min=%ld max=%ld average=%ld\n",leftColumn->stats.min,leftColumn->stats.max,leftColumn->stats.average);
-					printf("right stats min=%ld max=%ld average=%ld\n",rightColumn->stats.min,rightColumn->stats.max,rightColumn->stats.average);
+					printf("right stats min=%ld max=%ld average=%ld\n\n",rightColumn->stats.min,rightColumn->stats.max,rightColumn->stats.average);
 					//rightColumn
 					/////////////
 
@@ -708,6 +828,10 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 						//printf("After Join\n");
 						//printMiddleArray(middleResArray,middleResultsCounter);
 						//printResults(resultList1);
+						free(leftColumn->tuples);
+						free(rightColumn->tuples);
+						free(leftColumn);
+						free(rightColumn);
 						deleteResultList(resultList1);
 					}
 					else if(joinFlag==2)										//JointwoRelationArray
@@ -716,7 +840,9 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 						//printMiddleArray(middleResArray,middleResultsCounter);
 						//printf("vgika\n");
 						//if(leftColumn->num_of_tuples!=0 && rightColumn->num_of_tuples!=0){
+						//printMiddleArray(middleResArray,middleResultsCounter);
 						resultList2=RadixHashJoin(leftColumn,rightColumn);
+						printResults(resultList2);
 						//}
 						//else{
 
@@ -801,7 +927,10 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 								changeRowIdNumOfTeam(middleResArray,middleResArray[rightColumnPosInMiddleArray].team,resultList2->numberOfResults,middleResultsCounter);
 							}
 						}
-
+						free(leftColumn->tuples);
+						free(rightColumn->tuples);
+						free(leftColumn);
+						free(rightColumn);
 						//printf("After Join\n");
 						//printMiddleArray(middleResArray,middleResultsCounter);
 						//printResults(resultList2);
@@ -814,7 +943,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 				teamCounter=1;
 				//printMiddleArray(middleResArray,middleResultsCounter);
 				//printf("middle =%d\n",middleResultsCounter);
-				printf("i=%d   %d \n",i,data->numPredJoinTwoRel);
+				//printf("i=%d   %d \n",i,data->numPredJoinTwoRel);
 				if(i==data->numPredJoinTwoRel)
 				{
 					//printf("SUms-->%d\n",data->numViewQuery);
@@ -843,7 +972,9 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 									if(sum==0)
 										printf("NULL ");
 									else
-									printf("%ld ",sum);
+										printf("%ld ",sum);
+									free(column->tuples);
+									free(column);
 								}
 							}
 
@@ -889,7 +1020,7 @@ void printMiddleArray(middleResults *array,int size)
 	for(int i=0;i<size;i++)
 	{
 		printf("Relation[%d]-->%d  RelationID %d  Rows %d  Teams %d\n",i,array[i].relation,array[i].relation_id,array[i].rowIdsNum,array[i].team);
-		printf("STATS min=%ld max=%ld average=%ld\n",array[i].stats.min,array[i].stats.max,array[i].stats.average);
+		printf("STATS min=%ld max=%ld average=%ld\n\n",array[i].stats.min,array[i].stats.max,array[i].stats.average);
 		for(int j=0;j<array[i].rowIdsNum;j++)
 		{
 			//printf("Row[%d]=%d\n",j,array[i].rowIds[j]);
@@ -969,6 +1100,8 @@ void setResultsToMiddleArray(resultList *list,middleResults *middleResultsArray,
 								//perror("realloc failed?");
 							}
 							middleResultsArray[j].rowIdsNum=list->numberOfResults;
+							middleResultsArray[j].stats = list->leftStats;
+							middleResultsArray[j].stats.average/=list->numberOfResults;
 							//if(middleResultsArray[index].fromArray == 1){
 							//printf("TEMP=%d\n",tempArray[cnt]=middleResultsArray[j].rowIds[temp->row_Array[i].idS]);
 							//printf("Result=%d\n",temp->row_Array[i].idR);
@@ -999,6 +1132,8 @@ void setResultsToMiddleArray(resultList *list,middleResults *middleResultsArray,
 								middleResultsArray[j].rowIds=realloc(middleResultsArray[j].rowIds,list->numberOfResults*sizeof(int));
 							}
 							middleResultsArray[j].rowIdsNum=list->numberOfResults;
+							middleResultsArray[j].stats = list->rightStats;
+							middleResultsArray[j].stats.average/=list->numberOfResults;
 							//if(middleResultsArray[index].fromArray == 1){
 							//printf("TEMP=%d\n",tempArray[cnt]=middleResultsArray[j].rowIds[temp->row_Array[i].idR]);
 							tempArray[cnt]=middleResultsArray[j].rowIds[temp->row_Array[i].idR];
@@ -1034,6 +1169,10 @@ void setResultsToMiddleArray(resultList *list,middleResults *middleResultsArray,
 		}
 		free(tempArray);
 	}
+	else
+	{
+		free(tempArray);
+	}
 
 }
 //fillColumnFromFirstArray(multiColumnRelation* relationArray,int relationIndx,columnIndx,)
@@ -1049,7 +1188,7 @@ oneColumnRelation* setColumnFromFirstArray(multiColumnRelation* relationArray,in
 		temp->tuples[j].id=j;
 	}
 	//
-	printf("setColumnFromFirstArray min=%ld max=%ld average=%ld\n",relationArray[relationIndx].stats[columnIndx].min,relationArray[relationIndx].stats[columnIndx].max,relationArray[relationIndx].stats[columnIndx].average);
+	//printf("setColumnFromFirstArray min=%ld max=%ld average=%ld\n",relationArray[relationIndx].stats[columnIndx].min,relationArray[relationIndx].stats[columnIndx].max,relationArray[relationIndx].stats[columnIndx].average);
 	//memcpy(&(temp->stats),&(relationArray[relationIndx].stats[columnIndx]),sizeof(statistics));
 	temp->stats=relationArray[relationIndx].stats[columnIndx];
 	//
@@ -1064,6 +1203,7 @@ oneColumnRelation* setColumnFromMiddleArray(middleResults* middleResArray,int re
 		temp->tuples=malloc(middleResArray[arrayIndx].rowIdsNum*sizeof(tuple));
 	}
 	temp->num_of_tuples=middleResArray[arrayIndx].rowIdsNum;
+	//printf("setColumnFromMiddleArray min=%ld max=%ld average=%ld\n",middleResArray[relationIndx].stats.min,middleResArray[relationIndx].stats.max,middleResArray[relationIndx].stats.average);
 	for(int k=0;k<middleResArray[arrayIndx].rowIdsNum;k++)
 	{
 		//printf("%d   %d  %d\n",arrayIndx,k ,middleResArray[arrayIndx].rowIdsNum);
@@ -1073,8 +1213,8 @@ oneColumnRelation* setColumnFromMiddleArray(middleResults* middleResArray,int re
 		temp->tuples[k].id=k;
 		
 	}
-	temp->stats=middleResArray[relationIndx].stats;
-	printf("setColumnFromMiddleArray min=%ld max=%ld average=%ld\n",middleResArray[relationIndx].stats.min,middleResArray[relationIndx].stats.max,middleResArray[relationIndx].stats.average);
+	temp->stats=middleResArray[arrayIndx].stats;
+	//printf("setColumnFromMiddleArray min=%ld max=%ld average=%ld\n",middleResArray[relationIndx].stats.min,middleResArray[relationIndx].stats.max,middleResArray[relationIndx].stats.average);
 	return temp;
 }
 queryDataIndex* analyzeQuery(char *query)
@@ -1294,7 +1434,7 @@ resultList* sameRelationJoin(oneColumnRelation *relR,oneColumnRelation *relS){//
 	for(i=0;i<relR->num_of_tuples;i++){
 		if(relR->tuples[i].value==relS->tuples[i].value){//prepei ta id na einai ta idia
 		//	printf("%d == %d-->id=%d  %d\n",relR->tuples[i].value,relS->tuples[i].value,relR->tuples[i].id,relS->tuples[i].id);
-			insertResult(resList,relR->tuples[i].id,relR->tuples[i].id,1);			//2 sto teleutaio orisma shmainei oti exoume join apo idio relation
+			insertResult(resList,relR->tuples[i],relR->tuples[i],1);			//2 sto teleutaio orisma shmainei oti exoume join apo idio relation
 		}
 	}
 	return resList;
@@ -1441,7 +1581,6 @@ int64_t SumOneColumnRelation(oneColumnRelation *R){
 
 	return sum;
 }
-
 
 
 

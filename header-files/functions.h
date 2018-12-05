@@ -19,6 +19,7 @@ typedef struct filterPredNode filterPredNode;
 typedef struct joinPredNode joinPredNode;
 typedef struct middleResults middleResults;
 typedef struct statistics statistics;
+typedef struct statisticsArray statisticsArray;
 #ifndef FUNCTIONS_H_
 #define FUNCTIONS_H_
 
@@ -38,13 +39,6 @@ struct resultNodeForJoin
 };
 //////
 
-struct resultList
-{
-	resultNode *start;
-	resultNode *end;
-	int32_t numberOfNodes;
-	int32_t numberOfResults;
-};
 struct resultNode
 {
 	rowResult *row_Array;
@@ -66,6 +60,21 @@ struct statistics
 	uint64_t min;
 	uint64_t max;
 	uint64_t average;
+};
+struct statisticsArray
+{
+	int relationId;
+	int *cols;
+	statistics *stats;
+};
+struct resultList
+{
+	resultNode *start;
+	resultNode *end;
+	int32_t numberOfNodes;
+	int32_t numberOfResults;
+	statistics leftStats;
+	statistics rightStats;
 };
 struct multiColumnRelation	//to struct anaferetai se enan kombo , ara kanw pinaka apo tetoia
 {
@@ -153,6 +162,11 @@ struct queryDataIndex
 
 	int numViewQuery;  //posa views zhtaei to query
 	RelColNode *viewQueryArray;  //pinakas me ta views
+
+	//////////
+	RelColNode *distinct_cols;//posa diaforetika zeugaria rel.col exoume
+	int count_distinct_cols;
+	//////////
 };
 ///////////////////////////////////////////////////////////
 void setResultsToMiddleArray(resultList *list,middleResults *middleResultsArray,int index,int direction,int );
@@ -170,7 +184,7 @@ void deleteHashTable(indexHT **);
 indexHT* createHashTable(oneColumnRelation* reOrderedArray,int32_t start,int32_t end);
 void compareRelations(indexHT *ht,oneColumnRelation *array,int32_t start,int32_t end,oneColumnRelation *hashedArray,resultList *resList,int32_t );
 resultList *initializeResultList(void);
-void insertResult(resultList *list,uint32_t id1,uint32_t id2,int32_t);
+void insertResult(resultList *list,tuple id1,tuple id2,int32_t);
 void printResults(resultList *list);
 void createHT_CompareBuckets(resultList* ,hist*,hist*,oneColumnRelation*,oneColumnRelation*,int32_t,int32_t);//to last orisma einai boolean , apo poion pinaka erxete
 void writeFile(uint32_t,uint32_t);

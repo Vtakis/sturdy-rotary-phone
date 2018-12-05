@@ -54,7 +54,7 @@ int main(int argc,char** argv)
 	paths=malloc(fsize+1);
 	fread(paths,fsize,1,fp);
 	fclose(fp);
-	paths[fsize]='\0';
+	paths[fsize-1]='\0';
 	
 	//printf("paths:\n%s\n",paths);
 
@@ -221,4 +221,3 @@ int main(int argc,char** argv)
 	//
 
 }
-
