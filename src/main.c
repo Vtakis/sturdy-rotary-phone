@@ -130,8 +130,17 @@ int main(int argc,char** argv)
 						relationArray[i].stats[j].max=temp;
 					}
 				}
+
+				//briskw average
+				if(k==0){
+					relationArray[i].stats[j].average=temp;
+				}
+				else{
+					relationArray[i].stats[j].average+=temp;
+				}
 			}
-			printf("min=%ld max=%ld\n",relationArray[i].stats[j].min,relationArray[i].stats[j].max);
+			relationArray[i].stats[j].average=relationArray[i].stats[j].average/relationArray[i].rowCount;
+			printf("min=%ld max=%ld avg=%ld\n",relationArray[i].stats[j].min,relationArray[i].stats[j].max,relationArray[i].stats[j].average);
 		}
 
 		fclose(fp);

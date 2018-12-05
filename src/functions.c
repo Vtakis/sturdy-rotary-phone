@@ -468,7 +468,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 		if(strcmp(queryString,"F") && c!=EOF)
 		{
 			oneColumnRelation *column;
-			//printf("\n\n%d)%s",y,queryString);
+			printf("\n\n%d)%s\n",y,queryString);
 			y++;
 			data=analyzeQuery(queryString);
 			//getchar();
@@ -498,6 +498,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 								middleResArray[j]=executeFilter(column,data->predFilterArray[i].value,data->predFilterArray[i].typeOperation,relationIndex);
 								middleResArray[j].team=team;
 								middleResArray[j].relation_id=data->predFilterArray[i].relColumn->rel;
+								
 							//	printf("%d\n",middleResArray[j].relation_id);
 								//printMiddleArray(middleResArray,middleResultsCounter);
 								///if(middleResArray[middleResultsCounter].relation==-1)
@@ -527,7 +528,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 					middleResArray[middleResultsCounter-1].relation_id=data->predFilterArray[i].relColumn->rel;
 					middleResArray[middleResultsCounter-1].team=teamCounter++;
 
-				//	printMiddleArray(middleResArray,middleResultsCounter);
+					//printMiddleArray(middleResArray,middleResultsCounter);
 					middleResArray[middleResultsCounter-1].fromArray=0;
 					if(middleResArray[middleResultsCounter-1].relation==-1)
 					{
@@ -538,10 +539,14 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 					//printf("After\n");
 					//printMiddleArray(middleResArray,middleResultsCounter);
 					//printf("Filter[%d]-->%d/%d\n",i,middleResArray[middleResultsCounter-1].rowIdsNum,relationArray[relationIndex].rowCount);
+					//printMiddleArray(middleResArray,middleResultsCounter);
 				}
+				printMiddleArray(middleResArray,middleResultsCounter);
 			}
 			if(data->numPredJoinTwoRel>0)			//join 2 columns//
 			{
+				printMiddleArray(middleResArray,middleResultsCounter);
+
 				leftTeam=0;
 				rightTeam=0;
 				int leftColumnPosInMiddleArray=-1,rightColumnPosInMiddleArray=-1;
@@ -549,7 +554,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 				{
 					oneColumnRelation *leftColumn;
 					oneColumnRelation *rightColumn;
-					int chosen,joinFlag=0;//gia to joinflag 2=Radix 1=samejoin
+					int chosen=-1,joinFlag=0;//gia to joinflag 2=Radix 1=samejoin
 					for(k=0;k<data->numPredJoinTwoRel;k++){
 						if(data->twoRelationPredArray[k].selected==0){
 							
@@ -603,6 +608,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 								joinFlag=1;
 								break;
 							}
+							
 							else{
 								chosen=k;
 								data->twoRelationPredArray[k].selected=1;
@@ -610,9 +616,26 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 								break;
 							}
 						}
+						printMiddleArray(middleResArray,middleResultsCounter);
 					}
 					
-
+					
+					//
+					/*printf("before chosen=%d joinFlag=%d\n",chosen,joinFlag);
+					if(chosen==-1)			//Radix
+					{
+						
+						for(k=0;k<data->numPredJoinTwoRel;k++){
+							if(data->twoRelationPredArray[k].selected==0){
+								chosen=k;
+								data->twoRelationPredArray[k].selected=1;
+								joinFlag=2;
+								break;
+							}
+						}
+					}*/
+					//
+					printf("after chosen=%d joinFlag=%d\n",chosen,joinFlag);
 					
 					//printf("%d.%d = %d.%d  ,,,%d\n",leftRelationIndx,leftColumnIndx,rightRelationIndx,rightColumnIndx,middleResultsCounter);
 
@@ -634,6 +657,13 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 						middleResArray[middleResultsCounter].fromArray=0;
 						//rightTeam=middleResArray[middleResultsCounter].team;
 					}
+
+					/////////////
+					printf("left stats min=%ld max=%ld average=%ld\n",leftColumn->stats.min,leftColumn->stats.max,leftColumn->stats.average);
+					printf("right stats min=%ld max=%ld average=%ld\n",rightColumn->stats.min,rightColumn->stats.max,rightColumn->stats.average);
+					//rightColumn
+					/////////////
+
 
 					/*printf("LeftColumn\n");
 					for(int j=0;j<leftColumn->num_of_tuples;j++)
@@ -784,7 +814,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 				teamCounter=1;
 				//printMiddleArray(middleResArray,middleResultsCounter);
 				//printf("middle =%d\n",middleResultsCounter);
-				//printf("i=%d   %d \n",i,data->numPredJoinTwoRel);
+				printf("i=%d   %d \n",i,data->numPredJoinTwoRel);
 				if(i==data->numPredJoinTwoRel)
 				{
 					//printf("SUms-->%d\n",data->numViewQuery);
@@ -829,7 +859,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 					middleResArray[j].rowIdsNum=0;
 					middleResArray[j].team=0;
 					middleResArray[j].fromArray=-1;
-					middleResArray[i].relation_id=-1;
+					middleResArray[j].relation_id=-1;
 				}
 
 				//free(middleResArray);
@@ -859,6 +889,7 @@ void printMiddleArray(middleResults *array,int size)
 	for(int i=0;i<size;i++)
 	{
 		printf("Relation[%d]-->%d  RelationID %d  Rows %d  Teams %d\n",i,array[i].relation,array[i].relation_id,array[i].rowIdsNum,array[i].team);
+		printf("STATS min=%ld max=%ld average=%ld\n",array[i].stats.min,array[i].stats.max,array[i].stats.average);
 		for(int j=0;j<array[i].rowIdsNum;j++)
 		{
 			//printf("Row[%d]=%d\n",j,array[i].rowIds[j]);
@@ -1017,6 +1048,11 @@ oneColumnRelation* setColumnFromFirstArray(multiColumnRelation* relationArray,in
 		temp->tuples[j].value=relationArray[relationIndx].table[columnIndx][j];		//h mporw na stelnw kateutheian to table[column]//vazw se mia sthlh thn sthlh apo to arxiko table me ta data//
 		temp->tuples[j].id=j;
 	}
+	//
+	printf("setColumnFromFirstArray min=%ld max=%ld average=%ld\n",relationArray[relationIndx].stats[columnIndx].min,relationArray[relationIndx].stats[columnIndx].max,relationArray[relationIndx].stats[columnIndx].average);
+	//memcpy(&(temp->stats),&(relationArray[relationIndx].stats[columnIndx]),sizeof(statistics));
+	temp->stats=relationArray[relationIndx].stats[columnIndx];
+	//
 	return temp;
 }
 oneColumnRelation* setColumnFromMiddleArray(middleResults* middleResArray,int relationIndx,int columnIndx,int arrayIndx,multiColumnRelation* relationArray){
@@ -1035,7 +1071,10 @@ oneColumnRelation* setColumnFromMiddleArray(middleResults* middleResArray,int re
 	//	printf("%d %d %d %d %d\n",relationIndx,index,columnIndx,relationArray[relationIndx].rowCount,relationArray[relationIndx].colCount);
 		temp->tuples[k].value=relationArray[relationIndx].table[columnIndx][index];
 		temp->tuples[k].id=k;
+		
 	}
+	temp->stats=middleResArray[relationIndx].stats;
+	printf("setColumnFromMiddleArray min=%ld max=%ld average=%ld\n",middleResArray[relationIndx].stats.min,middleResArray[relationIndx].stats.max,middleResArray[relationIndx].stats.average);
 	return temp;
 }
 queryDataIndex* analyzeQuery(char *query)
@@ -1269,6 +1308,9 @@ middleResults executeFilter(oneColumnRelation* column,int value,char typeOperati
 	results.rowIdsNum=0;
 	results.relation=relation;
 	results.fromArray=0;
+
+	results.stats.average=0;
+	int flag=1;
 	for(i=0;i<column->num_of_tuples;i++)
 	{
 		if(typeOperation=='=')
@@ -1284,6 +1326,21 @@ middleResults executeFilter(oneColumnRelation* column,int value,char typeOperati
 				results.rowIds[results.rowIdsNum]=column->tuples[i].id;
 				results.relation = relation;
 				results.rowIdsNum++;
+
+				results.stats.average+=column->tuples[i].value;
+				if(flag==1){
+					results.stats.min=column->tuples[i].value;
+					results.stats.max=column->tuples[i].value;
+					flag=0;
+				}
+				else{
+					if(results.stats.min>value){
+						results.stats.min=column->tuples[i].value;
+					}
+					if(results.stats.max<value){
+						results.stats.max=column->tuples[i].value;
+					}
+				}
 			}
 		}
 		else if(typeOperation=='<')
@@ -1292,8 +1349,31 @@ middleResults executeFilter(oneColumnRelation* column,int value,char typeOperati
 				results.rowIds[results.rowIdsNum]=column->tuples[i].id;
 				results.relation = relation;
 				results.rowIdsNum++;
+
+				results.stats.average+=column->tuples[i].value;
+				if(flag==1){
+					results.stats.min=column->tuples[i].value;
+					results.stats.max=column->tuples[i].value;
+					flag=0;
+				}
+				else{
+					if(results.stats.min>column->tuples[i].value){
+						results.stats.min=value;
+					}
+					if(results.stats.max<value){
+						results.stats.max=column->tuples[i].value;
+					}
+				}
 			}
 		}
+	}
+	if(typeOperation=='='){
+		results.stats.min=value;
+		results.stats.max=value;
+		results.stats.average=value;
+	}
+	else{
+		results.stats.average/=results.rowIdsNum;
 	}
 	return results;
 }

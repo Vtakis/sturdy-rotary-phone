@@ -65,6 +65,7 @@ struct statistics
 {
 	uint64_t min;
 	uint64_t max;
+	uint64_t average;
 };
 struct multiColumnRelation	//to struct anaferetai se enan kombo , ara kanw pinaka apo tetoia
 {
@@ -77,6 +78,7 @@ struct oneColumnRelation
 {
 	tuple *tuples;
 	uint32_t num_of_tuples;
+	statistics stats;
 };
 struct hist
 {
@@ -112,6 +114,7 @@ struct middleResults
 	int *rowIds;
 	int rowIdsNum;
 	int fromArray;
+	statistics stats;
 };
 ////////////////////////////////////////////////////////
 struct RelColNode //de borw na skeftw kalo onoma
