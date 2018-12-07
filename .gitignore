@@ -8,3 +8,4 @@ unitest
 *.orig
 input-files/
 *.txt
+Debug/
