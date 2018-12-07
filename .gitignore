@@ -6,3 +6,5 @@
 myexe
 unitest
 *.orig
+input-files/
+*.txt

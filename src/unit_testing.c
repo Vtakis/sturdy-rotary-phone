@@ -49,11 +49,6 @@ void testOneRelationJoin(void)
 	{
         rewind(temp_file);
         ////////////////////////////////////////////////////0-99 --- 0-99 -->100//////////////////////////////////////////////////
-        size_A=100;
-        A[size_A];
-
-        size_B=100;
-        B[size_B];
 
     	FILE *fp;
     	fp=fopen("input-files/input.txt","w");
@@ -74,11 +69,7 @@ void testOneRelationJoin(void)
 		resList = sameRelationJoin(R,S);
 		CU_ASSERT(100== resList->numberOfResults);
         ////////////////////////////////////////////////////1 --- 0-99 -->1//////////////////////////////////////////////////
-        size_A=100;
-        A[size_A];
 
-        size_B=100;
-        B[size_B];
 
     	fp=fopen("input-files/input.txt","w");
     	fprintf(fp,"%d %d\n",size_A,size_B);
@@ -98,11 +89,7 @@ void testOneRelationJoin(void)
 		resList = sameRelationJoin(R,S);
 		CU_ASSERT(1== resList->numberOfResults);
         ////////////////////////////////////////////////////1 --- 1 -->1//////////////////////////////////////////////////
-        size_A=100;
-        A[size_A];
 
-        size_B=100;
-        B[size_B];
 
     	fp=fopen("input-files/input.txt","w");
     	fprintf(fp,"%d %d\n",size_A,size_B);
@@ -122,12 +109,6 @@ void testOneRelationJoin(void)
 		resList = sameRelationJoin(R,S);
 		CU_ASSERT(100== resList->numberOfResults);
         ////////////////////////////////////////////////////0-99 --- 99-0 -->0//////////////////////////////////////////////////
-        size_A=100;
-        A[size_A];
-
-        size_B=100;
-        B[size_B];
-
     	fp=fopen("input-files/input.txt","w");
     	fprintf(fp,"%d %d\n",size_A,size_B);
     	for(int32_t i=0;i<size_A;i++)
@@ -162,11 +143,6 @@ void testRadixHashJoin(void)
     {
         rewind(temp_file);
         ////////////////////////////////////////////////////0-99 --- 0-99 -->100//////////////////////////////////////////////////
-        size_A=100;
-        A[size_A];
-
-        size_B=100;
-        B[size_B];
 
     	FILE *fp;
     	fp=fopen("input-files/input.txt","w");

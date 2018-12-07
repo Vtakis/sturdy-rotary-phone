@@ -54,7 +54,7 @@ int main(int argc,char** argv)
 	paths=malloc(fsize+1);
 	fread(paths,fsize,1,fp);
 	fclose(fp);
-	paths[fsize-1]='\0';
+	paths[fsize]='\0';
 	
 	//printf("paths:\n%s\n",paths);
 
@@ -91,8 +91,6 @@ int main(int argc,char** argv)
 		fp=fopen(onepath,"rb");
 		//fp=fopen(onepath,"r");
 		uint64_t temp;
-		char cols[100],rows[100];
-		int a,b;
 		//fscanf(fp,"%s %[^\n]s",rows,cols);
 		fread(&temp,sizeof(uint64_t),1,fp);
 		//printf("temnp=%s %s\n",cols,rows);

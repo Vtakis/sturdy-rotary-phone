@@ -6,7 +6,7 @@ OBJS2=src/unit_testing.o src/functions.o
 SOURCE2=src/unit_testing.c src/functions.c
 OUT2=unitest
 CC=gcc
-FLAGS=-g -c -Wall
+FLAGS=-g -c -Wall 
 
 all:$(OBJS) $(OBJS2)
 	$(CC) -g $(SOURCE) -o $(OUT)
