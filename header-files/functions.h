@@ -74,6 +74,8 @@ struct statistics
 	uint64_t min;
 	uint64_t max;
 	uint64_t average;
+	uint64_t distinctValues;
+	float possibilityOfDistinct;
 };
 struct multiColumnRelation	//to struct anaferetai se enan kombo , ara kanw pinaka apo tetoia
 {
@@ -165,8 +167,8 @@ struct queryDataIndex
 };
 ///////////////////////////////////////////////////////////
 
-void createStatsFromMiddleArray(statistics_array **statsArray,middleResults *middleResArray,int middleResultsCounter,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int arrayIndx,int *statsArrayCounter);
-void createStatsFromFirstArray(statistics_array **statsArray,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int *statsArrayCounter);
+void createStatsFromMiddleArray(statistics_array **statsArray,middleResults *middleResArray,int middleResultsCounter,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int arrayIndx,int *statsArrayCounter,int relationId);
+void createStatsFromFirstArray(statistics_array **statsArray,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int *statsArrayCounter,int relationId);
 
 int createStatsAndFindPred(queryDataIndex *data,middleResults* middleResArray,int middleResultsCounter,multiColumnRelation* relationArray);
 int checkIfOneRelationJoinExists(queryDataIndex *,middleResults *,int);

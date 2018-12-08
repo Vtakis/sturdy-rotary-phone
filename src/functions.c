@@ -553,6 +553,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 					oneColumnRelation *rightColumn;
 
 					indx=checkIfOneRelationJoinExists(data,middleResArray,middleResultsCounter);
+					printf("Indx=%d\n",indx);
 					if(indx==-1)			//eimaste se TwoRelationJoin kai theloume na vroume ta statistika gia kathe kathgorhma//
 					{
 						indx=createStatsAndFindPred(data,middleResArray,middleResultsCounter,relationArray);
@@ -837,8 +838,13 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 
 int createStatsAndFindPred(queryDataIndex *data,middleResults* middleResArray,int middleResultsCounter,multiColumnRelation* relationArray)
 {
-	statistics_array *statsArray=NULL;
-	int k,statsArrayCounter=0,leftColumnIndx,rightRelationId,rightColumnIndx,leftRelationId,leftRelationIndx,rightRelationIndx,j,rightColumnPosInMiddleArray=-1,tempValue=-1,leftColumnPosInMiddleArray=-1;
+	statistics_array *statsArray;
+	statsArray=malloc(data->numRelQuery*sizeof(statistics_array));
+	for(int i=0;i<data->numRelQuery;i++)
+	{
+		statsArray[i].numberOfCols=0;
+	}
+	int k,statsArrayCounter=data->numRelQuery,leftColumnIndx,rightRelationId,rightColumnIndx,leftRelationId,leftRelationIndx,rightRelationIndx,j,rightColumnPosInMiddleArray=-1,tempValue=-1,leftColumnPosInMiddleArray=-1;
 	for(k=0;k<data->numPredJoinTwoRel;k++){
 		if(data->twoRelationPredArray[k].selected==1)continue;
 
@@ -857,13 +863,13 @@ int createStatsAndFindPred(queryDataIndex *data,middleResults* middleResArray,in
 			{
 				if(middleResArray[j].relation==leftRelationIndx && middleResArray[j].relation_id==leftRelationId)
 				{
-					createStatsFromMiddleArray(&statsArray,middleResArray,middleResultsCounter,relationArray,leftRelationIndx,leftColumnIndx,j,&statsArrayCounter);
+					createStatsFromMiddleArray(&statsArray,middleResArray,middleResultsCounter,relationArray,leftRelationIndx,leftColumnIndx,j,&statsArrayCounter,leftRelationId);
 					leftColumnPosInMiddleArray=j;			//h thesh ths aristerhs sthlhs mesa ston middleArray
 					middleResArray[j].fromArray=1;
 				}
 				if(middleResArray[j].relation==rightRelationIndx && middleResArray[j].relation_id==rightRelationId)
 				{
-					createStatsFromMiddleArray(&statsArray,middleResArray,middleResultsCounter,relationArray,rightRelationIndx,rightColumnIndx,j,&statsArrayCounter);
+					createStatsFromMiddleArray(&statsArray,middleResArray,middleResultsCounter,relationArray,rightRelationIndx,rightColumnIndx,j,&statsArrayCounter,rightRelationId);
 					rightColumnPosInMiddleArray=j;			//h thesh ths deksias sthlhs mesa ston middleArray
 					middleResArray[j].fromArray=1;
 				}
@@ -871,39 +877,58 @@ int createStatsAndFindPred(queryDataIndex *data,middleResults* middleResArray,in
 		}
 		if(leftColumnPosInMiddleArray==-1)
 		{
-			createStatsFromFirstArray(&statsArray,relationArray,leftRelationIndx,leftColumnIndx,&statsArrayCounter);
+			createStatsFromFirstArray(&statsArray,relationArray,leftRelationIndx,leftColumnIndx,&statsArrayCounter,leftRelationId);
 			middleResArray[middleResultsCounter].fromArray=0;
 		}
 		if(rightColumnPosInMiddleArray==-1)		//an den uparxei mesa ston middle array pairnoume thn sthlh apo ton arxiko pinaka
 		{
-			createStatsFromFirstArray(&statsArray,relationArray,rightRelationIndx,rightColumnIndx,&statsArrayCounter);
+			createStatsFromFirstArray(&statsArray,relationArray,rightRelationIndx,rightColumnIndx,&statsArrayCounter,rightRelationId);
 			middleResArray[middleResultsCounter].fromArray=0;
 		}
 
+
+		int leftMax=statsArray[leftRelationId].colStatsArray[leftColumnIndx].max,leftMin=statsArray[leftRelationId].colStatsArray[leftColumnIndx].min,leftAvrg=statsArray[leftRelationId].colStatsArray[leftColumnIndx].average;
+		int rightMax=statsArray[rightRelationId].colStatsArray[rightColumnIndx].max,rightMin=statsArray[rightRelationId].colStatsArray[rightColumnIndx].min,rightAvrg=statsArray[rightRelationId].colStatsArray[rightColumnIndx].average;
+		int leftDistNum=statsArray[leftRelationId].colStatsArray[leftColumnIndx].distinctValues,rightDistNum=statsArray[leftRelationId].colStatsArray[leftColumnIndx].distinctValues;
+
+		if(leftDistNum>rightDistNum){
+			
+		}
+
+		if(leftMin>rightMax || rightMin>leftMax)		//zero results//
+		{
+			data->twoRelationPredArray[k].score=10;
+		}
+		else if((leftMin>=rightMin && leftMax<=rightMax)  || (rightMin>=leftMin && rightMax<=leftMax))	// MIN  min max   MAX ///
+		{
+			data->twoRelationPredArray[k].score=1;
+		}
+		else if((leftMin>=rightMin && leftMax>=rightMax) || (rightMin>=leftMin && rightMax>=leftMax) || (leftMin<=rightMin && leftMax<=rightMax) || (rightMin<=leftMin && rightMax<=leftMax))
+		{
+			data->twoRelationPredArray[k].score=5;
+		}
+	//	printf("%d.%d=%d.%d    Score=%d\n",data->twoRelationPredArray[k].left->rel,data->twoRelationPredArray[k].left->col,data->twoRelationPredArray[k].right->rel,data->twoRelationPredArray[k].right->col,data->twoRelationPredArray[k].score);
 		for(int i=0;i<statsArrayCounter;i++)
 		{
 			printf("%d)RelId=%ld  NumOfCols=%ld\n",i,statsArray[i].relId,statsArray[i].numberOfCols);
 			for(int l=0;l<statsArray[i].numberOfCols;l++)
 			{
+				if(statsArray[i].cols[l]==-1)continue;
 				printf("Col=%ld   Min=%ld  Max=%ld  Avrg=%ld\n",statsArray[i].cols[l],statsArray[i].colStatsArray[l].min,statsArray[i].colStatsArray[l].max,statsArray[i].colStatsArray[l].average);
 			}
 		}
 		printf("\n");
-
 	}
 
-	/*for(k=0;k<data->numPredJoinTwoRel;k++){
+	for(k=0;k<data->numPredJoinTwoRel;k++){
 		if(data->twoRelationPredArray[k].selected==1)continue;
-
-		for(int i=0;i<statsArrayCounter;i++){
-			
-		}
-	}*/
+		printf("%d.%d=%d.%d    Score=%d\n",data->twoRelationPredArray[k].left->rel,data->twoRelationPredArray[k].left->col,data->twoRelationPredArray[k].right->rel,data->twoRelationPredArray[k].right->col,data->twoRelationPredArray[k].score);
+	}
 }
-void createStatsFromMiddleArray(statistics_array **statsArray,middleResults *middleResArray,int middleResultsCounter,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int arrayIndx,int *statsArrayCounter)
+void createStatsFromMiddleArray(statistics_array **statsArray,middleResults *middleResArray,int middleResultsCounter,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int arrayIndx,int *statsArrayCounter,int relationId)
 {
-	int statsArrayIndex=*statsArrayCounter,flag=0;
-	if(statsArrayIndex==0)
+	int statsArrayIndex=relationId,flag=0;
+	/*if(statsArrayIndex==0)
 	{
 		(*statsArray)=malloc(sizeof(statistics_array));
 		(*statsArrayCounter)++;
@@ -932,31 +957,57 @@ void createStatsFromMiddleArray(statistics_array **statsArray,middleResults *mid
 			(*statsArray)=realloc((*statsArray),(1+statsArrayIndex)*sizeof(statistics_array));
 			(*statsArray)[statsArrayIndex].numberOfCols=0;
 		}
-	}
+	}*/
 
 	if((*statsArray)[statsArrayIndex].numberOfCols==0)
 	{
-		(*statsArray)[statsArrayIndex].cols=malloc(sizeof(uint64_t));
+		(*statsArray)[statsArrayIndex].cols=malloc(relationArray[relationIndx].colCount*sizeof(uint64_t));
+		(*statsArray)[statsArrayIndex].numberOfCols=relationArray[relationIndx].colCount;
+		(*statsArray)[statsArrayIndex].colStatsArray=malloc(relationArray[relationIndx].colCount*sizeof(statistics));
+		for(int i=0;i<(*statsArray)[statsArrayIndex].numberOfCols;i++)
+		{
+			(*statsArray)[statsArrayIndex].cols[i]=-1;
+			(*statsArray)[statsArrayIndex].colStatsArray[i].max=-1;
+			(*statsArray)[statsArrayIndex].colStatsArray[i].min=-1;
+			(*statsArray)[statsArrayIndex].colStatsArray[i].average=-1;
+			(*statsArray)[statsArrayIndex].colStatsArray[i].possibilityOfDistinct=-1;
+			(*statsArray)[statsArrayIndex].colStatsArray[i].distinctValues=-1;
+		}
 	}
-	else
+	/*else
 	{
 		(*statsArray)[statsArrayIndex].cols=realloc((*statsArray)[statsArrayIndex].cols,(1+(*statsArray)[statsArrayIndex].numberOfCols)*sizeof(uint64_t));
-	}
+	}*/
 
-	if((*statsArray)[statsArrayIndex].numberOfCols==0)
+	/*if((*statsArray)[statsArrayIndex].numberOfCols==0)
 	{
-		(*statsArray)[statsArrayIndex].colStatsArray=malloc(sizeof(statistics));
-	}
-	else
+
+	}*/
+/*	else
 	{
 		(*statsArray)[statsArrayIndex].colStatsArray=realloc((*statsArray)[statsArrayIndex].colStatsArray,(1+(*statsArray)[statsArrayIndex].numberOfCols)*sizeof(statistics));
-	}
-
-	(*statsArray)[statsArrayIndex].cols[(*statsArray)[statsArrayIndex].numberOfCols]=columnIndx;
+	}*/
+	(*statsArray)[statsArrayIndex].cols[columnIndx]=columnIndx;
 	(*statsArray)[statsArrayIndex].relId=relationIndx;
 
 	int index=middleResArray[arrayIndx].rowIds[0];
 	int max=relationArray[relationIndx].table[columnIndx][index],min=relationArray[relationIndx].table[columnIndx][index],average=0;
+
+	///briskw tis diakrites time me hash
+	int **dis_values,*pointers,*maxes;//einai hash
+	int hash_num=100,num_per_hash=100,distinct_values=0;
+
+	dis_values=malloc(hash_num*sizeof(int *));
+	pointers=malloc(hash_num*sizeof(int));
+	maxes=malloc(hash_num*sizeof(int));
+
+	for(int k=0;k<hash_num;k++){
+		maxes[k]=num_per_hash;
+		dis_values[k]=malloc(num_per_hash*sizeof(int *));
+		pointers[k]=0;
+	}
+	///
+
 	for(int k=0;k<middleResArray[arrayIndx].rowIdsNum;k++)
 	{
 		 index=middleResArray[arrayIndx].rowIds[k];
@@ -969,19 +1020,102 @@ void createStatsFromMiddleArray(statistics_array **statsArray,middleResults *mid
 			 min=relationArray[relationIndx].table[columnIndx][index];
 		 }
 		 average+=relationArray[relationIndx].table[columnIndx][index];
+
+		//////////////////////
+		int curValue=relationArray[relationIndx].table[columnIndx][index]%hash_num;
+		//pointers[curValue]++;
+		int flag=1;
+		for(int l=0;l<pointers[curValue];l++){
+			if(dis_values[curValue][l]==relationArray[relationIndx].table[columnIndx][index]){
+				flag=0;
+				break;
+			}
+		}
+		if(flag==1){
+			if(pointers[curValue]<maxes[curValue]){
+				dis_values[curValue][pointers[curValue]]=relationArray[relationIndx].table[columnIndx][index];
+				pointers[curValue]++;
+				distinct_values++;
+			}
+			else{//realloc
+				printf("realloc disticnt middle\n");
+				maxes[curValue]=maxes[curValue]*2;
+				dis_values[curValue]=realloc(dis_values[curValue],maxes[curValue]);
+
+				dis_values[curValue][pointers[curValue]]=relationArray[relationIndx].table[columnIndx][index];
+				pointers[curValue]++;
+				distinct_values++;
+			}
+		}
+		////////////////////////
+
 	}
+//test oti bgazw swsta distinct
+	int ans=0,sum=0;
+	for(int k=0;k<hash_num;k++){
+		//printf("dis_values[%d] = (items=%d) ",k,pointers[k]);
+		sum+=pointers[k];
+		for(int j=0;j<pointers[k];j++){
+			//printf("%d ,",dis_values[k][j]);
+			for(int i=0;i<middleResArray[arrayIndx].rowIdsNum;i++){
+				index=middleResArray[arrayIndx].rowIds[i];
+				if(dis_values[k][j]==relationArray[relationIndx].table[columnIndx][index]){
+					//printf("%d %d\n",dis_values[k][j],relationArray[relationIndx].table[columnIndx][i]);
+					ans++;
+				}
+			}
+		}
+		//printf("\n");
+	}
+
+	printf("\n\nTEST DISTINCT MIDDLE ans=%d / sum=%d / middleResArray[arrayIndx].rowIdsNum=%d\n\n",ans,sum,middleResArray[arrayIndx].rowIdsNum);
+	printf(" middle array distinct_values=%d\n",distinct_values);
+//
+
+printf(" middle results distinct_values=%d\n",distinct_values);
 	average/=middleResArray[arrayIndx].rowIdsNum;
 
-	(*statsArray)[statsArrayIndex].colStatsArray[(*statsArray)[statsArrayIndex].numberOfCols].average=average;
-	(*statsArray)[statsArrayIndex].colStatsArray[(*statsArray)[statsArrayIndex].numberOfCols].max=max;
-	(*statsArray)[statsArrayIndex].colStatsArray[(*statsArray)[statsArrayIndex].numberOfCols].min=min;
-	(*statsArray)[statsArrayIndex].numberOfCols++;
+//toy hlia
+
+	//printf("max=%d min=%d avrg=%d num=%d\n",max,min,average,middleResArray[arrayIndx].rowIdsNum);
+	(*statsArray)[statsArrayIndex].colStatsArray[columnIndx].average=average;
+	(*statsArray)[statsArrayIndex].colStatsArray[columnIndx].max=max;
+	(*statsArray)[statsArrayIndex].colStatsArray[columnIndx].min=min;
+	(*statsArray)[statsArrayIndex].colStatsArray[columnIndx].distinctValues=distinct_values;
+	/*int maxdiff=max-average,mindiff=average-min;
+	int diff =maxdiff-mindiff;
+	float maxPoss=(float)(max-min)/(float)maxdiff,minPoss=(float)(max-min)/(float)mindiff;
+	float sumPoss;
+
+	if(diff<0)
+	{
+		sumPoss=0.5+(float)((-1)*diff)/(float)(max-min);
+	}
+	else sumPoss=0.5+(float)(diff)/(float)(max-min);
+	(*statsArray)[statsArrayIndex].colStatsArray[columnIndx].possibilityOfDistinct=((float)(max-min)/(float)middleResArray[arrayIndx].rowIdsNum);
+	float totalPos=sumPoss*(*statsArray)[statsArrayIndex].colStatsArray[columnIndx].possibilityOfDistinct;
+	//printf("maxPoss=%f    minPoss=%f diff=%d sumPoss=%f  totalPos=%f  Pos=%f\n",maxPoss,minPoss,diff,sumPoss,totalPos,(*statsArray)[statsArrayIndex].colStatsArray[columnIndx].possibilityOfDistinct);
+
+	int distinct_values2=middleResArray[arrayIndx].rowIdsNum*(*statsArray)[statsArrayIndex].colStatsArray[columnIndx].possibilityOfDistinct;
+	if(distinct_values2>middleResArray[arrayIndx].rowIdsNum)
+	{
+		distinct_values2=middleResArray[arrayIndx].rowIdsNum;
+	}
+	printf("Before DistinctValues=%d\n",distinct_values2);
+
+	distinct_values2=middleResArray[arrayIndx].rowIdsNum*totalPos;
+	if(distinct_values2>middleResArray[arrayIndx].rowIdsNum)
+	{
+		distinct_values2=middleResArray[arrayIndx].rowIdsNum;
+	}
+	printf("After DistinctValues=%d\n",distinct_values2);*/
+//toy hlia end
 }
 
-void createStatsFromFirstArray(statistics_array **statsArray,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int *statsArrayCounter)
+void createStatsFromFirstArray(statistics_array **statsArray,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int *statsArrayCounter,int relationId)
 {
-	int statsArrayIndex=*statsArrayCounter,flag=0;
-	if(statsArrayIndex==0)
+	int statsArrayIndex=relationId,flag=0;
+	/*if(statsArrayIndex==0)
 	{
 		(*statsArray)=malloc(sizeof(statistics_array));
 		(*statsArrayCounter)++;
@@ -1010,12 +1144,23 @@ void createStatsFromFirstArray(statistics_array **statsArray,multiColumnRelation
 			(*statsArray)=realloc((*statsArray),(1+statsArrayIndex)*sizeof(statistics_array));
 			(*statsArray)[statsArrayIndex].numberOfCols=0;
 		}
-	}
+	}*/
 	if((*statsArray)[statsArrayIndex].numberOfCols==0)
 	{
-		(*statsArray)[statsArrayIndex].cols=malloc(sizeof(uint64_t));
+		(*statsArray)[statsArrayIndex].cols=malloc(relationArray[relationIndx].colCount*sizeof(uint64_t));
+		(*statsArray)[statsArrayIndex].numberOfCols=relationArray[relationIndx].colCount;
+		(*statsArray)[statsArrayIndex].colStatsArray=malloc(relationArray[relationIndx].colCount*sizeof(statistics));
+		for(int i=0;i<(*statsArray)[statsArrayIndex].numberOfCols;i++)
+		{
+			(*statsArray)[statsArrayIndex].cols[i]=-1;
+			(*statsArray)[statsArrayIndex].colStatsArray[i].max=-1;
+			(*statsArray)[statsArrayIndex].colStatsArray[i].min=-1;
+			(*statsArray)[statsArrayIndex].colStatsArray[i].average=-1;
+			(*statsArray)[statsArrayIndex].colStatsArray[i].possibilityOfDistinct=-1;
+			(*statsArray)[statsArrayIndex].colStatsArray[i].distinctValues=-1;
+		}
 	}
-	else
+	/*else
 	{
 		(*statsArray)[statsArrayIndex].cols=realloc((*statsArray)[statsArrayIndex].cols,(1+(*statsArray)[statsArrayIndex].numberOfCols)*sizeof(uint64_t));
 	}
@@ -1026,11 +1171,26 @@ void createStatsFromFirstArray(statistics_array **statsArray,multiColumnRelation
 	else
 	{
 		(*statsArray)[statsArrayIndex].colStatsArray=realloc((*statsArray)[statsArrayIndex].colStatsArray,(1+(*statsArray)[statsArrayIndex].numberOfCols)*sizeof(statistics));
-	}
+	}*/
 
-	(*statsArray)[statsArrayIndex].cols[(*statsArray)[statsArrayIndex].numberOfCols]=columnIndx;
+	(*statsArray)[statsArrayIndex].cols[columnIndx]=columnIndx;
 	(*statsArray)[statsArrayIndex].relId=relationIndx;
 	int max=relationArray[relationIndx].table[columnIndx][0],min=relationArray[relationIndx].table[columnIndx][0],average=0;
+
+	///briskw tis diakrites time me hash
+	int **dis_values,*pointers,*maxes;//einai hash
+	int hash_num=100,num_per_hash=100,distinct_values=0;
+
+	dis_values=malloc(hash_num*sizeof(int *));
+	pointers=malloc(hash_num*sizeof(int));
+	maxes=malloc(hash_num*sizeof(int));
+
+	for(int k=0;k<hash_num;k++){
+		maxes[k]=num_per_hash;
+		dis_values[k]=malloc(num_per_hash*sizeof(int *));
+		pointers[k]=0;
+	}
+	///
 
 	for(int j=0;j<relationArray[relationIndx].rowCount;j++)
 	{
@@ -1043,14 +1203,99 @@ void createStatsFromFirstArray(statistics_array **statsArray,multiColumnRelation
 			min = relationArray[relationIndx].table[columnIndx][j];
 		}
 		average+=relationArray[relationIndx].table[columnIndx][j];
+
+		//////////////////////
+		int curValue=relationArray[relationIndx].table[columnIndx][j]%hash_num;
+		
+		int flag=1;
+		for(int l=0;l<pointers[curValue];l++){
+			if(dis_values[curValue][l]==relationArray[relationIndx].table[columnIndx][j]){
+				flag=0;
+				break;
+			}
+		}
+		if(flag==1){
+			if(pointers[curValue]<maxes[curValue]){
+				dis_values[curValue][pointers[curValue]]=relationArray[relationIndx].table[columnIndx][j];
+				pointers[curValue]++;
+				distinct_values++;
+			}
+			else{//realloc
+				printf("realloc disticnt first\n");
+				maxes[curValue]=maxes[curValue]*2;
+				dis_values[curValue]=realloc(dis_values[curValue],maxes[curValue]);
+
+				dis_values[curValue][pointers[curValue]]=relationArray[relationIndx].table[columnIndx][j];
+				pointers[curValue]++;
+				distinct_values++;
+			}
+		}
+		//pointers[curValue]++;
+		////////////////////////
+
 	}
+
+//test oti bgazw swsta distinct
+	int ans=0,sum=0;
+	for(int k=0;k<hash_num;k++){
+		//printf("dis_values[%d] = (items=%d) ",k,pointers[k]);
+		sum+=pointers[k];
+		for(int j=0;j<pointers[k];j++){
+			//printf("%d ,",dis_values[k][j]);
+			for(int i=0;i<relationArray[relationIndx].rowCount;i++){
+				if(dis_values[k][j]==relationArray[relationIndx].table[columnIndx][i]){
+					//printf("%d %d\n",dis_values[k][j],relationArray[relationIndx].table[columnIndx][i]);
+					ans++;
+				}
+			}
+		}
+		//printf("\n");
+	}
+
+	printf("\n\nTEST DISTINCT FIRST ans=%d / sum=%d / apo pinaka=%d\n\n",ans,sum,relationArray[relationIndx].rowCount);
+	printf(" first array distinct_values=%d\n",distinct_values);
+//
 
 	average/=relationArray[relationIndx].rowCount;
 
-	(*statsArray)[statsArrayIndex].colStatsArray[(*statsArray)[statsArrayIndex].numberOfCols].average=average;
-	(*statsArray)[statsArrayIndex].colStatsArray[(*statsArray)[statsArrayIndex].numberOfCols].max=max;
-	(*statsArray)[statsArrayIndex].colStatsArray[(*statsArray)[statsArrayIndex].numberOfCols].min=min;
-	(*statsArray)[statsArrayIndex].numberOfCols++;
+//toy hlia
+	//printf("\nmax=%d min=%d avrg=%d num=%d\n",max,min,average,relationArray[relationIndx].rowCount);
+	(*statsArray)[statsArrayIndex].colStatsArray[columnIndx].average=average;
+	(*statsArray)[statsArrayIndex].colStatsArray[columnIndx].max=max;
+	(*statsArray)[statsArrayIndex].colStatsArray[columnIndx].min=min;
+	(*statsArray)[statsArrayIndex].colStatsArray[columnIndx].distinctValues=distinct_values;
+	/*(*statsArray)[statsArrayIndex].colStatsArray[columnIndx].possibilityOfDistinct=((float)(max-min)/(float)relationArray[relationIndx].rowCount);
+
+
+	int maxdiff=max-average,mindiff=average-min;
+	int diff =maxdiff-mindiff;
+	float maxPoss=(float)(max-min)/(float)maxdiff,minPoss=(float)(max-min)/(float)mindiff;
+	float sumPoss;
+
+	if(diff<0)
+	{
+		sumPoss=0.5+(float)((-1)*diff)/(float)(max-min);
+	}
+	else sumPoss=0.5+(float)(diff)/(float)(max-min);
+	(*statsArray)[statsArrayIndex].colStatsArray[columnIndx].possibilityOfDistinct=((float)(max-min)/(float)relationArray[relationIndx].rowCount);
+	float totalPos=sumPoss*(*statsArray)[statsArrayIndex].colStatsArray[columnIndx].possibilityOfDistinct;
+	//printf("maxPoss=%f    minPoss=%f diff=%d sumPoss=%f  totalPos=%f  Pos=%f\n",maxPoss,minPoss,diff,sumPoss,totalPos,(*statsArray)[statsArrayIndex].colStatsArray[columnIndx].possibilityOfDistinct);
+
+	int distinct_values2=relationArray[relationIndx].rowCount*(*statsArray)[statsArrayIndex].colStatsArray[columnIndx].possibilityOfDistinct;
+	if(distinct_values2>relationArray[relationIndx].rowCount)
+	{
+		distinct_values2=relationArray[relationIndx].rowCount;
+	}
+	printf("Before DistinctValues=%d\n",distinct_values2);
+
+
+	distinct_values2=relationArray[relationIndx].rowCount*totalPos;
+	if(distinct_values2>relationArray[relationIndx].rowCount)
+	{
+		distinct_values2=relationArray[relationIndx].rowCount;
+	}
+	printf("After DistinctValues=%d\n",distinct_values2);*/
+//tou hlia end
 }
 
 
