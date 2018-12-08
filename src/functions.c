@@ -553,7 +553,6 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 					oneColumnRelation *rightColumn;
 
 					indx=checkIfOneRelationJoinExists(data,middleResArray,middleResultsCounter);
-					printf("Indx=%d\n",indx);
 					if(indx==-1)			//eimaste se TwoRelationJoin kai theloume na vroume ta statistika gia kathe kathgorhma//
 					{
 						indx=createStatsAndFindPred(data,middleResArray,middleResultsCounter,relationArray);
@@ -852,47 +851,33 @@ int createStatsAndFindPred(queryDataIndex *data,middleResults* middleResArray,in
 
 		leftRelationIndx = data->QueryRelArray[leftRelationId];
 		rightRelationIndx = data->QueryRelArray[rightRelationId];
-		printf("Counter=%d\n",statsArrayCounter);
 		if(middleResultsCounter>0)			//exoume endiamesa apotelesmata
 		{
 			for(j=0;j<middleResultsCounter;j++)			//trexoume ton pinaka me ta relations kai psaxnoume an uparxei antistoixia//
 			{
 				if(middleResArray[j].relation==leftRelationIndx && middleResArray[j].relation_id==leftRelationId)
 				{
-					createStatsFromMiddleArray(&statsArray,middleResArray,middleResultsCounter,relationArray,leftRelationIndx,leftColumnIndx,j,statsArrayCounter);
-					statsArrayCounter++;
+					createStatsFromMiddleArray(&statsArray,middleResArray,middleResultsCounter,relationArray,leftRelationIndx,leftColumnIndx,j,&statsArrayCounter);
 					leftColumnPosInMiddleArray=j;			//h thesh ths aristerhs sthlhs mesa ston middleArray
 					middleResArray[j].fromArray=1;
 				}
 				if(middleResArray[j].relation==rightRelationIndx && middleResArray[j].relation_id==rightRelationId)
 				{
-					createStatsFromMiddleArray(&statsArray,middleResArray,middleResultsCounter,relationArray,rightRelationIndx,rightColumnIndx,j,statsArrayCounter);
-					statsArrayCounter++;
+					createStatsFromMiddleArray(&statsArray,middleResArray,middleResultsCounter,relationArray,rightRelationIndx,rightColumnIndx,j,&statsArrayCounter);
 					rightColumnPosInMiddleArray=j;			//h thesh ths deksias sthlhs mesa ston middleArray
 					middleResArray[j].fromArray=1;
 				}
 			}
 		}
-		printf("Counter=%d\n",statsArrayCounter);
-		printf("%d %d\n",leftColumnPosInMiddleArray,rightColumnPosInMiddleArray);
 		if(leftColumnPosInMiddleArray==-1)
 		{
-			createStatsFromFirstArray(&statsArray,relationArray,leftRelationIndx,leftColumnIndx,statsArrayCounter);
-			statsArrayCounter++;
+			createStatsFromFirstArray(&statsArray,relationArray,leftRelationIndx,leftColumnIndx,&statsArrayCounter);
 			middleResArray[middleResultsCounter].fromArray=0;
 		}
-		printf("Counter=%d\n",statsArrayCounter);
 		if(rightColumnPosInMiddleArray==-1)		//an den uparxei mesa ston middle array pairnoume thn sthlh apo ton arxiko pinaka
 		{
-			createStatsFromFirstArray(&statsArray,relationArray,rightRelationIndx,rightColumnIndx,statsArrayCounter);
-			statsArrayCounter++;
+			createStatsFromFirstArray(&statsArray,relationArray,rightRelationIndx,rightColumnIndx,&statsArrayCounter);
 			middleResArray[middleResultsCounter].fromArray=0;
-		}
-		printf("%d %d\n",leftColumnPosInMiddleArray,rightColumnPosInMiddleArray);
-		printf("Counter=%d\n",statsArrayCounter);
-		if(statsArray==NULL)
-		{
-			printf("NULL\n");
 		}
 
 		for(int i=0;i<statsArrayCounter;i++)
@@ -904,51 +889,71 @@ int createStatsAndFindPred(queryDataIndex *data,middleResults* middleResArray,in
 			}
 		}
 		printf("\n");
+
 	}
 
-}
-void createStatsFromMiddleArray(statistics_array **statsArray,middleResults *middleResArray,int middleResultsCounter,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int arrayIndx,int statsArrayCounter)
-{
+	/*for(k=0;k<data->numPredJoinTwoRel;k++){
+		if(data->twoRelationPredArray[k].selected==1)continue;
 
-	if(statsArrayCounter==0)
+		for(int i=0;i<statsArrayCounter;i++){
+			
+		}
+	}*/
+}
+void createStatsFromMiddleArray(statistics_array **statsArray,middleResults *middleResArray,int middleResultsCounter,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int arrayIndx,int *statsArrayCounter)
+{
+	int statsArrayIndex=*statsArrayCounter,flag=0;
+	if(statsArrayIndex==0)
 	{
 		(*statsArray)=malloc(sizeof(statistics_array));
-		(*statsArray)[statsArrayCounter].numberOfCols=0;
-		(*statsArray)[statsArrayCounter].cols=NULL;
-		(*statsArray)[statsArrayCounter].colStatsArray=NULL;
-		printf("stats malloc\n");
+		(*statsArrayCounter)++;
+		(*statsArray)[statsArrayIndex].numberOfCols=0;
+		(*statsArray)[statsArrayIndex].cols=NULL;
+		(*statsArray)[statsArrayIndex].colStatsArray=NULL;
 	}
 	else
 	{
-		printf("stats realloc\n");
-		(*statsArray)=realloc((*statsArray),(1+statsArrayCounter)*sizeof(statistics_array));
-		(*statsArray)[statsArrayCounter].numberOfCols=0;
+		for(int i=0;i<statsArrayIndex;i++){
+			if( (*statsArray)[i].relId==relationIndx ){
+				statsArrayIndex=i;
+				flag=1;
+				for(int j=0;j<(*statsArray)[i].numberOfCols;j++){
+					if( (*statsArray)[i].cols[j]==columnIndx ){
+						return;
+					}
+				}
+				if(flag==1){
+					break;
+				}
+			}
+		}
+		if(flag==0){
+			(*statsArrayCounter)++;
+			(*statsArray)=realloc((*statsArray),(1+statsArrayIndex)*sizeof(statistics_array));
+			(*statsArray)[statsArrayIndex].numberOfCols=0;
+		}
 	}
 
-	if((*statsArray)[statsArrayCounter].numberOfCols==0)
+	if((*statsArray)[statsArrayIndex].numberOfCols==0)
 	{
-		printf("cols malloc\n");
-		(*statsArray)[statsArrayCounter].cols=malloc(sizeof(uint64_t));
+		(*statsArray)[statsArrayIndex].cols=malloc(sizeof(uint64_t));
 	}
 	else
 	{
-		printf("cols realloc\n");
-		(*statsArray)[statsArrayCounter].cols=realloc((*statsArray)[statsArrayCounter].cols,(1+(*statsArray)[statsArrayCounter].numberOfCols)*sizeof(uint64_t));
+		(*statsArray)[statsArrayIndex].cols=realloc((*statsArray)[statsArrayIndex].cols,(1+(*statsArray)[statsArrayIndex].numberOfCols)*sizeof(uint64_t));
 	}
 
-	if((*statsArray)[statsArrayCounter].numberOfCols==0)
+	if((*statsArray)[statsArrayIndex].numberOfCols==0)
 	{
-		printf("colstats malloc\n");
-		(*statsArray)[statsArrayCounter].colStatsArray=malloc(sizeof(statistics));
+		(*statsArray)[statsArrayIndex].colStatsArray=malloc(sizeof(statistics));
 	}
 	else
 	{
-		printf("colstats realloc\n");
-		(*statsArray)[statsArrayCounter].colStatsArray=realloc((*statsArray)[statsArrayCounter].colStatsArray,(1+(*statsArray)[statsArrayCounter].numberOfCols)*sizeof(statistics));
+		(*statsArray)[statsArrayIndex].colStatsArray=realloc((*statsArray)[statsArrayIndex].colStatsArray,(1+(*statsArray)[statsArrayIndex].numberOfCols)*sizeof(statistics));
 	}
 
-	(*statsArray)[statsArrayCounter].cols[(*statsArray)[statsArrayCounter].numberOfCols]=columnIndx;
-	(*statsArray)[statsArrayCounter].relId=relationIndx;
+	(*statsArray)[statsArrayIndex].cols[(*statsArray)[statsArrayIndex].numberOfCols]=columnIndx;
+	(*statsArray)[statsArrayIndex].relId=relationIndx;
 
 	int index=middleResArray[arrayIndx].rowIds[0];
 	int max=relationArray[relationIndx].table[columnIndx][index],min=relationArray[relationIndx].table[columnIndx][index],average=0;
@@ -967,53 +972,64 @@ void createStatsFromMiddleArray(statistics_array **statsArray,middleResults *mid
 	}
 	average/=middleResArray[arrayIndx].rowIdsNum;
 
-	(*statsArray)[statsArrayCounter].colStatsArray[(*statsArray)[statsArrayCounter].numberOfCols].average=average;
-	(*statsArray)[statsArrayCounter].colStatsArray[(*statsArray)[statsArrayCounter].numberOfCols].max=max;
-	(*statsArray)[statsArrayCounter].colStatsArray[(*statsArray)[statsArrayCounter].numberOfCols].min=min;
-	(*statsArray)[statsArrayCounter].numberOfCols++;
+	(*statsArray)[statsArrayIndex].colStatsArray[(*statsArray)[statsArrayIndex].numberOfCols].average=average;
+	(*statsArray)[statsArrayIndex].colStatsArray[(*statsArray)[statsArrayIndex].numberOfCols].max=max;
+	(*statsArray)[statsArrayIndex].colStatsArray[(*statsArray)[statsArrayIndex].numberOfCols].min=min;
+	(*statsArray)[statsArrayIndex].numberOfCols++;
 }
 
-void createStatsFromFirstArray(statistics_array **statsArray,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int statsArrayCounter)
+void createStatsFromFirstArray(statistics_array **statsArray,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int *statsArrayCounter)
 {
-	printf("FirstArray\n");
-	if(statsArrayCounter==0)
+	int statsArrayIndex=*statsArrayCounter,flag=0;
+	if(statsArrayIndex==0)
 	{
-		printf("stats1 malloc\n");
 		(*statsArray)=malloc(sizeof(statistics_array));
-		(*statsArray)[statsArrayCounter].numberOfCols=0;
-		(*statsArray)[statsArrayCounter].cols=NULL;
-		(*statsArray)[statsArrayCounter].colStatsArray=NULL;
+		(*statsArrayCounter)++;
+		(*statsArray)[statsArrayIndex].numberOfCols=0;
+		(*statsArray)[statsArrayIndex].cols=NULL;
+		(*statsArray)[statsArrayIndex].colStatsArray=NULL;
 	}
 	else
 	{
-		printf("stats realloc\n");
+		for(int i=0;i<statsArrayIndex;i++){
+			if( (*statsArray)[i].relId==relationIndx ){
+				statsArrayIndex=i;
+				flag=1;
+				for(int j=0;j<(*statsArray)[i].numberOfCols;j++){
+					if( (*statsArray)[i].cols[j]==columnIndx ){
+						return;
+					}
+				}
+				if(flag==1){
+					break;
+				}
+			}
+		}
+		if(flag==0){
+			(*statsArrayCounter)++;
+			(*statsArray)=realloc((*statsArray),(1+statsArrayIndex)*sizeof(statistics_array));
+			(*statsArray)[statsArrayIndex].numberOfCols=0;
+		}
+	}
+	if((*statsArray)[statsArrayIndex].numberOfCols==0)
+	{
+		(*statsArray)[statsArrayIndex].cols=malloc(sizeof(uint64_t));
+	}
+	else
+	{
+		(*statsArray)[statsArrayIndex].cols=realloc((*statsArray)[statsArrayIndex].cols,(1+(*statsArray)[statsArrayIndex].numberOfCols)*sizeof(uint64_t));
+	}
+	if((*statsArray)[statsArrayIndex].numberOfCols==0)
+	{
+		(*statsArray)[statsArrayIndex].colStatsArray=malloc(sizeof(statistics));
+	}
+	else
+	{
+		(*statsArray)[statsArrayIndex].colStatsArray=realloc((*statsArray)[statsArrayIndex].colStatsArray,(1+(*statsArray)[statsArrayIndex].numberOfCols)*sizeof(statistics));
+	}
 
-		(*statsArray)=realloc((*statsArray),(statsArrayCounter+1)*sizeof(statistics_array));
-		(*statsArray)[statsArrayCounter].numberOfCols=0;
-	}
-	if((*statsArray)[statsArrayCounter].numberOfCols==0)
-	{
-		printf("cols malloc\n");
-		(*statsArray)[statsArrayCounter].cols=malloc(sizeof(uint64_t));
-	}
-	else
-	{
-		printf("col realloc\n");
-		(*statsArray)[statsArrayCounter].cols=realloc((*statsArray)[statsArrayCounter].cols,(1+(*statsArray)[statsArrayCounter].numberOfCols)*sizeof(uint64_t));
-	}
-	if((*statsArray)[statsArrayCounter].numberOfCols==0)
-	{
-		printf("colstats malloc\n");
-		(*statsArray)[statsArrayCounter].colStatsArray=malloc(sizeof(statistics));
-	}
-	else
-	{
-		printf("colstats realloc\n");
-		(*statsArray)[statsArrayCounter].colStatsArray=realloc((*statsArray)[statsArrayCounter].colStatsArray,(1+(*statsArray)[statsArrayCounter].numberOfCols)*sizeof(statistics));
-	}
-
-	(*statsArray)[statsArrayCounter].cols[(*statsArray)[statsArrayCounter].numberOfCols]=columnIndx;
-	(*statsArray)[statsArrayCounter].relId=relationIndx;
+	(*statsArray)[statsArrayIndex].cols[(*statsArray)[statsArrayIndex].numberOfCols]=columnIndx;
+	(*statsArray)[statsArrayIndex].relId=relationIndx;
 	int max=relationArray[relationIndx].table[columnIndx][0],min=relationArray[relationIndx].table[columnIndx][0],average=0;
 
 	for(int j=0;j<relationArray[relationIndx].rowCount;j++)
@@ -1031,22 +1047,21 @@ void createStatsFromFirstArray(statistics_array **statsArray,multiColumnRelation
 
 	average/=relationArray[relationIndx].rowCount;
 
-	(*statsArray)[statsArrayCounter].colStatsArray[(*statsArray)[statsArrayCounter].numberOfCols].average=average;
-	(*statsArray)[statsArrayCounter].colStatsArray[(*statsArray)[statsArrayCounter].numberOfCols].max=max;
-	(*statsArray)[statsArrayCounter].colStatsArray[(*statsArray)[statsArrayCounter].numberOfCols].min=min;
-	(*statsArray)[statsArrayCounter].numberOfCols++;
-	printf("FirstArray FInish\n");
+	(*statsArray)[statsArrayIndex].colStatsArray[(*statsArray)[statsArrayIndex].numberOfCols].average=average;
+	(*statsArray)[statsArrayIndex].colStatsArray[(*statsArray)[statsArrayIndex].numberOfCols].max=max;
+	(*statsArray)[statsArrayIndex].colStatsArray[(*statsArray)[statsArrayIndex].numberOfCols].min=min;
+	(*statsArray)[statsArrayIndex].numberOfCols++;
 }
 
 
 int checkIfOneRelationJoinExists(queryDataIndex* data,middleResults* middleResArray,int middleResultsCounter)
 {
 	int k,rightRelationId,leftRelationId,leftRelationIndx,rightRelationIndx,j,leftTeam=0,rightTeam=0,rightColumnPosInMiddleArray=-1,tempValue=-1,leftColumnPosInMiddleArray=-1;
-	printf("\nNEW CHECK \n");
+	//printf("\nNEW CHECK \n");
 	for(k=0;k<data->numPredJoinTwoRel;k++){
 
 
-		printf("Selected[%d]=%d\n",k,data->twoRelationPredArray[k].selected);
+		//printf("Selected[%d]=%d\n",k,data->twoRelationPredArray[k].selected);
 		if(data->twoRelationPredArray[k].selected==1)continue;
 		else if(tempValue==-1) tempValue=k;
 
@@ -1364,6 +1379,7 @@ queryDataIndex* analyzeQuery(char *query)
 				queryData->twoRelationPredArray[k].left=malloc(sizeof(RelColNode));
 				queryData->twoRelationPredArray[k].right=malloc(sizeof(RelColNode));
 				queryData->twoRelationPredArray[k].selected=0;
+				queryData->twoRelationPredArray[k].score=-1;
 			}
 
 
@@ -1661,6 +1677,7 @@ int64_t SumOneColumnRelation(oneColumnRelation *R){
 
 	return sum;
 }
+
 
 
 

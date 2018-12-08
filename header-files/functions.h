@@ -143,6 +143,7 @@ struct joinPredNode
 	RelColNode *left;
 	RelColNode *right;
 	int selected;
+	int score;
 };
 
 struct queryDataIndex
@@ -164,8 +165,8 @@ struct queryDataIndex
 };
 ///////////////////////////////////////////////////////////
 
-void createStatsFromMiddleArray(statistics_array **statsArray,middleResults *middleResArray,int middleResultsCounter,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int arrayIndx,int statsArrayCounter);
-void createStatsFromFirstArray(statistics_array **statsArray,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int statsArrayCounter);
+void createStatsFromMiddleArray(statistics_array **statsArray,middleResults *middleResArray,int middleResultsCounter,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int arrayIndx,int *statsArrayCounter);
+void createStatsFromFirstArray(statistics_array **statsArray,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int *statsArrayCounter);
 
 int createStatsAndFindPred(queryDataIndex *data,middleResults* middleResArray,int middleResultsCounter,multiColumnRelation* relationArray);
 int checkIfOneRelationJoinExists(queryDataIndex *,middleResults *,int);
@@ -201,3 +202,4 @@ void printResultsForJoin(resultListForJoin *list);
 void changeRowIdNumOfTeam(middleResults*,int,int,int);
 int64_t SumOneColumnRelation(oneColumnRelation *R);
 #endif /* FUNCTIONS_H_ */
+
