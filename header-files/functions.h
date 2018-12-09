@@ -167,11 +167,11 @@ struct queryDataIndex
 };
 ///////////////////////////////////////////////////////////
 
-void createStatsFromMiddleArray(statistics_array **statsArray,middleResults *middleResArray,int middleResultsCounter,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int arrayIndx,int *statsArrayCounter,int relationId);
+int createStatsFromMiddleArray(statistics_array **statsArray,middleResults *middleResArray,int middleResultsCounter,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int arrayIndx,int *statsArrayCounter,int relationId);
 void createStatsFromFirstArray(statistics_array **statsArray,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int *statsArrayCounter,int relationId);
 
 int createStatsAndFindPred(queryDataIndex *data,middleResults* middleResArray,int middleResultsCounter,multiColumnRelation* relationArray);
-int checkIfOneRelationJoinExists(queryDataIndex *,middleResults *,int);
+int checkIfOneRelationJoinExists(queryDataIndex *,middleResults *,int,int indx);
 void setResultsToMiddleArray(resultList *list,middleResults *middleResultsArray,int index,int direction,int );
 void printMiddleArray(middleResults *array,int size);
 oneColumnRelation* setColumnFromMiddleArray(middleResults* middleResArray,int relationIndx,int columnIndx,int arrayIndx,multiColumnRelation* relationArray);
