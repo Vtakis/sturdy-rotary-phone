@@ -398,7 +398,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 		if(strcmp(queryString,"F") && c!=EOF)
 		{
 			oneColumnRelation *column;
-			printf("\n\n%d)%s\n",y,queryString);
+			//printf("\n\n%d)%s\n",y,queryString);
 			y++;
 			data=analyzeQuery(queryString);
 			if(data->numPredFilter>0)				//kanoume prwta tis prakseis me arithmous
@@ -479,8 +479,8 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 				    }
 					end = clock();
 					cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-					printf("\nTime = %f\n",cpu_time_used);
-					printf("Indx=%d\n",indx);
+					//printf("\nTime = %f\n",cpu_time_used);
+					//printf("Indx=%d\n",indx);
 					leftColumnPosInMiddleArray=-1;
 					rightColumnPosInMiddleArray=-1;
 					leftRelationId = data->twoRelationPredArray[indx].left->rel;					//pernoume ta stoixeia apo thn domh pou krataei ta predications data //
@@ -524,7 +524,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 					resultList *resultList1,*resultList2;
 					if(leftRelationId==rightRelationId || (leftTeam==rightTeam && leftColumnPosInMiddleArray!=-1 && rightColumnPosInMiddleArray!=-1))			//JoinOneRelationArray
 					{
-						printf("One Relation Join\n");
+						//printf("One Relation Join\n");
 						resultList1=sameRelationJoin(leftColumn,rightColumn);
 						data->twoRelationPredArray[indx].selected=1;
 						if(leftColumnPosInMiddleArray==-1)			//an den uparxei to left column ston middle array
@@ -549,13 +549,13 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray)
 					    clock_t start, end;
 					    double cpu_time_used;
 					    start = clock();
-					    printf("%d.%d=%d.%d    Score=%d\n",data->twoRelationPredArray[indx].left->rel,data->twoRelationPredArray[indx].left->col,data->twoRelationPredArray[indx].right->rel,data->twoRelationPredArray[indx].right->col,data->twoRelationPredArray[indx].score);
+					 //   printf("%d.%d=%d.%d    Score=%d\n",data->twoRelationPredArray[indx].left->rel,data->twoRelationPredArray[indx].left->col,data->twoRelationPredArray[indx].right->rel,data->twoRelationPredArray[indx].right->col,data->twoRelationPredArray[indx].score);
 						resultList2=RadixHashJoin(leftColumn,rightColumn);
 						data->twoRelationPredArray[indx].selected=1;
 
 						end = clock();
 						cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-						printf("Radix Time = %f\n",cpu_time_used);
+						//printf("Radix Time = %f\n",cpu_time_used);
 						if(leftColumnPosInMiddleArray==-1 && rightColumnPosInMiddleArray==-1){	//ftiaxnoume neo team
 
 							middleResArray[middleResultsCounter].relation=leftRelationIndx;
