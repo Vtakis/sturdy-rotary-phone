@@ -1,10 +1,9 @@
 #include <pthread.h>
 #include <stdio.h>
-#include "Job_Scheduler.h"
+#include "../header-files/Job_Scheduler.h"
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-#include "st_ngrams.h"
 
 pthread_mutex_t start_mutex= PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t id_counter_mutex= PTHREAD_MUTEX_INITIALIZER;
@@ -162,34 +161,48 @@ Job_Scheduler* initialize_scheduler(int execution_threads,hash_trie* indx,hash_k
 	}
 	return scheduler;
 }
-void submit_job(Job_Scheduler* schedule,Job* j,int id,int current_version)//upovoli mias ergasias ston buffer
+submit_job(Job_Scheduler* schedule,Job* job,int join_id ,int partition_id ,int hist_id,oneColumnRelation *reOrderedArray , oneColumnRelation* array,
+		int32_t start,int32_t end,int32_t num ,indexHT *ht,oneColumnRelation *relSegment,oneColumnRelation *relation,hist* histSum)//upovoli mias ergasias ston buffer
 {
 	int i;
-    if(schedule->q->end==schedule->q->size)//an gemisei o buffe r tou diplasiazoume to megethos
+    if(schedule->q->end==schedule->q->size)//an gemisei o buffer tou diplasiazoume to megethos
     {
         schedule->q->size=schedule->q->size*2;
         schedule->q->jobs=realloc(schedule->q->jobs,schedule->q->size*sizeof(Job));
         int j;
         for(j=schedule->q->end;j<schedule->q->size;j++)
         {
-            strcpy(schedule->q->jobs[j].job_name,"-1");
+            schedule->q->jobs[j].histFlag=false;
+            schedule->q->jobs[j].partitionFlag=false;
+            schedule->q->jobs[j].joinFlag=false;
+            schedule->q->jobs[j].histjob=NULL;
+            schedule->q->jobs[j].partitionjob=NULL;
+            schedule->q->jobs[j].joinjob=NULL;
         }
     }
-    schedule->q->jobs[schedule->q->end]=*j;
-    schedule->q->jobs[schedule->q->end].id=id;
-    if(!strcmp(schedule->q->jobs[schedule->q->end].job_name,"QS"))
+    if(job->histFlag==true)
     {
-        schedule->q->jobs[schedule->q->end].job_fun_st=static_search;
-        schedule->q->jobs[schedule->q->end].job_fun_dy=NULL;
+    	//to do
     }
-    if(!strcmp(schedule->q->jobs[schedule->q->end].job_name,"QD"))
+    else if(job->partitionFlag==true)
     {
-        schedule->q->jobs[schedule->q->end].job_fun_st=NULL;
-        schedule->q->jobs[schedule->q->end].job_fun_dy=new_search;
-        schedule->q->jobs[schedule->q->end].current_version=current_version;
+    	//to do
+    }
+    else if(job->joinFlag==true)
+    {
+        schedule->q->jobs[schedule->q->end]=job;
+        schedule->q->jobs[schedule->q->end].joinjob.start = start;
+        schedule->q->jobs[schedule->q->end].joinjob.end = end;
+        schedule->q->jobs[schedule->q->end].joinjob.num = num;
+        schedule->q->jobs[schedule->q->end].joinjob.reOrderedArray = reOrderedArray;
+        schedule->q->jobs[schedule->q->end].joinjob.ht = ht;
+        schedule->q->jobs[schedule->q->end].joinjob.array = array;
+        schedule->q->jobs[schedule->q->end].joinjob.id=join_id;
+    	schedule->q->jobs[schedule->q->end].joinjob.compareRelations = compareRelations;
+    	schedule->q->jobs[schedule->q->end].joinjob.createHashTable = createHashTable;
+    	schedule->q->jobs[schedule->q->end].joinjob.deleteHashTable = deleteHashTable;
     }
     schedule->q->end=schedule->q->end+1;
-
 }
 
 void execute_all_jobs(Job_Scheduler* schedule,thread_param *temp,char **buf_res)

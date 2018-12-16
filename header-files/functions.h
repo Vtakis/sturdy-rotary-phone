@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 typedef struct tuple tuple;
 typedef struct multiColumnRelation multiColumnRelation;
 typedef struct oneColumnRelation oneColumnRelation;
@@ -166,7 +167,6 @@ struct queryDataIndex
 	RelColNode *viewQueryArray;  //pinakas me ta views
 };
 ///////////////////////////////////////////////////////////
-
 int createStatsFromMiddleArray(statistics_array **statsArray,middleResults *middleResArray,int middleResultsCounter,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int arrayIndx,int *statsArrayCounter,int relationId);
 void createStatsFromFirstArray(statistics_array **statsArray,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int *statsArrayCounter,int relationId);
 
