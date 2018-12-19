@@ -39,7 +39,9 @@ struct HistJob
 };
 struct PartitionJob
 {
-
+	//oneColumnRelation* (createReOrderedArray)(oneColumnRelation *array,hist *sumArray);
+	oneColumnRelation *array;
+	hist* histSum;
 };
 struct JoinJob
 {
