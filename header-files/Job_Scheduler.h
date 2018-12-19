@@ -2,6 +2,7 @@
 #define JOB_SCHEDULER_H_
 #include <pthread.h>
 #include <stdbool.h>
+#include "../header-files/functions.h"
 
 typedef struct Job Job;
 typedef struct HistJob HistJob;
@@ -23,19 +24,14 @@ struct Job_Scheduler
 	Queue* q;
 	pthread_t* tids;
 };
-struct Job
-{
-	HistJob histjob;
-	PartitionJob partitionjob;
-	JoinJob joinjob;
-	bool histFlag;
-	bool partitionFlag;
-	bool joinFlag;
-};
+
 struct HistJob
 {
-	oneColumnRelation *relSegment;
-	int id;
+	//oneColumnRelation *relSegment;
+	int start;
+	int end;
+	char rel;
+	//int id;
 };
 struct PartitionJob
 {
@@ -53,14 +49,28 @@ struct JoinJob
 	void (*compareRelations)(indexHT *ht,oneColumnRelation *array,int32_t start,int32_t end,oneColumnRelation *hashedArray,resultList *resList,int32_t );
 	void (*deleteHashTable)(indexHT **);
 };
+
+struct Job
+{
+	HistJob histjob;
+	PartitionJob partitionjob;
+	JoinJob joinjob;
+	bool isEmpty;
+	bool histFlag;
+	bool partitionFlag;
+	bool joinFlag;
+};
+
 struct thread_param
 {
 	Job_Scheduler* sch;
 	int id;
-	hash_trie* indx;
-	hash_keeper* hash;
-    char **buffer;
-    int flagslen;
+	oneColumnRelation *R;
+	oneColumnRelation *S;
+	hist *HistR;
+	hist *HistS;
+
+
 };
 struct thread_hist_param
 {
@@ -74,9 +84,10 @@ struct thread_join_param
 {
 
 };
+void submit_HistJob(Job_Scheduler* schedule,Job *Job);
 void initializeJob(char *type_of_job,Job *job);		// type_of_job : "hist" , "partition" ,"join"//
 void printjobs(Job_Scheduler* schedule);
-Job_Scheduler* initialize_scheduler(int,int,thread_param **);
+Job_Scheduler* initialize_scheduler(int,oneColumnRelation*,oneColumnRelation*);
 void *HistWorker(void* i);
 void *PartitionWorker(void* i);
 void *JoinWorker(void* i);

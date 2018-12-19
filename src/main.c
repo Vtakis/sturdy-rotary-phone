@@ -3,6 +3,8 @@
 #include "../header-files/functions.h"
 #include <unistd.h>
 #include <string.h>
+#include <pthread.h>
+
 
 int main(int argc,char** argv)
 {

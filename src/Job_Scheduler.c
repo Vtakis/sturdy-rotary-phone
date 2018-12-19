@@ -1,9 +1,12 @@
 #include <pthread.h>
 #include <stdio.h>
 #include "../header-files/Job_Scheduler.h"
+//#include "../header-files/functions.h"
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <pthread.h>
+
 
 pthread_mutex_t start_mutex= PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t id_counter_mutex= PTHREAD_MUTEX_INITIALIZER;
@@ -32,7 +35,45 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
 	thread_param* x=(thread_param*)j;
 	int question_id=-1;
 	int flag1=0;
-	int start;
+	int start,i;
+	int segSize;
+
+	pthread_mutex_lock( &start_mutex );//pairnei tin thesi tou buffer apo tin opoia tha parei douleia
+	start=x->sch->q->start;
+	printf("I am pretty thread %d and get pos %d\n",x->id,start);
+	thread_mutex_place=start;
+	start=(start+1)%(x->sch->q->size);
+	x->sch->q->start=start;
+	pthread_mutex_unlock(&start_mutex);
+	exit(0);
+
+	while(x->sch->q->start!=1){
+		printf("I am pretty thread %d and waiting for\n",x->id);
+		pthread_cond_wait(&(read_cond[thread_mutex_place]),&(mutex[thread_mutex_place]));
+	}
+	segSize=x->R->num_of_tuples/x->sch->execution_threads;
+	Job *job;
+	for(i=0;i<x->sch->execution_threads;i++){
+		initializeJob("hist",job);
+		job->histjob.start=i*segSize;
+		job->histjob.end=job->histjob.start+segSize;
+		job->histjob.rel='R';
+		if(i==x->sch->execution_threads-1)
+			job->histjob.end+=x->R->num_of_tuples%x->sch->execution_threads;
+		submit_HistJob(x->sch,job);
+	}
+	printf("I am pretty thread %d\n",x->id);
+/*
+
+    pthread_mutex_lock( &start_mutex );//pairnei tin thesi tou buffer apo tin opoia tha parei douleia
+    start=x->sch->q->start;
+    thread_mutex_place=start;
+    start=(start+1)%(x->sch->q->size);
+    x->sch->q->start=start;
+    pthread_mutex_unlock(&start_mutex);
+    pthread_mutex_lock( &(mutex[thread_mutex_place]));//lockarei to mutex autis tis thesis
+
+
 	while(1)
 	{
         flag1=0;
@@ -83,11 +124,12 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
         pthread_mutex_unlock(&cntm);
 		pthread_mutex_unlock( &(mutex[thread_mutex_place]));
 	}
+	*/
 }
 
 void execute_job(thread_param *x,int thread_mutex_place)//voithitiki tou worker gia na ektelesei tin ergasia
 {
-    char* result;
+  /*  char* result;
     int question_id;
     question_id=x->sch->q->jobs[thread_mutex_place].id;
     if(x->sch->q->jobs[thread_mutex_place].job_fun_st!=NULL)//an einai static
@@ -109,10 +151,10 @@ void execute_job(thread_param *x,int thread_mutex_place)//voithitiki tou worker 
         strcpy(x->buffer[question_id],result);
     }
     free(x->sch->q->jobs[thread_mutex_place].job_work);
-    strcpy(x->sch->q->jobs[thread_mutex_place].job_name,"-1");
+    strcpy(x->sch->q->jobs[thread_mutex_place].job_name,"-1");*/
 }
 
-Job_Scheduler* initialize_scheduler(int execution_threads,hash_trie* indx,hash_keeper** hk,int counter,thread_param **temp)//arxikopoiisi JobScheduler
+Job_Scheduler* initialize_scheduler(int execution_threads,oneColumnRelation *R,oneColumnRelation *S)//arxikopoiisi JobScheduler
 {
 	Job_Scheduler* scheduler=malloc(sizeof(Job_Scheduler));
 	pthread_t *workers;
@@ -121,16 +163,16 @@ Job_Scheduler* initialize_scheduler(int execution_threads,hash_trie* indx,hash_k
 	queue->end=0;
 	queue->size=100;
 	queue->jobs=malloc(queue->size*sizeof(Job));
-	mutex=malloc(execution_threads*sizeof(pthread_mutex_t));//dimiourgeia mutex gia kathe thesi tou pinaka
-	read_cond=malloc(execution_threads*sizeof(pthread_cond_t));//kai ena condition variable gia kathe thesi tou pinaka
+	mutex=malloc(queue->size*sizeof(pthread_mutex_t));//dimiourgeia mutex gia kathe thesi tou pinaka
+	read_cond=malloc(queue->size*sizeof(pthread_cond_t));//kai ena condition variable gia kathe thesi tou pinaka
 	int j;
-	for(j=0;j<execution_threads;j++)
+	for(j=0;j<queue->size;j++)
 	{
 		pthread_mutex_init(&(mutex[j]),NULL);//arxikopoiisi ton mutex gia kathe thesi tou pinaka
 		pthread_cond_init(&(read_cond[j]),NULL);//arxikopoiisi ton condition variables gia kathe thesi tou pinaka
 	}
 	for(j=0;j<queue->size;j++)
-		strcpy(queue->jobs[j].job_name,"-1");
+		queue->jobs[j].isEmpty=true;
 	scheduler->execution_threads=execution_threads;
 
 	if (( workers = malloc ( execution_threads * sizeof ( pthread_t ))) == NULL )
@@ -143,16 +185,17 @@ Job_Scheduler* initialize_scheduler(int execution_threads,hash_trie* indx,hash_k
 	scheduler->tids=workers;
 	int err;
 	void *Worker(void*) ;
-	*temp=malloc(scheduler->execution_threads*sizeof(thread_param));
 	thread_param *temp1;
-	temp1=*temp;
+	temp1=malloc(scheduler->execution_threads*sizeof(thread_param));
+	//temp1=*temp;
     for(i=0;i<scheduler->execution_threads;i++)//dimiourgia ton thread
 	{
 		temp1[i].sch=scheduler;
 		temp1[i].id=i;
-		temp1[i].hash=hk[i];
-		temp1[i].indx=indx;
-		temp1[i].buffer=NULL;
+		temp1[i].R=R;
+		temp1[i].S=S;
+		temp1[i].HistR=NULL;
+		temp1[i].HistS=NULL;
 		if ((err=pthread_create( (scheduler->tids)+i , NULL , Worker ,(void*)(temp1+i))))		/*ftiaxnw ta threads workers*/
 		{
 			perror (" pthread_create " );
@@ -161,7 +204,19 @@ Job_Scheduler* initialize_scheduler(int execution_threads,hash_trie* indx,hash_k
 	}
 	return scheduler;
 }
-submit_job(Job_Scheduler* schedule,Job* job,int join_id ,int partition_id ,int hist_id,oneColumnRelation *reOrderedArray , oneColumnRelation* array,
+
+void submit_HistJob(Job_Scheduler* schedule,Job *Job){
+	int i,j;
+
+	schedule->q->jobs[schedule->q->end]=*Job;
+	schedule->q->jobs[schedule->q->end].histFlag=true;
+	schedule->q->jobs[schedule->q->end].isEmpty=false;
+	schedule->q->jobs[schedule->q->end].joinFlag=false;
+	schedule->q->jobs[schedule->q->end].partitionFlag=false;
+
+}
+
+/*submit_job(Job_Scheduler* schedule,Job* job,int join_id ,int partition_id ,int hist_id,oneColumnRelation *reOrderedArray , oneColumnRelation* array,
 		int32_t start,int32_t end,int32_t num ,indexHT *ht,oneColumnRelation *relSegment,oneColumnRelation *relation,hist* histSum)//upovoli mias ergasias ston buffer
 {
 	int i;
@@ -190,7 +245,7 @@ submit_job(Job_Scheduler* schedule,Job* job,int join_id ,int partition_id ,int h
 	schedule->q->jobs[schedule->q->end]=job;
 	schedule->q->jobs[schedule->q->end].joinjob.reOrderedArray = reOrderedArray;//
         schedule->q->jobs[schedule->q->end].joinjob.array = array;
-	schedule->q->jobs[schedule->q->end].joinjob.histSum=histSum;
+	//schedule->q->jobs[schedule->q->end].joinjob.histSum=histSum;
 	
     }
     else if(job->joinFlag==true)
@@ -208,6 +263,38 @@ submit_job(Job_Scheduler* schedule,Job* job,int join_id ,int partition_id ,int h
     	schedule->q->jobs[schedule->q->end].joinjob.deleteHashTable = deleteHashTable;
     }
     schedule->q->end=schedule->q->end+1;
+}*/
+
+void initializeJob(char *type_of_job,Job *job)		// type_of_job : "hist" , "partition" ,"join"//
+{
+	job=malloc(sizeof(Job));
+	if(!strcmp(type_of_job,"hist"))
+	{
+        job->histFlag=true;
+        job->joinFlag=false;
+        job->partitionFlag=false;
+        //job->joinjob =NULL;
+        //job->histjob=malloc(sizeof(HistJob));;
+        //job->partitionjob=NULL;
+	}
+	else if(!strcmp(type_of_job,"partition"))
+	{
+        job->histFlag=false;
+        job->joinFlag=false;
+        job->partitionFlag=true;
+        //job->joinjob = NULL;
+        //job->histjob=NULL;
+        //job->partitionjob=malloc(sizeof(PartitionJob));;
+	}
+	else if(!strcmp(type_of_job,"join"))
+	{
+        job->histFlag=false;
+        job->joinFlag=true;
+        job->partitionFlag=false;
+        //job->joinjob = malloc(sizeof(JoinJob));
+        //job->histjob=NULL;
+        //job->partitionjob=NULL;
+	}
 }
 
 void execute_all_jobs(Job_Scheduler* schedule,thread_param *temp,char **buf_res)

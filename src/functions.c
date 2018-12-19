@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <math.h>
 #include <time.h>
 #include "../header-files/functions.h"
@@ -9,6 +10,8 @@
 #define N 12
 #define THREADS_NUM 4
 #include <stdbool.h>
+#include <pthread.h>
+
 
 void createRelations(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,oneColumnRelation **S,oneColumnRelation **R){
 	int32_t i;
@@ -267,9 +270,20 @@ void createHT_CompareBuckets(resultList* resList,hist *histSumArrayR,hist *histS
 }
 resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 
+	Job_Scheduler* job_scheduler;
+	job_scheduler=malloc(sizeof(Job_Scheduler));
+	job_scheduler=initialize_scheduler(THREADS_NUM,relR,relS);
+
+	printf("radix\n");
+	sleep(20);
+	//jobNumber++;
+
 	hist *histSumArrayR,*histSumArrayS;
 	oneColumnRelation *RS,*RR;
 	resultList **resList;
+	///
+
+	///
 	histSumArrayS=createSumHistArray(createHistArray(&relS));//dhmiourgia hist sum arrays
 	histSumArrayR=createSumHistArray(createHistArray(&relR));
 	RR=createReOrderedArray(relR,histSumArrayR);//dhmiourgia reordered array
@@ -282,7 +296,6 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 	indexHT* ht;
 	int32_t startR=0,endR,startS=0,endS,counter = 0,cnt=0;
 
-	Job_Scheduler* job_scheduler;
 
 
 
@@ -303,17 +316,17 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 		cnt++;
 		if((endR - startR) >= (endS - startS))//kanoume hash to pio mikro bucket
 		{
-            Job* join_job;
-            initializeJob("join",join_job);
+//            Job* join_job;
+//            initializeJob("join",join_job);
 			//ht=createHashTable(RS,startS,endS);
 			//compareRelations(ht,RR,startR,endR,RS,resList,0);		// 0 -> hashedRs
 			//deleteHashTable(&ht);
 		}
 		else
 		{
-            Job* join_job;
-            initializeJob("join",join_job);
-            submit_job(job_scheduler,join_job,0,0,0,RR,RS,startR,endR,0 ,*ht,NULL,NULL,NULL);
+  //          Job* join_job;
+  //          initializeJob("join",join_job);
+           // submit_job(job_scheduler,join_job,0,0,0,RR,RS,startR,endR,0 ,*ht,NULL,NULL,NULL);
 			ht=createHashTable(RR,startR,endR);
 			//compareRelations(ht,RS,startS,endS,RR,resList,1);		// 1 -> hashedRr
 			//deleteHashTable(&ht);
@@ -336,37 +349,7 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 
 	return resList;
 }
-void initializeJob(char *type_of_job,Job *job)		// type_of_job : "hist" , "partition" ,"join"//
-{
-	job=malloc(sizeof(Job));
-	if(!strcmp(type_of_job,"hist"))
-	{
-        job->histFlag=true;
-        job->joinFlag=false;
-        job->partitionFlag=false;
-        job->joinjob =NULL;
-        job->histjob=malloc(sizeof(HistJob));;
-        job->partitionjob=NULL;
-	}
-	else if(!strcmp(type_of_job,"partition"))
-	{
-        job->histFlag=false;
-        job->joinFlag=false;
-        job->partitionFlag=true;
-        job->joinjob = NULL;
-        job->histjob=NULL;
-        job->partitionjob=malloc(sizeof(PartitionJob));;
-	}
-	else if(!strcmp(type_of_job,"join"))
-	{
-        job->histFlag=false;
-        job->joinFlag=true;
-        job->partitionFlag=false;
-        job->joinjob = malloc(sizeof(JoinJob));
-        job->histjob=NULL;
-        job->partitionjob=NULL;
-	}
-}
+
 void writeFile(uint32_t size_A,uint32_t size_B){
 	FILE *fp;
 	fp=fopen("input-files/input.txt","w");

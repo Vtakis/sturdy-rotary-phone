@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdbool.h>
+
 typedef struct tuple tuple;
 typedef struct multiColumnRelation multiColumnRelation;
 typedef struct oneColumnRelation oneColumnRelation;
