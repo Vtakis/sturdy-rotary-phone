@@ -187,6 +187,11 @@ submit_job(Job_Scheduler* schedule,Job* job,int join_id ,int partition_id ,int h
     else if(job->partitionFlag==true)
     {
     	//to do
+	schedule->q->jobs[schedule->q->end]=job;
+	schedule->q->jobs[schedule->q->end].joinjob.reOrderedArray = reOrderedArray;//
+        schedule->q->jobs[schedule->q->end].joinjob.array = array;
+	schedule->q->jobs[schedule->q->end].joinjob.histSum=histSum;
+	
     }
     else if(job->joinFlag==true)
     {
