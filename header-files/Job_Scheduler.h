@@ -11,26 +11,35 @@ typedef struct JoinJob JoinJob;
 typedef struct Job_Scheduler Job_Scheduler;
 typedef struct Queue Queue;
 typedef struct thread_param thread_param;
+typedef struct data data;
+
 struct Queue
 {
 	Job* jobs;
 	int size;
 	int start;
 	int end;
+	int jobs_counter;
 };
 struct Job_Scheduler
 {
 	int execution_threads;
 	Queue* q;
 	pthread_t* tids;
+	data shared_data;
 };
-
+struct data
+{
+	hist* histArrayR;
+	hist* histArrayS;
+};
 struct HistJob
 {
 	//oneColumnRelation *relSegment;
 	int start;
 	int end;
 	char rel;
+	hist* (*createHistArray)(oneColumnRelation **,int ,int );
 	//int id;
 };
 struct PartitionJob
@@ -84,8 +93,9 @@ struct thread_join_param
 {
 
 };
+void sleep_producer(Job_Scheduler *job_scheduler);
 void submit_HistJob(Job_Scheduler* schedule,Job *Job);
-void initializeJob(char *type_of_job,Job *job);		// type_of_job : "hist" , "partition" ,"join"//
+Job* initializeJob(char *type_of_job);		// type_of_job : "hist" , "partition" ,"join"//
 void printjobs(Job_Scheduler* schedule);
 Job_Scheduler* initialize_scheduler(int,oneColumnRelation*,oneColumnRelation*);
 void *HistWorker(void* i);

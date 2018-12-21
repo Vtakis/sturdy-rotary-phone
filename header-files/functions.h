@@ -181,7 +181,7 @@ unsigned int hash(int32_t x,int);
 indexHT* initiliazeIndexHT(oneColumnRelation* ,int32_t);
 void createRelations(int32_t[],uint32_t,int32_t[],uint32_t,oneColumnRelation **,oneColumnRelation**);
 resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS);
-hist* createHistArray(oneColumnRelation **rel);
+hist* createHistArray(oneColumnRelation **rel,int start,int end);
 hist* createSumHistArray(hist *array);
 oneColumnRelation* createReOrderedArray(oneColumnRelation *array,hist *sumArray);
 void deleteHashTable(indexHT **);

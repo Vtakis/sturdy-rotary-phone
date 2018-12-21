@@ -31,17 +31,18 @@ void createRelations(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,one
 		(*R)->tuples[i].value=B[i];
 	}	
 }
-hist* createHistArray(oneColumnRelation **rel){
+hist* createHistArray(oneColumnRelation **rel,int start,int end){
+
 	int32_t i;
 	hist *Hist;
 	Hist=malloc(sizeof(Hist));
 	Hist->histSize=pow(2,N);
-	Hist->histArray=malloc(Hist->histSize*sizeof(histNode));	
+	Hist->histArray=malloc(Hist->histSize*sizeof(histNode));
 	for(i=0;i<Hist->histSize;i++){
 		Hist->histArray[i].count=0;
 		Hist->histArray[i].point=0;
 	}
-	for(i=0;i<(*rel)->num_of_tuples;i++){
+	for(i=start;i<end;i++){
 		Hist->histArray[(*rel)->tuples[i].value%Hist->histSize].count++;
 	}
 	return Hist;
@@ -150,7 +151,7 @@ void compareRelations(indexHT *ht,oneColumnRelation *array,int32_t start,int32_t
 					insertResult(resList,hashedArray->tuples[bucket_offset].id,array->tuples[i].id,fromArray);
 				}
 				chain_offset=ht->chainNode[chain_offset].prevchainPosition;//to neo offset einai apo to prevchainPosition
-				if(chain_offset==-1)break;//den exei alla stoixeia na doume
+				if(chain_offset==-1)break;						//den exei alla stoixeia na doume
 				bucket_offset = ht->chainNode[chain_offset].bucketPos;
 			}
 		}
@@ -268,26 +269,51 @@ void createHT_CompareBuckets(resultList* resList,hist *histSumArrayR,hist *histS
 		}
 	}
 }
+
 resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 
 	Job_Scheduler* job_scheduler;
 	job_scheduler=malloc(sizeof(Job_Scheduler));
 	job_scheduler=initialize_scheduler(THREADS_NUM,relR,relS);
 
-	printf("radix\n");
-	sleep(20);
-	//jobNumber++;
-
 	hist *histSumArrayR,*histSumArrayS;
 	oneColumnRelation *RS,*RR;
 	resultList **resList;
 	///
+	Job *job;
+	int segSize=relR->num_of_tuples/THREADS_NUM;
+	for(int i=0;i<THREADS_NUM;i++){
+		job=initializeJob("hist");
+		job->histjob.start=i*segSize;
+		job->histjob.end=job->histjob.start+segSize;
+		job->histjob.rel='R';
+		if(i==THREADS_NUM-1)
+			job->histjob.end+=relR->num_of_tuples%THREADS_NUM;
+		submit_HistJob(job_scheduler,job);
+		//printf("start=%d end=%d\n",job->histjob.start,job->histjob.end);
+	}
+	segSize=relS->num_of_tuples/THREADS_NUM;
+	for(int i=0;i<THREADS_NUM;i++){
+		job=initializeJob("hist");
+		job->histjob.start=i*segSize;
+		job->histjob.end=job->histjob.start+segSize;
+		job->histjob.rel='S';
+		if(i==THREADS_NUM-1)
+			job->histjob.end+=relS->num_of_tuples%THREADS_NUM;
+		submit_HistJob(job_scheduler,job);
+		//printf("start=%d end=%d\n",job->histjob.start,job->histjob.end);
+	}
+
+	sleep_producer(job_scheduler);
+	//sleep(20);
+	printf("Teleiwsa\n");
 
 	///
-	histSumArrayS=createSumHistArray(createHistArray(&relS));//dhmiourgia hist sum arrays
-	histSumArrayR=createSumHistArray(createHistArray(&relR));
-	RR=createReOrderedArray(relR,histSumArrayR);//dhmiourgia reordered array
-	RS=createReOrderedArray(relS,histSumArrayS);
+
+	//histSumArrayS=createSumHistArray(createHistArray(&relS));//dhmiourgia hist sum arrays
+	//histSumArrayR=createSumHistArray(createHistArray(&relR));
+	//RR=createReOrderedArray(relR,histSumArrayR);//dhmiourgia reordered array
+	//RS=createReOrderedArray(relS,histSumArrayS);
 	for(int i=0;i<THREADS_NUM;i++)
 	{
 		resList[i]=initializeResultList();
