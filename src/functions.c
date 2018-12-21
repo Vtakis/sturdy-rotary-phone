@@ -276,6 +276,10 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 	job_scheduler=malloc(sizeof(Job_Scheduler));
 	job_scheduler=initialize_scheduler(THREADS_NUM,relR,relS);
 
+	//job_scheduler->shared_data.histArrayR=malloc(pow(2,N)*sizeof(histNode));
+	//job_scheduler->shared_data.histArrayS=malloc(pow(2,N)*sizeof(histNode));
+
+
 	hist *histSumArrayR,*histSumArrayS;
 	oneColumnRelation *RS,*RR;
 	resultList **resList;
@@ -309,6 +313,35 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 	printf("Teleiwsa\n");
 
 	///
+	hist *histR;
+	hist *histS;
+	histR=malloc(sizeof(hist));
+	histS=malloc(sizeof(hist));
+	histR->histSize=pow(2,N);
+	histS->histSize=histR->histSize;
+	histR->histArray=malloc(histR->histSize*sizeof(histNode));
+	histS->histArray=malloc(histS->histSize*sizeof(histNode));
+	for(int f=0;f<histR->histSize;f++){
+		histR->histArray[f].count=0;
+		histS->histArray[f].count=0;
+	}
+
+	for(int c=0;c<THREADS_NUM;c++){
+		printf("c=%d\n",c);
+		for(int q=0;q<histR->histSize;q++){
+			//printf("data from sch R: %d\n",job_scheduler->shared_data.histArrayR[c]->histArray[q].count);
+			//printf("data from sch S: %d\n",job_scheduler->shared_data.histArrayS[c]->histArray[q].count);
+
+			histR->histArray[q].count+=job_scheduler->shared_data.histArrayR[c]->histArray[q].count;
+			histS->histArray[q].count+=job_scheduler->shared_data.histArrayS[c]->histArray[q].count;
+		}
+	}
+	printf("ok\n");
+
+	histSumArrayR=createSumHistArray(histR);
+	histSumArrayS=createSumHistArray(histS);//dhmiourgia hist sum arrays
+
+
 
 	//histSumArrayS=createSumHistArray(createHistArray(&relS));//dhmiourgia hist sum arrays
 	//histSumArrayR=createSumHistArray(createHistArray(&relR));

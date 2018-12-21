@@ -19,6 +19,9 @@ pthread_cond_t  *read_cond;
 pthread_cond_t wait_hist_cond= PTHREAD_COND_INITIALIZER;
 pthread_mutex_t wait_hist_mutex= PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t job_counter_mutex= PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t write_to_histR= PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t write_to_histS= PTHREAD_MUTEX_INITIALIZER;
+
 
 int ending=0;
 int id_counter=0;
@@ -35,6 +38,9 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
 	int question_id=-1;
 	int flag1=0;
 	int start,i;
+
+	//x->sch->shared_data.histArrayR=malloc(x->sch->execution_threads*sizeof(hist*));
+	//x->sch->shared_data.histArrayS=malloc(x->sch->execution_threads*sizeof(hist*));
 
 	while(1)
 	{
@@ -59,11 +65,33 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
 			int end = x->sch->q->jobs[thread_mutex_place].histjob.end;
 			if(x->sch->q->jobs[thread_mutex_place].histjob.rel=='R')
 			{
-				x->HistR=x->sch->q->jobs[thread_mutex_place].histjob.createHistArray(&(x->R),start,end);
+				printf("R>>>>>id=%d\n",thread_mutex_place%x->sch->execution_threads);
+				//x->HistR=x->sch->q->jobs[thread_mutex_place].histjob.createHistArray(&(x->R),start,end);
+			//	x->sch->shared_data.histArrayR[x->id%x->sch->execution_threads]=x->sch->q->jobs[thread_mutex_place].histjob.createHistArray(&(x->R),start,end);
+				x->sch->shared_data.histArrayR[thread_mutex_place%x->sch->execution_threads]=x->sch->q->jobs[thread_mutex_place].histjob.createHistArray(&(x->R),start,end);
+
+				/*pthread_mutex_lock(&write_to_histR);
+				for(int i=0;i<x->HistR->histSize;i++){
+					x->sch->shared_data.histArrayR->histArray[i].count+=x->HistR->histArray[i].count;
+				}
+				free(x->HistR->histArray);
+				free(x->HistR);
+				pthread_mutex_unlock(&write_to_histR);*/
 			}
 			else
 			{
-				x->HistS=x->sch->q->jobs[thread_mutex_place].histjob.createHistArray(&(x->S),start,end);
+				printf("S>>>>>>id=%d\n",thread_mutex_place%x->sch->execution_threads);
+				//x->HistS=x->sch->q->jobs[thread_mutex_place].histjob.createHistArray(&(x->S),start,end);
+				//x->sch->shared_data.histArrayS[x->id%x->sch->execution_threads]=x->sch->q->jobs[thread_mutex_place].histjob.createHistArray(&(x->S),start,end);
+				x->sch->shared_data.histArrayS[thread_mutex_place%x->sch->execution_threads]=x->sch->q->jobs[thread_mutex_place].histjob.createHistArray(&(x->S),start,end);
+
+				/*pthread_mutex_lock(&write_to_histS);
+				for(int i=0;i<x->HistS->histSize;i++){
+					x->sch->shared_data.histArrayS->histArray[i].count+=x->HistS->histArray[i].count;
+				}
+				free(x->HistS->histArray);
+				free(x->HistS);
+				pthread_mutex_unlock(&write_to_histS);*/
 			}
 			pthread_mutex_lock( &job_counter_mutex);
 			x->sch->q->jobs_counter--;
@@ -214,6 +242,10 @@ Job_Scheduler* initialize_scheduler(int execution_threads,oneColumnRelation *R,o
 		perror ( " malloc ") ;
 		exit (1) ;
 	}
+
+	scheduler->shared_data.histArrayR=malloc(execution_threads*sizeof(hist*));
+	scheduler->shared_data.histArrayS=malloc(execution_threads*sizeof(hist*));
+
 	int i;
 	scheduler->q=queue;
 	scheduler->tids=workers;

@@ -21,6 +21,13 @@ struct Queue
 	int end;
 	int jobs_counter;
 };
+
+struct data
+{
+	hist **histArrayR;
+	hist **histArrayS;
+};
+
 struct Job_Scheduler
 {
 	int execution_threads;
@@ -28,11 +35,7 @@ struct Job_Scheduler
 	pthread_t* tids;
 	data shared_data;
 };
-struct data
-{
-	hist* histArrayR;
-	hist* histArrayS;
-};
+
 struct HistJob
 {
 	//oneColumnRelation *relSegment;
