@@ -11,7 +11,7 @@
 #define THREADS_NUM 4
 #include <stdbool.h>
 #include <pthread.h>
-
+pthread_mutex_t *reOrdered_mutex;
 
 void createRelations(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,oneColumnRelation **S,oneColumnRelation **R){
 	int32_t i;
@@ -75,17 +75,21 @@ hist* createSumHistArray(hist *array){
 	return Hist;
 }
 
-oneColumnRelation* createReOrderedArray(oneColumnRelation *array,hist *sumArray){
-	oneColumnRelation *reOrderedArray;
+oneColumnRelation* createReOrderedArray(oneColumnRelation *array,hist *sumArray,int start,int end,oneColumnRelation *reOrderedArray){
+	//oneColumnRelation *reOrderedArray;
+
 	int32_t i;
-	reOrderedArray=malloc(sizeof(oneColumnRelation));
-	reOrderedArray->num_of_tuples=array->num_of_tuples;
-	reOrderedArray->tuples=malloc(array->num_of_tuples*sizeof(tuple));
-	for(i=0;i<array->num_of_tuples;i++){//to point mou dixnei pou prepei na balw to stoixeio
+
+	for(i=start;i<end;i++){//to point mou dixnei pou prepei na balw to stoixeio
+		pthread_mutex_lock(&(reOrdered_mutex[array->tuples[i].value%sumArray->histSize]));
+		//printf("point = %d\n",sumArray->histArray[array->tuples[i].value%sumArray->histSize].point);
 		reOrderedArray->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].point].id=array->tuples[i].id;//koitazoume ton sumArray gia na brw to offset pou 8a balw to epomeno tuple
 		reOrderedArray->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].point++].value=array->tuples[i].value;//thn deuterh fora pou bazoume to value kanw ++ gia na deixnei sthn epomenh kenh 8esh
+
+		pthread_mutex_unlock(&(reOrdered_mutex[array->tuples[i].value%sumArray->histSize]));
 	}
-	return reOrderedArray;
+
+	//return reOrderedArray;
 }
 unsigned int hash(int32_t x,int mod) {
     x = ((x >> 16) ^ x) * 0x45d9f3b;
@@ -165,9 +169,12 @@ resultList *initializeResultList(void){
 	list->numberOfResults=0;
 	return list;
 }
+pthread_mutex_t insert_mutex = PTHREAD_MUTEX_INITIALIZER;
 void insertResult(resultList *list,uint32_t id1,uint32_t id2,int32_t fromArray){
 	int32_t numberoftuples=(128*1024)/sizeof(rowResult);
+	//pthread_mutex_lock(&insert_mutex);
 	if(list->end==NULL){//kenh lista
+
 		list->start=malloc(sizeof(resultNode));
 		list->end=list->start;
 		list->numberOfNodes=1;
@@ -222,6 +229,7 @@ void insertResult(resultList *list,uint32_t id1,uint32_t id2,int32_t fromArray){
 			}
 		}
 	}
+	//pthread_mutex_unlock(&insert_mutex);
 }
 void printResults(resultList *list){
 	resultNode *temp;
@@ -229,7 +237,7 @@ void printResults(resultList *list){
 	printf("\nRowidR\t\tRowidS\n");
 	while(temp!=NULL){
 		for(int i=0;i<temp->rowSize;i++){
-			printf("%d\t\t%d\n",temp->row_Array[i].idR,temp->row_Array[i].idS);
+		//	printf("%d\t\t%d\n",temp->row_Array[i].idR,temp->row_Array[i].idS);
 		}
 		temp=temp->next;
 	}
@@ -282,7 +290,7 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 
 	hist *histSumArrayR,*histSumArrayS;
 	oneColumnRelation *RS,*RR;
-	resultList **resList;
+
 	///
 	Job *job;
 	int segSize=relR->num_of_tuples/THREADS_NUM;
@@ -293,7 +301,7 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 		job->histjob.rel='R';
 		if(i==THREADS_NUM-1)
 			job->histjob.end+=relR->num_of_tuples%THREADS_NUM;
-		submit_HistJob(job_scheduler,job);
+		submit_Job(job_scheduler,job);
 		//printf("start=%d end=%d\n",job->histjob.start,job->histjob.end);
 	}
 	segSize=relS->num_of_tuples/THREADS_NUM;
@@ -304,13 +312,13 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 		job->histjob.rel='S';
 		if(i==THREADS_NUM-1)
 			job->histjob.end+=relS->num_of_tuples%THREADS_NUM;
-		submit_HistJob(job_scheduler,job);
+		submit_Job(job_scheduler,job);
 		//printf("start=%d end=%d\n",job->histjob.start,job->histjob.end);
 	}
 
 	sleep_producer(job_scheduler);
 	//sleep(20);
-	printf("Teleiwsa\n");
+	//printf("Teleiwsa\n");
 
 	///
 	hist *histR;
@@ -327,7 +335,7 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 	}
 
 	for(int c=0;c<THREADS_NUM;c++){
-		printf("c=%d\n",c);
+		//printf("c=%d\n",c);
 		for(int q=0;q<histR->histSize;q++){
 			//printf("data from sch R: %d\n",job_scheduler->shared_data.histArrayR[c]->histArray[q].count);
 			//printf("data from sch S: %d\n",job_scheduler->shared_data.histArrayS[c]->histArray[q].count);
@@ -336,27 +344,71 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 			histS->histArray[q].count+=job_scheduler->shared_data.histArrayS[c]->histArray[q].count;
 		}
 	}
-	printf("ok\n");
+	//printf("ok\n");
 
 	histSumArrayR=createSumHistArray(histR);
 	histSumArrayS=createSumHistArray(histS);//dhmiourgia hist sum arrays
 
-
-
-	//histSumArrayS=createSumHistArray(createHistArray(&relS));//dhmiourgia hist sum arrays
-	//histSumArrayR=createSumHistArray(createHistArray(&relR));
-	//RR=createReOrderedArray(relR,histSumArrayR);//dhmiourgia reordered array
-	//RS=createReOrderedArray(relS,histSumArrayS);
-	for(int i=0;i<THREADS_NUM;i++)
+	job_scheduler->shared_data.histArrayR=&histSumArrayR;
+	job_scheduler->shared_data.histArrayS=&histSumArrayS;
+	//printf("ok\n");
+	reOrdered_mutex=malloc(histSumArrayR->histSize*sizeof(pthread_mutex_t));//dimiourgeia mutex gia kathe thesi tou pinaka
+	for(int j=0;j<histSumArrayR->histSize;j++)
 	{
-		resList[i]=initializeResultList();
+		pthread_mutex_init(&(reOrdered_mutex[j]),NULL);//arxikopoiisi ton mutex gia kathe thesi tou pinaka
+	}
+	//printf("ok\n");
+	RR=malloc(sizeof(oneColumnRelation));
+	RR->num_of_tuples=relR->num_of_tuples;
+	RR->tuples=malloc(relR->num_of_tuples*sizeof(tuple));
+
+	RS=malloc(sizeof(oneColumnRelation));
+	RS->num_of_tuples=relS->num_of_tuples;
+	RS->tuples=malloc(relS->num_of_tuples*sizeof(tuple));
+
+	job_scheduler->shared_data.RR=&RR;
+	job_scheduler->shared_data.RS=&RS;
+
+	segSize=relR->num_of_tuples/THREADS_NUM;
+	for(int i=0;i<THREADS_NUM;i++){
+		job=initializeJob("partition");
+		job->partitionjob.start=i*segSize;
+		job->partitionjob.end=job->partitionjob.start+segSize;
+		job->partitionjob.rel='R';
+		if(i==THREADS_NUM-1)
+			job->partitionjob.end+=relR->num_of_tuples%THREADS_NUM;
+		submit_Job(job_scheduler,job);
 	}
 
-	indexHT* ht;
+	segSize=relS->num_of_tuples/THREADS_NUM;
+	for(int i=0;i<THREADS_NUM;i++){
+		job=initializeJob("partition");
+		job->partitionjob.start=i*segSize;
+		job->partitionjob.end=job->partitionjob.start+segSize;
+		job->partitionjob.rel='S';
+		if(i==THREADS_NUM-1)
+			job->partitionjob.end+=relS->num_of_tuples%THREADS_NUM;
+		submit_Job(job_scheduler,job);
+	}
+
+	sleep_producer(job_scheduler);
+	//printf("ok\n");
+	//histSumArrayS=createSumHistArray(createHistArray(&relS,0,relS->num_of_tuples));//dhmiourgia hist sum arrays
+	//histSumArrayR=createSumHistArray(createHistArray(&relR,0,relR->num_of_tuples));
+	//RR=createReOrderedArray(relR,histSumArrayR);//dhmiourgia reordered array
+	//RS=createReOrderedArray(relS,histSumArrayS);
+	/*for(int i=0;i<THREADS_NUM;i++)
+	{
+		resList[i]=initializeResultList();
+	}*/
+	resultList **resList;
+	resList = malloc(histSumArrayR->histSize*sizeof(resultList*));
+	//resList=initializeResultList();
+
 	int32_t startR=0,endR,startS=0,endS,counter = 0,cnt=0;
 
-
-
+	job_scheduler->shared_data.resList=resList;
+	//indexHT *ht;
 
 	while(1)
 	{
@@ -375,22 +427,78 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 		cnt++;
 		if((endR - startR) >= (endS - startS))//kanoume hash to pio mikro bucket
 		{
-//            Job* join_job;
-//            initializeJob("join",join_job);
+			job=initializeJob("join");
+            job->joinjob.startR=startR;
+            job->joinjob.endR=endR;
+            job->joinjob.startS=startS;
+            job->joinjob.endS=endS;
+            job->joinjob.rel='S';
+            submit_Job(job_scheduler,job);
 			//ht=createHashTable(RS,startS,endS);
 			//compareRelations(ht,RR,startR,endR,RS,resList,0);		// 0 -> hashedRs
 			//deleteHashTable(&ht);
 		}
 		else
 		{
-  //          Job* join_job;
-  //          initializeJob("join",join_job);
-           // submit_job(job_scheduler,join_job,0,0,0,RR,RS,startR,endR,0 ,*ht,NULL,NULL,NULL);
-			ht=createHashTable(RR,startR,endR);
+            job=initializeJob("join");
+            job->joinjob.startR=startR;
+            job->joinjob.endR=endR;
+            job->joinjob.startS=startS;
+            job->joinjob.endS=endS;
+            job->joinjob.rel='R';
+            submit_Job(job_scheduler,job);
+
+			//ht=createHashTable(RR,startR,endR);
 			//compareRelations(ht,RS,startS,endS,RR,resList,1);		// 1 -> hashedRr
 			//deleteHashTable(&ht);
 		}
 	}
+
+	sleep_producer(job_scheduler);
+	//delete_threads(&job_scheduler);
+
+	for(int i=1;i<cnt;i++)
+	{
+			if(resList==NULL)
+			{
+				//printf("%d)NULL1\n",i);
+				continue;
+			}
+			if(resList[i]==NULL)
+			{
+				//printf("%d)NULL\n",i);
+				continue;
+			}
+
+			if(resList[i]->numberOfResults==0)
+			{
+				//printf("Null\n");
+			}
+			//printf("%d  %d \n",resList[i]->numberOfNodes,resList[i]->numberOfResults);
+			//printResults(resList[i]);
+			if(resList[i]->start==NULL || resList[i]->end==NULL)
+			{
+				//printf("%d)NULL\n",i);
+				continue;
+			}
+		//	printf("i=%d\n",i);
+
+
+			resList[0]->end->next=resList[i]->start;
+			resList[0]->end = resList[i]->end;
+			resList[0]->numberOfNodes+=resList[i]->numberOfNodes;
+			resList[0]->numberOfResults+=resList[i]->numberOfResults;
+			free(resList[i]);
+	}
+
+	//printf("counter2=%d\n",cnt);
+	if(cnt==0)
+	{
+		resList[0]=initializeResultList();
+	}
+	//printResults(resList[0]);
+	//printf("counter1=%d\n",cnt);
+
 	free(histSumArrayR->histArray);
 	free(histSumArrayR);
 	free(histSumArrayS->histArray);
@@ -406,7 +514,7 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 	free(relR->tuples);
 	free(relR);
 
-	return resList;
+	return resList[0];
 }
 
 void writeFile(uint32_t size_A,uint32_t size_B){

@@ -21,10 +21,13 @@ pthread_mutex_t wait_hist_mutex= PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t job_counter_mutex= PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t write_to_histR= PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t write_to_histS= PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t  new_cond=PTHREAD_COND_INITIALIZER;
+pthread_mutex_t resList_counter_mutex= PTHREAD_MUTEX_INITIALIZER;
 
 
 int ending=0;
 int id_counter=0;
+int resList_counter=0;
 int threads_exited=0;
 int beginning=0;
 int broadcast_start=0;
@@ -35,9 +38,7 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
 {
     int thread_mutex_place=0;
 	thread_param* x=(thread_param*)j;
-	int question_id=-1;
-	int flag1=0;
-	int start,i;
+	int start;
 
 	//x->sch->shared_data.histArrayR=malloc(x->sch->execution_threads*sizeof(hist*));
 	//x->sch->shared_data.histArrayS=malloc(x->sch->execution_threads*sizeof(hist*));
@@ -47,17 +48,24 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
 		pthread_mutex_lock( &start_mutex );//pairnei tin thesi tou buffer apo tin opoia tha parei douleia
 		start=x->sch->q->start;
 		thread_mutex_place=start;
-		printf("I am thread %d and get pos %d\n",x->id,thread_mutex_place);
+		//printf("I am thread %d and get pos %d jobs=%d\n",x->id,thread_mutex_place,x->sch->q->jobs_counter);
 		start=(start+1)%(x->sch->q->size);
 		x->sch->q->start=start;
 		pthread_mutex_unlock(&start_mutex);
+
+		pthread_mutex_lock(&mutex[thread_mutex_place]);
 		//printf("I am thread %d and leave pos %d\n",x->id,thread_mutex_place);
-
-
 		while(x->sch->q->jobs[thread_mutex_place].isEmpty==true){			//oso h thesh pou exei parei ena thread sthn oura einai adeia tote perimenei sot condition variable//
-			printf("I am thread %d and waiting with position=%d\n",x->id,thread_mutex_place);
-			pthread_cond_wait(&(read_cond[thread_mutex_place]),&(mutex[thread_mutex_place]));
+			//printf("I am thread %d and waiting with position %d\n",x->id,thread_mutex_place);
+			//if(ending==1)exit(0);
+			pthread_cond_wait(&new_cond,&mutex[thread_mutex_place]);
+			//printf("I am thread %d and woke up with position %d\n",x->id,thread_mutex_place);
+			//sleep(10);
 		}
+		//printf("I am thread %d and i start work at pos %d\n",x->id,thread_mutex_place);
+		//sleep(10);
+		//x->sch->q->jobs_counter--;
+		pthread_mutex_unlock(&mutex[thread_mutex_place]);
 
 		if(x->sch->q->jobs[thread_mutex_place].histFlag==true)
 		{
@@ -65,129 +73,117 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
 			int end = x->sch->q->jobs[thread_mutex_place].histjob.end;
 			if(x->sch->q->jobs[thread_mutex_place].histjob.rel=='R')
 			{
-				printf("R>>>>>id=%d\n",thread_mutex_place%x->sch->execution_threads);
-				//x->HistR=x->sch->q->jobs[thread_mutex_place].histjob.createHistArray(&(x->R),start,end);
-			//	x->sch->shared_data.histArrayR[x->id%x->sch->execution_threads]=x->sch->q->jobs[thread_mutex_place].histjob.createHistArray(&(x->R),start,end);
 				x->sch->shared_data.histArrayR[thread_mutex_place%x->sch->execution_threads]=x->sch->q->jobs[thread_mutex_place].histjob.createHistArray(&(x->R),start,end);
-
-				/*pthread_mutex_lock(&write_to_histR);
-				for(int i=0;i<x->HistR->histSize;i++){
-					x->sch->shared_data.histArrayR->histArray[i].count+=x->HistR->histArray[i].count;
-				}
-				free(x->HistR->histArray);
-				free(x->HistR);
-				pthread_mutex_unlock(&write_to_histR);*/
 			}
 			else
 			{
-				printf("S>>>>>>id=%d\n",thread_mutex_place%x->sch->execution_threads);
-				//x->HistS=x->sch->q->jobs[thread_mutex_place].histjob.createHistArray(&(x->S),start,end);
-				//x->sch->shared_data.histArrayS[x->id%x->sch->execution_threads]=x->sch->q->jobs[thread_mutex_place].histjob.createHistArray(&(x->S),start,end);
 				x->sch->shared_data.histArrayS[thread_mutex_place%x->sch->execution_threads]=x->sch->q->jobs[thread_mutex_place].histjob.createHistArray(&(x->S),start,end);
-
-				/*pthread_mutex_lock(&write_to_histS);
-				for(int i=0;i<x->HistS->histSize;i++){
-					x->sch->shared_data.histArrayS->histArray[i].count+=x->HistS->histArray[i].count;
-				}
-				free(x->HistS->histArray);
-				free(x->HistS);
-				pthread_mutex_unlock(&write_to_histS);*/
 			}
-			pthread_mutex_lock( &job_counter_mutex);
-			x->sch->q->jobs_counter--;
-			pthread_mutex_unlock(&job_counter_mutex);
-			printf("Id=%d Counter=%d\n",x->id,x->sch->q->jobs_counter);
-			pthread_cond_signal(&wait_hist_cond);
-
 		}
 		else if(x->sch->q->jobs[thread_mutex_place].partitionFlag==true)
 		{
-
+			int start = x->sch->q->jobs[thread_mutex_place].partitionjob.start;
+			int end = x->sch->q->jobs[thread_mutex_place].partitionjob.end;
+			if(x->sch->q->jobs[thread_mutex_place].partitionjob.rel=='R')
+			{
+				x->sch->q->jobs[thread_mutex_place].partitionjob.createReOrderedArray(x->R,*(x->sch->shared_data.histArrayR),start,end,*(x->sch->shared_data.RR));
+			}
+			else
+			{
+				x->sch->q->jobs[thread_mutex_place].partitionjob.createReOrderedArray(x->S,*(x->sch->shared_data.histArrayS),start,end,*(x->sch->shared_data.RS));
+			}
 		}
 		else if(x->sch->q->jobs[thread_mutex_place].joinFlag==true)
 		{
-
+			//printf("I Begin join work %d\n",thread_mutex_place);
+			indexHT* ht;
+			resultList *resList=initializeResultList();
+			int startR = x->sch->q->jobs[thread_mutex_place].joinjob.startR;
+			int endR = x->sch->q->jobs[thread_mutex_place].joinjob.endR;
+			int startS = x->sch->q->jobs[thread_mutex_place].joinjob.startS;
+			int endS = x->sch->q->jobs[thread_mutex_place].joinjob.endS;
+			if(x->sch->q->jobs[thread_mutex_place].joinjob.rel=='R')
+			{
+				ht=createHashTable(*(x->sch->shared_data.RR),startR,endR);
+				compareRelations(ht,*(x->sch->shared_data.RS),startS,endS,*(x->sch->shared_data.RR),resList,1);		// 1 -> hashedRr
+				deleteHashTable(&ht);
+			}
+			else
+			{
+				ht=createHashTable(*(x->sch->shared_data.RS),startS,endS);
+				compareRelations(ht,*(x->sch->shared_data.RR),startR,endR,*(x->sch->shared_data.RS),resList,0);		// 0 -> hashedRs
+				deleteHashTable(&ht);
+			}
+			pthread_mutex_lock(&resList_counter_mutex);
+			x->sch->shared_data.resList[resList_counter] = resList;
+			resList_counter++;
+			//printf("Listcounter=%d\n",resList_counter);
+			pthread_mutex_unlock(&resList_counter_mutex);
 		}
+		pthread_mutex_lock( &job_counter_mutex);
+		x->sch->q->jobs_counter--;
+		x->sch->q->jobs[thread_mutex_place].isEmpty=true;
+		//printf("Reduce Jobs=%d\n",x->sch->q->jobs_counter);
+		pthread_mutex_unlock(&job_counter_mutex);
+		//printf("Id=%d Counter=%d\n",x->id,x->sch->q->jobs_counter);
+		pthread_cond_signal(&wait_hist_cond);
+
 	}
 
-	printf("I am thread %d and waked up with position=%d\n",x->id,thread_mutex_place);
+	//printf("I am thread %d and waked up with position=%d\n",x->id,thread_mutex_place);
 	sleep(10);
 	exit(0);
-/*
-
-    pthread_mutex_lock( &start_mutex );//pairnei tin thesi tou buffer apo tin opoia tha parei douleia
-    start=x->sch->q->start;
-    thread_mutex_place=start;
-    start=(start+1)%(x->sch->q->size);
-    x->sch->q->start=start;
-    pthread_mutex_unlock(&start_mutex);
-    pthread_mutex_lock( &(mutex[thread_mutex_place]));//lockarei to mutex autis tis thesis
-
-
-	while(1)
-	{
-        flag1=0;
-        pthread_mutex_lock( &start_mutex );//pairnei tin thesi tou buffer apo tin opoia tha parei douleia
-        start=x->sch->q->start;
-        thread_mutex_place=start;
-        start=(start+1)%(x->sch->q->size);
-        x->sch->q->start=start;
-        pthread_mutex_unlock( &start_mutex );
-        pthread_mutex_lock( &(mutex[thread_mutex_place]));//lockarei to mutex autis tis thesis
-        while(!strcmp(x->sch->q->jobs[thread_mutex_place].job_name,"-1"))//an einai adeio
-        {
-            if(!beginning)//an eimaste akoma stin arxi kai tora exoun dimiourgithei ta thread
-            {
-                pthread_mutex_lock(&(trm));
-                threads_reached=threads_reached+1;//auksise autin tin mettavliti otan auti ginei osos o atrithmos ton thread kai exoun mpei oles oi douleies mesa ston buffer tote tha ta afupnisei i execute_all_jobs
-                pthread_mutex_unlock(&(trm));
-            }
-            if(id_counter>=x->flagslen-x->sch->execution_threads)//sunthiki gia termatismo
-            {
-                pthread_mutex_lock( &threads_exited_mutex );
-                threads_exited++;
-                pthread_mutex_unlock( &threads_exited_mutex );
-                if(threads_exited==x->sch->execution_threads)//an ola ta thread teleiosan steile sima stin wait_all_tasks na proxorisei
-                	pthread_cond_signal(&end_cond);
-            }
-            pthread_cond_wait(&(read_cond[thread_mutex_place]),&(mutex[thread_mutex_place]));//koimisou mexri na se ksipnisei i execute_all_jobs
-            if(ending)//edo kanoun exit ta threads
-            {
-                pthread_mutex_unlock( &(mutex[thread_mutex_place]));
-                pthread_exit(&x->id);
-            }
-            if(beginning>1)//pare tin thesi tou buffer gia na ekteleseis douleia
-            {
-                pthread_mutex_unlock( &(mutex[thread_mutex_place]));
-                pthread_mutex_lock( &start_mutex );
-                start=x->sch->q->start;
-                thread_mutex_place=start;
-                start=(start+1)%(x->sch->q->size);
-                x->sch->q->start=start;
-                pthread_mutex_unlock( &start_mutex );
-                pthread_mutex_lock(&(mutex[thread_mutex_place]));
-            }
-        }
-        execute_job(x,thread_mutex_place);
-        pthread_mutex_lock(&cntm);
-        id_counter++;
-        pthread_mutex_unlock(&cntm);
-		pthread_mutex_unlock( &(mutex[thread_mutex_place]));
-	}
-	*/
 }
 void sleep_producer(Job_Scheduler *job_scheduler)
 {
 	while(job_scheduler->q->jobs_counter!=0)
 	{
-		printf("Eimai h kentrikh diergasia kai perimenw %d\n",job_scheduler->q->jobs_counter);
+		//printf("Eimai h kentrikh diergasia kai perimenw %d\n",job_scheduler->q->jobs_counter);
 		//printf("%d\n",job_scheduler->q->jobs_counter);
 		pthread_cond_wait(&wait_hist_cond,&wait_hist_mutex);
-		printf("Eimai h kentrikh diergasia kai ksupnhsa\n");
+		//printf("Eimai h kentrikh diergasia kai ksupnhsa\n");
 	}
+	resList_counter=0;
 
 }
+void submit_Job(Job_Scheduler* schedule,Job *Job){
+	pthread_mutex_lock(&mutex[schedule->q->end]);
+	if((*Job).histFlag==true)
+	{
+		schedule->q->jobs[schedule->q->end]=*Job;
+		schedule->q->jobs[schedule->q->end].histFlag=true;
+		schedule->q->jobs[schedule->q->end].isEmpty=false;
+		schedule->q->jobs[schedule->q->end].joinFlag=false;
+		schedule->q->jobs[schedule->q->end].partitionFlag=false;
+	}
+	else if((*Job).partitionFlag==true)
+	{
+		schedule->q->jobs[schedule->q->end]=*Job;
+		schedule->q->jobs[schedule->q->end].histFlag=false;
+		schedule->q->jobs[schedule->q->end].isEmpty=false;
+		schedule->q->jobs[schedule->q->end].joinFlag=false;
+		schedule->q->jobs[schedule->q->end].partitionFlag=true;
+	}
+	else if((*Job).joinFlag==true)
+	{
+		schedule->q->jobs[schedule->q->end]=*Job;
+		schedule->q->jobs[schedule->q->end].histFlag=false;
+		schedule->q->jobs[schedule->q->end].isEmpty=false;
+		schedule->q->jobs[schedule->q->end].joinFlag=true;
+		schedule->q->jobs[schedule->q->end].partitionFlag=false;
+	}
+	pthread_mutex_lock( &job_counter_mutex );
+	schedule->q->jobs_counter++;
+	//printf("Increase Jobs=%d\n",schedule->q->jobs_counter);
+	pthread_mutex_unlock( &job_counter_mutex );
+	pthread_mutex_unlock(&mutex[schedule->q->end]);
+	schedule->q->end=(schedule->q->end+1)%(schedule->q->size);
+	//printf("Increase Jobs=%d\n",schedule->q->jobs_counter);
+	//sleep(15);
+	pthread_cond_broadcast(&new_cond);
+	//sleep(5);
 
+}
 void execute_job(thread_param *x,int thread_mutex_place)//voithitiki tou worker gia na ektelesei tin ergasia
 {
   /*  char* result;
@@ -222,16 +218,17 @@ Job_Scheduler* initialize_scheduler(int execution_threads,oneColumnRelation *R,o
 	Queue* queue=malloc(sizeof(Queue));//dimiourgeia buffer
 	queue->start=0;
 	queue->end=0;
-	queue->size=100;
+	queue->size=5000;
 	queue->jobs_counter=0;
 	queue->jobs=malloc(queue->size*sizeof(Job));
+	ending=0;
 	mutex=malloc(queue->size*sizeof(pthread_mutex_t));//dimiourgeia mutex gia kathe thesi tou pinaka
-	read_cond=malloc(queue->size*sizeof(pthread_cond_t));//kai ena condition variable gia kathe thesi tou pinaka
+	//read_cond=malloc(queue->size*sizeof(pthread_cond_t));//kai ena condition variable gia kathe thesi tou pinaka
 	int j;
 	for(j=0;j<queue->size;j++)
 	{
 		pthread_mutex_init(&(mutex[j]),NULL);//arxikopoiisi ton mutex gia kathe thesi tou pinaka
-		pthread_cond_init(&(read_cond[j]),NULL);//arxikopoiisi ton condition variables gia kathe thesi tou pinaka
+		//pthread_cond_init(&(read_cond[j]),NULL);//arxikopoiisi ton condition variables gia kathe thesi tou pinaka
 	}
 	for(j=0;j<queue->size;j++)
 		queue->jobs[j].isEmpty=true;
@@ -270,75 +267,6 @@ Job_Scheduler* initialize_scheduler(int execution_threads,oneColumnRelation *R,o
 	}
 	return scheduler;
 }
-
-void submit_HistJob(Job_Scheduler* schedule,Job *Job){
-	int i,j;
-
-
-
-	schedule->q->jobs[schedule->q->end]=*Job;
-	schedule->q->jobs[schedule->q->end].histFlag=true;
-	schedule->q->jobs[schedule->q->end].isEmpty=false;
-	schedule->q->jobs[schedule->q->end].joinFlag=false;
-	schedule->q->jobs[schedule->q->end].partitionFlag=false;
-	printf("ksupnaw to thread me thesh %d\n",schedule->q->end);
-	pthread_cond_signal(&(read_cond[schedule->q->end]));
-	pthread_mutex_lock( &job_counter_mutex );
-	schedule->q->jobs_counter++;
-	pthread_mutex_unlock( &job_counter_mutex );
-	schedule->q->end=schedule->q->end+1;
-
-}
-
-/*submit_job(Job_Scheduler* schedule,Job* job,int join_id ,int partition_id ,int hist_id,oneColumnRelation *reOrderedArray , oneColumnRelation* array,
-		int32_t start,int32_t end,int32_t num ,indexHT *ht,oneColumnRelation *relSegment,oneColumnRelation *relation,hist* histSum)//upovoli mias ergasias ston buffer
-{
-	int i;
-    if(schedule->q->end==schedule->q->size)//an gemisei o buffer tou diplasiazoume to megethos
-    {
-        schedule->q->size=schedule->q->size*2;
-        schedule->q->jobs=realloc(schedule->q->jobs,schedule->q->size*sizeof(Job));
-        int j;
-        for(j=schedule->q->end;j<schedule->q->size;j++)
-        {
-            schedule->q->jobs[j].histFlag=false;
-            schedule->q->jobs[j].partitionFlag=false;
-            schedule->q->jobs[j].joinFlag=false;
-            schedule->q->jobs[j].histjob=NULL;
-            schedule->q->jobs[j].partitionjob=NULL;
-            schedule->q->jobs[j].joinjob=NULL;
-        }
-    }
-    if(job->histFlag==true)
-    {
-    	//to do
-    }
-    else if(job->partitionFlag==true)
-    {
-    	//to do
-	schedule->q->jobs[schedule->q->end]=job;
-	schedule->q->jobs[schedule->q->end].joinjob.reOrderedArray = reOrderedArray;//
-        schedule->q->jobs[schedule->q->end].joinjob.array = array;
-	//schedule->q->jobs[schedule->q->end].joinjob.histSum=histSum;
-	
-    }
-    else if(job->joinFlag==true)
-    {
-        schedule->q->jobs[schedule->q->end]=job;
-        schedule->q->jobs[schedule->q->end].joinjob.start = start;
-        schedule->q->jobs[schedule->q->end].joinjob.end = end;
-        schedule->q->jobs[schedule->q->end].joinjob.num = num;
-        schedule->q->jobs[schedule->q->end].joinjob.reOrderedArray = reOrderedArray;
-        schedule->q->jobs[schedule->q->end].joinjob.ht = ht;
-        schedule->q->jobs[schedule->q->end].joinjob.array = array;
-        schedule->q->jobs[schedule->q->end].joinjob.id=join_id;
-    	schedule->q->jobs[schedule->q->end].joinjob.compareRelations = compareRelations;
-    	schedule->q->jobs[schedule->q->end].joinjob.createHashTable = createHashTable;
-    	schedule->q->jobs[schedule->q->end].joinjob.deleteHashTable = deleteHashTable;
-    }
-    schedule->q->end=schedule->q->end+1;
-}*/
-
 Job* initializeJob(char *type_of_job)		// type_of_job : "hist" , "partition" ,"join"//
 {
 	Job *job;
@@ -349,27 +277,22 @@ Job* initializeJob(char *type_of_job)		// type_of_job : "hist" , "partition" ,"j
         job->joinFlag=false;
         job->partitionFlag=false;
         job->histjob.createHistArray = createHistArray;
-        //job->joinjob =NULL;
-        //job->histjob=malloc(sizeof(HistJob));;
-        //job->partitionjob=NULL;
 	}
 	else if(!strcmp(type_of_job,"partition"))
 	{
         job->histFlag=false;
         job->joinFlag=false;
         job->partitionFlag=true;
-        //job->joinjob = NULL;
-        //job->histjob=NULL;
-        //job->partitionjob=malloc(sizeof(PartitionJob));;
+        job->partitionjob.createReOrderedArray=createReOrderedArray;
 	}
 	else if(!strcmp(type_of_job,"join"))
 	{
         job->histFlag=false;
         job->joinFlag=true;
         job->partitionFlag=false;
-        //job->joinjob = malloc(sizeof(JoinJob));
-        //job->histjob=NULL;
-        //job->partitionjob=NULL;
+        job->joinjob.compareRelations = compareRelations;
+        job->joinjob.createHashTable = createHashTable;
+        job->joinjob.deleteHashTable = deleteHashTable;
 	}
 	return job;
 }
@@ -426,14 +349,14 @@ void reset_queue(Queue *q)//arxikopoiei tin oura
 	q->end=0;
 	id_counter=0;
 }
-void delete_threads(Job_Scheduler** schedule,thread_param **temp)//katharizei ton jobscheduler
+void delete_threads(Job_Scheduler** schedule)//katharizei ton jobscheduler
 {
     int i;
 	int err;
 	ending=1;
-    for(i=0;i<5000;i++)
+  //  for(i=0;i<schedule->execution_threads;i++)
     {
-        pthread_cond_broadcast(&(read_cond[i]));
+        pthread_cond_broadcast(&new_cond);
     }
 	for (i =0 ; i <(*schedule)->execution_threads ; i++)
 	{
@@ -443,17 +366,65 @@ void delete_threads(Job_Scheduler** schedule,thread_param **temp)//katharizei to
 			exit (1) ;
 		}
 	}
-	free((*schedule)->tids);
-	free((*schedule)->q->jobs);
-	free((*schedule)->q);
-	for(i=0;i<5000;i++)
+	//free((*schedule)->tids);
+	//free((*schedule)->q->jobs);
+	//free((*schedule)->q);
+	/*for(i=0;i<5000;i++)
 	{
 		pthread_mutex_destroy(&mutex[i]);
 		pthread_cond_destroy(&read_cond[i]);
-	}
-	free((*schedule));
-	free((*temp));
-	free(mutex);
-	free(read_cond);
-	pthread_mutex_destroy(&start_mutex);
+	}*/
+	//free((*schedule));
+	//free((*temp));
+	//free(mutex);
+	//free(read_cond);
+	//pthread_mutex_destroy(&start_mutex);
 }
+/*submit_job(Job_Scheduler* schedule,Job* job,int join_id ,int partition_id ,int hist_id,oneColumnRelation *reOrderedArray , oneColumnRelation* array,
+		int32_t start,int32_t end,int32_t num ,indexHT *ht,oneColumnRelation *relSegment,oneColumnRelation *relation,hist* histSum)//upovoli mias ergasias ston buffer
+{
+	int i;
+    if(schedule->q->end==schedule->q->size)//an gemisei o buffer tou diplasiazoume to megethos
+    {
+        schedule->q->size=schedule->q->size*2;
+        schedule->q->jobs=realloc(schedule->q->jobs,schedule->q->size*sizeof(Job));
+        int j;
+        for(j=schedule->q->end;j<schedule->q->size;j++)
+        {
+            schedule->q->jobs[j].histFlag=false;
+            schedule->q->jobs[j].partitionFlag=false;
+            schedule->q->jobs[j].joinFlag=false;
+            schedule->q->jobs[j].histjob=NULL;
+            schedule->q->jobs[j].partitionjob=NULL;
+            schedule->q->jobs[j].joinjob=NULL;
+        }
+    }
+    if(job->histFlag==true)
+    {
+    	//to do
+    }
+    else if(job->partitionFlag==true)
+    {
+    	//to do
+	schedule->q->jobs[schedule->q->end]=job;
+	schedule->q->jobs[schedule->q->end].joinjob.reOrderedArray = reOrderedArray;//
+        schedule->q->jobs[schedule->q->end].joinjob.array = array;
+	//schedule->q->jobs[schedule->q->end].joinjob.histSum=histSum;
+
+    }
+    else if(job->joinFlag==true)
+    {
+        schedule->q->jobs[schedule->q->end]=job;
+        schedule->q->jobs[schedule->q->end].joinjob.start = start;
+        schedule->q->jobs[schedule->q->end].joinjob.end = end;
+        schedule->q->jobs[schedule->q->end].joinjob.num = num;
+        schedule->q->jobs[schedule->q->end].joinjob.reOrderedArray = reOrderedArray;
+        schedule->q->jobs[schedule->q->end].joinjob.ht = ht;
+        schedule->q->jobs[schedule->q->end].joinjob.array = array;
+        schedule->q->jobs[schedule->q->end].joinjob.id=join_id;
+    	schedule->q->jobs[schedule->q->end].joinjob.compareRelations = compareRelations;
+    	schedule->q->jobs[schedule->q->end].joinjob.createHashTable = createHashTable;
+    	schedule->q->jobs[schedule->q->end].joinjob.deleteHashTable = deleteHashTable;
+    }
+    schedule->q->end=schedule->q->end+1;
+}*/

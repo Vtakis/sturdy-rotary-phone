@@ -183,7 +183,7 @@ void createRelations(int32_t[],uint32_t,int32_t[],uint32_t,oneColumnRelation **,
 resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS);
 hist* createHistArray(oneColumnRelation **rel,int start,int end);
 hist* createSumHistArray(hist *array);
-oneColumnRelation* createReOrderedArray(oneColumnRelation *array,hist *sumArray);
+oneColumnRelation* createReOrderedArray(oneColumnRelation *array,hist *sumArray,int start,int end,oneColumnRelation *);
 void deleteHashTable(indexHT **);
 indexHT* createHashTable(oneColumnRelation* reOrderedArray,int32_t start,int32_t end);
 void compareRelations(indexHT *ht,oneColumnRelation *array,int32_t start,int32_t end,oneColumnRelation *hashedArray,resultList *resList,int32_t );

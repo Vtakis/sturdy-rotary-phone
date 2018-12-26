@@ -26,6 +26,9 @@ struct data
 {
 	hist **histArrayR;
 	hist **histArrayS;
+	oneColumnRelation **RR;
+	oneColumnRelation **RS;
+	resultList **resList;
 };
 
 struct Job_Scheduler
@@ -47,16 +50,16 @@ struct HistJob
 };
 struct PartitionJob
 {
-	//oneColumnRelation* (createReOrderedArray)(oneColumnRelation *array,hist *sumArray);
-	oneColumnRelation *array;
-	hist* histSum;
+	int start;
+	int end;
+	char rel;
+	oneColumnRelation* (*createReOrderedArray)(oneColumnRelation *array,hist *sumArray,int ,int,oneColumnRelation*);
 };
 struct JoinJob
 {
-	int id;
-	oneColumnRelation *reOrderedArray,*array;
-	int32_t start,end,num;
-	indexHT *ht;
+	char rel;
+	int32_t startR,endR;
+	int32_t startS,endS;
 	indexHT* (*createHashTable)(oneColumnRelation* reOrderedArray,int32_t start,int32_t end);
 	void (*compareRelations)(indexHT *ht,oneColumnRelation *array,int32_t start,int32_t end,oneColumnRelation *hashedArray,resultList *resList,int32_t );
 	void (*deleteHashTable)(indexHT **);
@@ -81,8 +84,6 @@ struct thread_param
 	oneColumnRelation *S;
 	hist *HistR;
 	hist *HistS;
-
-
 };
 struct thread_hist_param
 {
@@ -97,7 +98,7 @@ struct thread_join_param
 
 };
 void sleep_producer(Job_Scheduler *job_scheduler);
-void submit_HistJob(Job_Scheduler* schedule,Job *Job);
+void submit_Job(Job_Scheduler* schedule,Job *Job);
 Job* initializeJob(char *type_of_job);		// type_of_job : "hist" , "partition" ,"join"//
 void printjobs(Job_Scheduler* schedule);
 Job_Scheduler* initialize_scheduler(int,oneColumnRelation*,oneColumnRelation*);
@@ -111,5 +112,5 @@ void wait_all_tasks_finish(Job_Scheduler* schedule);
 void destroy_scheduler(Job_Scheduler* schedule);
 void reset_queue(Queue *);
 void execute_job(thread_param *,int);
-void delete_threads(Job_Scheduler **,thread_param **);
+void delete_threads(Job_Scheduler **);
 #endif /* JOB_SCHEDULER_H_ */
