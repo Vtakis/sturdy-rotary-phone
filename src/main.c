@@ -13,13 +13,13 @@ int main(int argc,char** argv)
 	FILE *fp;
 	int fsize,i,j,k,pointer,number_of_files;
 	multiColumnRelation *relationArray;
-	if (argc!=3){
+	if (argc!=2){
 		printf("\n\nWRONG NUMBER OF ARGS!!!\n\n\n");
 		return 1;
 	}
-	filename=malloc(strlen("input-files/")+strlen(argv[1])+1);//dineis mono to arxeio , to path to ftiaxnw edw
-	strcpy(filename,"input-files/");
-	strcat(filename,argv[1]);
+	filename=malloc(strlen(argv[1])+strlen("small.init")+1);//dineis mono to arxeio , to path to ftiaxnw edw
+	strcpy(filename,argv[1]);
+	strcat(filename,"small.init");
 
 	fp=fopen(filename,"r");
 
@@ -44,18 +44,19 @@ int main(int argc,char** argv)
 	//ftiaxnw ton pinaka relationArray kai pairnw ta data apo ka8e arxeio
 	relationArray=malloc(number_of_files*sizeof(multiColumnRelation));
 
-	onepath=malloc(strlen("input-files/")+fsize+1);
+	onepath=malloc(strlen(argv[1])+fsize+1);
 	pointer=0;
 	for(i=0;i<number_of_files;i++){
-		memset(onepath,'\0',fsize);
-		strcpy(onepath,"input-files/");
-		j=strlen("input-files/");
+		memset(onepath,'\0',strlen(argv[1])+fsize+1);
+		strcpy(onepath,argv[1]);
+		j=strlen(argv[1]);
 		while( paths[pointer]!='\n' && paths[pointer]!='\0' ){
 			onepath[j]=paths[pointer];
 			j++;
 			pointer++;
 		}
 		pointer++;
+
 		fp=fopen(onepath,"rb");
 		uint64_t temp;
 		fread(&temp,sizeof(uint64_t),1,fp);
@@ -101,7 +102,13 @@ int main(int argc,char** argv)
 	free(filename);
 	free(onepath);
 	free(paths);
-	readWorkFile(argv[2],relationArray);
+
+
+	filename=malloc(strlen(argv[1])+strlen("small.work")+1);//dineis mono to arxeio , to path to ftiaxnw edw
+	strcpy(filename,argv[1]);
+	strcat(filename,"small.work");
+	readWorkFile(filename,relationArray);
+	free(filename);
 	for(i=0;i<number_of_files;i++){
 		for(j=0;j<relationArray[i].colCount;j++){
 			free(relationArray[i].table[j]);
