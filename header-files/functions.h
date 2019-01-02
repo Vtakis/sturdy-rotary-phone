@@ -1,6 +1,4 @@
 #include <stdint.h>
-#include <stdbool.h>
-
 typedef struct tuple tuple;
 typedef struct multiColumnRelation multiColumnRelation;
 typedef struct oneColumnRelation oneColumnRelation;
@@ -15,15 +13,63 @@ typedef struct chainNode chainNode;
 typedef struct indexHT indexHT;
 typedef struct hist hist;
 typedef struct queryDataIndex queryDataIndex;
-typedef struct ListNode ListNode;
+//typedef struct ListNode ListNode;
 typedef struct RelColNode RelColNode;
 typedef struct filterPredNode filterPredNode;
 typedef struct joinPredNode joinPredNode;
 typedef struct middleResults middleResults;
 typedef struct statistics statistics;
 typedef struct statistics_array statistics_array;
+
+//new stats
+typedef struct stats stats;
+typedef struct all_stats all_stats;
+typedef struct bestTree bestTree;
+typedef struct listnode listnode;
+//
 #ifndef FUNCTIONS_H_
 #define FUNCTIONS_H_
+
+int *JoinEnumeration(queryDataIndex *data,all_stats *statsArray);
+
+struct bestTree{//to offset+1 einai to posa rel exei to set
+	listnode *startlist;
+	listnode *endlist;
+	listnode *BestNode;
+};
+struct listnode{
+	int cost;
+	int *set;//mege8os data->numRelQuery
+	int *teams;//idio mege8os
+	int teamCount;//poses diaforetikes omades exoume,den metraw tis omades me ena rel mesa
+	//
+	int *seira;
+	//int seira_size;//mege8os data->numPredJoinTwoRel
+	int seira_point;
+	//
+	all_stats *local_stats;
+	struct listnode *next;
+};
+void insertList(listnode **list,int cost,int *set,int size,int *teams,int teamCount,all_stats *stats,int *seira,int seira_size,int seira_point);
+void printList(listnode *list,int max,int max_seira);
+void deleteBestTree(bestTree *tree);
+//telos tree
+//new stats
+struct stats
+{
+	uint64_t l;
+	uint64_t u;
+	uint64_t f;
+	uint64_t d;
+};
+
+struct all_stats
+{
+	uint64_t rels;
+	uint64_t *cols;
+	stats **array_with_stats;
+};
+//
 
 //////
 struct resultListForJoin
@@ -168,6 +214,7 @@ struct queryDataIndex
 	RelColNode *viewQueryArray;  //pinakas me ta views
 };
 ///////////////////////////////////////////////////////////
+
 int createStatsFromMiddleArray(statistics_array **statsArray,middleResults *middleResArray,int middleResultsCounter,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int arrayIndx,int *statsArrayCounter,int relationId);
 void createStatsFromFirstArray(statistics_array **statsArray,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int *statsArrayCounter,int relationId);
 
@@ -181,9 +228,9 @@ unsigned int hash(int32_t x,int);
 indexHT* initiliazeIndexHT(oneColumnRelation* ,int32_t);
 void createRelations(int32_t[],uint32_t,int32_t[],uint32_t,oneColumnRelation **,oneColumnRelation**);
 resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS);
-hist* createHistArray(oneColumnRelation **rel,int start,int end);
+hist* createHistArray(oneColumnRelation **rel);
 hist* createSumHistArray(hist *array);
-oneColumnRelation* createReOrderedArray(oneColumnRelation *array,hist *sumArray,int start,int end,oneColumnRelation *);
+oneColumnRelation* createReOrderedArray(oneColumnRelation *array,hist *sumArray);
 void deleteHashTable(indexHT **);
 indexHT* createHashTable(oneColumnRelation* reOrderedArray,int32_t start,int32_t end);
 void compareRelations(indexHT *ht,oneColumnRelation *array,int32_t start,int32_t end,oneColumnRelation *hashedArray,resultList *resList,int32_t );
@@ -195,9 +242,9 @@ void writeFile(uint32_t,uint32_t);
 void readFile(int32_t[],uint32_t *,int32_t[],uint32_t *);
 void deleteResultList(resultList *);
 queryDataIndex* analyzeQuery(char * query);
-void readWorkFile(char *filename,multiColumnRelation *);
+void readWorkFile(char *filename,multiColumnRelation *,all_stats *);
 queryDataIndex* addQueryData(char *token,int part);
-middleResults executeFilter(oneColumnRelation*,int,char,int);
+middleResults executeFilter(oneColumnRelation*,int,char,int,all_stats *statsArray,int,int);
 resultList* sameRelationJoin(oneColumnRelation *relR,oneColumnRelation *relS);
 resultListForJoin *initializeResultListForJoin(void);
 void insertResultForJoin(resultListForJoin *list,uint32_t id);
