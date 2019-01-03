@@ -17,9 +17,9 @@ int main(int argc,char** argv)
 		printf("\n\nWRONG NUMBER OF ARGS!!!\n\n\n");
 		return 1;
 	}
-	filename=malloc(strlen(argv[1])+strlen("public.init")+1);//dineis mono to arxeio , to path to ftiaxnw edw
+	filename=malloc(strlen(argv[1])+strlen("small.init")+1);//dineis mono to arxeio , to path to ftiaxnw edw
 	strcpy(filename,argv[1]);
-	strcat(filename,"public.init");
+	strcat(filename,"small.init");
 
 	fp=fopen(filename,"r");
 
@@ -122,8 +122,8 @@ int main(int argc,char** argv)
 			}
 			relationArray[i].stats[j].average=relationArray[i].stats[j].average/relationArray[i].rowCount;
 			int d=0;
-			if(statsArray->array_with_stats[i][j].u-statsArray->array_with_stats[i][j].l+1>50000){
-				int sizeofbool=50000;
+			if(statsArray->array_with_stats[i][j].u-statsArray->array_with_stats[i][j].l+1>500000){
+				int sizeofbool=500000;
 				bool distArray[sizeofbool];
 				for(int qaz=0;qaz<sizeofbool;qaz++){
 					distArray[qaz]=false;
@@ -161,9 +161,9 @@ int main(int argc,char** argv)
 	free(onepath);
 	free(paths);
 
-	filename=malloc(strlen(argv[1])+strlen("public.work")+1);//dineis mono to arxeio , to path to ftiaxnw edw
+	filename=malloc(strlen(argv[1])+strlen("small.work")+1);//dineis mono to arxeio , to path to ftiaxnw edw
 	strcpy(filename,argv[1]);
-	strcat(filename,"public.work");
+	strcat(filename,"small.work");
 	readWorkFile(filename,relationArray,statsArray);
 	free(filename);
 	for(i=0;i<number_of_files;i++){

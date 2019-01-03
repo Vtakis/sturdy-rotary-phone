@@ -4,8 +4,14 @@
 #include <math.h>
 #include <time.h>
 #include "../header-files/functions.h"
+#include "../header-files/Job_Scheduler.h"
 #define bucketPosNum 50
 #define N 12
+#define THREADS_NUM 4
+#include <stdbool.h>
+#include <pthread.h>
+
+pthread_mutex_t *reOrdered_mutex;
 
 void createRelations(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,oneColumnRelation **S,oneColumnRelation **R){
 	int32_t i;
@@ -23,19 +29,20 @@ void createRelations(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,one
 	for(i=0;i<size_B;i++){
 		(*R)->tuples[i].id=i+1;
 		(*R)->tuples[i].value=B[i];
-	}	
+	}
 }
-hist* createHistArray(oneColumnRelation **rel){
+hist* createHistArray(oneColumnRelation **rel,int start,int end){
+
 	int32_t i;
 	hist *Hist;
 	Hist=malloc(sizeof(Hist));
 	Hist->histSize=pow(2,N);
-	Hist->histArray=malloc(Hist->histSize*sizeof(histNode));	
+	Hist->histArray=malloc(Hist->histSize*sizeof(histNode));
 	for(i=0;i<Hist->histSize;i++){
 		Hist->histArray[i].count=0;
 		Hist->histArray[i].point=0;
 	}
-	for(i=0;i<(*rel)->num_of_tuples;i++){
+	for(i=start;i<end;i++){
 		Hist->histArray[(*rel)->tuples[i].value%Hist->histSize].count++;
 	}
 	return Hist;
@@ -67,18 +74,21 @@ hist* createSumHistArray(hist *array){
 	free(array);
 	return Hist;
 }
+oneColumnRelation* createReOrderedArray(oneColumnRelation *array,hist *sumArray,int start,int end,oneColumnRelation *reOrderedArray){
+	//oneColumnRelation *reOrderedArray;
 
-oneColumnRelation* createReOrderedArray(oneColumnRelation *array,hist *sumArray){
-	oneColumnRelation *reOrderedArray;
 	int32_t i;
-	reOrderedArray=malloc(sizeof(oneColumnRelation));
-	reOrderedArray->num_of_tuples=array->num_of_tuples;
-	reOrderedArray->tuples=malloc(array->num_of_tuples*sizeof(tuple));
-	for(i=0;i<array->num_of_tuples;i++){//to point mou dixnei pou prepei na balw to stoixeio
+
+	for(i=start;i<end;i++){//to point mou dixnei pou prepei na balw to stoixeio
+		pthread_mutex_lock(&(reOrdered_mutex[array->tuples[i].value%sumArray->histSize]));
+		//printf("point = %d\n",sumArray->histArray[array->tuples[i].value%sumArray->histSize].point);
 		reOrderedArray->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].point].id=array->tuples[i].id;//koitazoume ton sumArray gia na brw to offset pou 8a balw to epomeno tuple
 		reOrderedArray->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].point++].value=array->tuples[i].value;//thn deuterh fora pou bazoume to value kanw ++ gia na deixnei sthn epomenh kenh 8esh
+
+		pthread_mutex_unlock(&(reOrdered_mutex[array->tuples[i].value%sumArray->histSize]));
 	}
-	return reOrderedArray;
+
+	//return reOrderedArray;
 }
 unsigned int hash(int32_t x,int mod) {
     x = ((x >> 16) ^ x) * 0x45d9f3b;
@@ -144,7 +154,7 @@ void compareRelations(indexHT *ht,oneColumnRelation *array,int32_t start,int32_t
 					insertResult(resList,hashedArray->tuples[bucket_offset].id,array->tuples[i].id,fromArray);
 				}
 				chain_offset=ht->chainNode[chain_offset].prevchainPosition;//to neo offset einai apo to prevchainPosition
-				if(chain_offset==-1)break;//den exei alla stoixeia na doume
+				if(chain_offset==-1)break;						//den exei alla stoixeia na doume
 				bucket_offset = ht->chainNode[chain_offset].bucketPos;
 			}
 		}
@@ -158,9 +168,11 @@ resultList *initializeResultList(void){
 	list->numberOfResults=0;
 	return list;
 }
+pthread_mutex_t insert_mutex = PTHREAD_MUTEX_INITIALIZER;
 void insertResult(resultList *list,uint32_t id1,uint32_t id2,int32_t fromArray){
-	int32_t numberoftuples=(1024*1024)/sizeof(rowResult);
+	int32_t numberoftuples=(128*1024)/sizeof(rowResult);
 	if(list->end==NULL){//kenh lista
+
 		list->start=malloc(sizeof(resultNode));
 		list->end=list->start;
 		list->numberOfNodes=1;
@@ -221,6 +233,7 @@ void printResults(resultList *list){
 	temp =list->start;
 	printf("\nRowidR\t\tRowidS\n");
 	while(temp!=NULL){
+		//printf("mesa\n");
 		for(int i=0;i<temp->rowSize;i++){
 			printf("%d\t\t%d\n",temp->row_Array[i].idR,temp->row_Array[i].idS);
 		}
@@ -264,16 +277,137 @@ void createHT_CompareBuckets(resultList* resList,hist *histSumArrayR,hist *histS
 }
 resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 
+	Job_Scheduler* job_scheduler;
+	job_scheduler=malloc(sizeof(Job_Scheduler));
+	job_scheduler=initialize_scheduler(THREADS_NUM,relR,relS);
+
+	//job_scheduler->shared_data.histArrayR=malloc(pow(2,N)*sizeof(histNode));
+	//job_scheduler->shared_data.histArrayS=malloc(pow(2,N)*sizeof(histNode));
+
+
 	hist *histSumArrayR,*histSumArrayS;
 	oneColumnRelation *RS,*RR;
-	resultList *resList;
-	histSumArrayS=createSumHistArray(createHistArray(&relS));//dhmiourgia hist sum arrays
-	histSumArrayR=createSumHistArray(createHistArray(&relR));
-	RR=createReOrderedArray(relR,histSumArrayR);//dhmiourgia reordered array
-	RS=createReOrderedArray(relS,histSumArrayS);
-	resList=initializeResultList();
-	indexHT* ht;
+
+	///
+	Job *job;
+	int segSize=relR->num_of_tuples/THREADS_NUM;
+	for(int i=0;i<THREADS_NUM;i++){
+		job=initializeJob("hist");
+		job->histjob.start=i*segSize;
+		job->histjob.end=job->histjob.start+segSize;
+		job->histjob.rel='R';
+		if(i==THREADS_NUM-1)
+			job->histjob.end+=relR->num_of_tuples%THREADS_NUM;
+		submit_Job(job_scheduler,job);
+	}
+
+
+	segSize=relS->num_of_tuples/THREADS_NUM;
+	for(int i=0;i<THREADS_NUM;i++){
+		job=initializeJob("hist");
+		job->histjob.start=i*segSize;
+		job->histjob.end=job->histjob.start+segSize;
+		job->histjob.rel='S';
+		if(i==THREADS_NUM-1)
+			job->histjob.end+=relS->num_of_tuples%THREADS_NUM;
+		submit_Job(job_scheduler,job);
+		//printf("start=%d end=%d\n",job->histjob.start,job->histjob.end);
+	}
+
+
+	//sleep(20);
+	//printf("Teleiwsa\n");
+
+	///
+	hist *histR;
+	hist *histS;
+	histR=malloc(sizeof(hist));
+	histS=malloc(sizeof(hist));
+	histR->histSize=pow(2,N);
+	histS->histSize=histR->histSize;
+	histR->histArray=malloc(histR->histSize*sizeof(histNode));
+	histS->histArray=malloc(histS->histSize*sizeof(histNode));
+	for(int f=0;f<histR->histSize;f++){
+		histR->histArray[f].count=0;
+		histS->histArray[f].count=0;
+	}
+	sleep_producer(job_scheduler,0);
+	for(int c=0;c<THREADS_NUM;c++){
+		//printf("c=%d\n",c);
+		for(int q=0;q<histR->histSize;q++){
+			//printf("data from sch R: %d\n",job_scheduler->shared_data.histArrayR[c]->histArray[q].count);
+			//printf("data from sch S: %d\n",job_scheduler->shared_data.histArrayS[c]->histArray[q].count);
+
+			histR->histArray[q].count+=job_scheduler->shared_data.histArrayR[c]->histArray[q].count;
+			histS->histArray[q].count+=job_scheduler->shared_data.histArrayS[c]->histArray[q].count;
+		}
+	}
+	//printf("ok\n");
+
+	histSumArrayR=createSumHistArray(histR);
+	histSumArrayS=createSumHistArray(histS);//dhmiourgia hist sum arrays
+
+	job_scheduler->shared_data.histArrayR=&histSumArrayR;
+	job_scheduler->shared_data.histArrayS=&histSumArrayS;
+	//printf("ok\n");
+	reOrdered_mutex=malloc(histSumArrayR->histSize*sizeof(pthread_mutex_t));//dimiourgeia mutex gia kathe thesi tou pinaka
+	for(int j=0;j<histSumArrayR->histSize;j++)
+	{
+		pthread_mutex_init(&(reOrdered_mutex[j]),NULL);//arxikopoiisi ton mutex gia kathe thesi tou pinaka
+	}
+	//printf("ok\n");
+	RR=malloc(sizeof(oneColumnRelation));
+	RR->num_of_tuples=relR->num_of_tuples;
+	RR->tuples=malloc(relR->num_of_tuples*sizeof(tuple));
+
+	RS=malloc(sizeof(oneColumnRelation));
+	RS->num_of_tuples=relS->num_of_tuples;
+	RS->tuples=malloc(relS->num_of_tuples*sizeof(tuple));
+
+	job_scheduler->shared_data.RR=&RR;
+	job_scheduler->shared_data.RS=&RS;
+
+	segSize=relR->num_of_tuples/THREADS_NUM;
+	for(int i=0;i<THREADS_NUM;i++){
+		job=initializeJob("partition");
+		job->partitionjob.start=i*segSize;
+		job->partitionjob.end=job->partitionjob.start+segSize;
+		job->partitionjob.rel='R';
+		if(i==THREADS_NUM-1)
+			job->partitionjob.end+=relR->num_of_tuples%THREADS_NUM;
+		submit_Job(job_scheduler,job);
+	}
+
+	segSize=relS->num_of_tuples/THREADS_NUM;
+	for(int i=0;i<THREADS_NUM;i++){
+		job=initializeJob("partition");
+		job->partitionjob.start=i*segSize;
+		job->partitionjob.end=job->partitionjob.start+segSize;
+		job->partitionjob.rel='S';
+		if(i==THREADS_NUM-1)
+			job->partitionjob.end+=relS->num_of_tuples%THREADS_NUM;
+		submit_Job(job_scheduler,job);
+	}
+
+	//printf("ok\n");
+	//histSumArrayS=createSumHistArray(createHistArray(&relS,0,relS->num_of_tuples));//dhmiourgia hist sum arrays
+	//histSumArrayR=createSumHistArray(createHistArray(&relR,0,relR->num_of_tuples));
+	//RR=createReOrderedArray(relR,histSumArrayR);//dhmiourgia reordered array
+	//RS=createReOrderedArray(relS,histSumArrayS);
+	/*for(int i=0;i<THREADS_NUM;i++)
+	{
+		resList[i]=initializeResultList();
+	}*/
+	sleep_producer(job_scheduler,0);
+	resultList **resList;
+	resList = malloc(histSumArrayR->histSize*sizeof(resultList*));
+	//resList=initializeResultList();
+
 	int32_t startR=0,endR,startS=0,endS,counter = 0,cnt=0;
+
+	job_scheduler->shared_data.resList=resList;
+	//indexHT *ht;
+
 	while(1)
 	{
 		if(counter+1 > histSumArrayR->histSize)break;		//counter+1 giati einai h thesh gia to end ,dld an h thesh pou tha einai to end einai ektos oriwn break//
@@ -291,17 +425,69 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 		cnt++;
 		if((endR - startR) >= (endS - startS))//kanoume hash to pio mikro bucket
 		{
-			ht=createHashTable(RS,startS,endS);
+			job=initializeJob("join");
+            job->joinjob.startR=startR;
+            job->joinjob.endR=endR;
+            job->joinjob.startS=startS;
+            job->joinjob.endS=endS;
+            job->joinjob.rel='S';
+            submit_Job(job_scheduler,job);
+			/*ht=createHashTable(RS,startS,endS);
 			compareRelations(ht,RR,startR,endR,RS,resList,0);		// 0 -> hashedRs
-			deleteHashTable(&ht);
+			deleteHashTable(&ht);*/
 		}
 		else
 		{
-			ht=createHashTable(RR,startR,endR);
-			compareRelations(ht,RS,startS,endS,RR,resList,1);		// 1 -> hashedRr
-			deleteHashTable(&ht);
+            job=initializeJob("join");
+            job->joinjob.startR=startR;
+            job->joinjob.endR=endR;
+            job->joinjob.startS=startS;
+            job->joinjob.endS=endS;
+            job->joinjob.rel='R';
+            submit_Job(job_scheduler,job);
+
+			//ht=createHashTable(RR,startR,endR);
+			//compareRelations(ht,RS,startS,endS,RR,resList,1);		// 1 -> hashedRr
+			//deleteHashTable(&ht);
 		}
 	}
+	sleep_producer(job_scheduler,1);
+	//printf("cnt=%d\n",cnt);
+	int first=0;
+	for(int i=1;i<cnt;i++)
+	{
+			//printf("0)Nodes %d  Results %d\n",resList[0]->numberOfNodes,resList[0]->numberOfResults);
+			//printf("i)Nodes %d  Results %d\n",resList[i]->numberOfNodes,resList[i]->numberOfResults);
+
+			if(resList==NULL)
+			{
+				continue;
+			}
+			if(resList[i]==NULL)
+			{
+				continue;
+			}
+			if(resList[i]->start==NULL || resList[i]->end==NULL)
+			{
+				continue;
+			}
+			if(resList[first]->end==NULL)
+			{
+				resList[first]=resList[i];
+				continue;
+			}
+			resList[first]->end->next=resList[i]->start;
+			resList[first]->end = resList[i]->end;
+			resList[first]->numberOfNodes+=resList[i]->numberOfNodes;
+			resList[first]->numberOfResults+=resList[i]->numberOfResults;
+			free(resList[i]);
+	}
+	if(cnt==0)
+	{
+		resList[first]=initializeResultList();
+	}
+	//delete_threads(&job_scheduler);
+
 	free(histSumArrayR->histArray);
 	free(histSumArrayR);
 	free(histSumArrayS->histArray);
@@ -316,8 +502,7 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 	free(relS);
 	free(relR->tuples);
 	free(relR);
-
-	return resList;
+	return resList[first];
 }
 void writeFile(uint32_t size_A,uint32_t size_B){
 	FILE *fp;
@@ -398,7 +583,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray,all_stats *s
 		if(strcmp(queryString,"F") && c!=EOF)
 		{
 			oneColumnRelation *column;
-			printf("\n\n%d)%s\n",y,queryString);
+			//printf("\n\n%d)%s\n",y,queryString);
 			y++;
 			data=analyzeQuery(queryString);
 
@@ -413,8 +598,8 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray,all_stats *s
 		temp_stats->cols[i]=statsArray->cols[data->QueryRelArray[i]];
 		//printf("QQQQQQQ %ld %ld\n",relationArray[data->QueryRelArray[i]].colCount,statsArray->cols[data->QueryRelArray[i]]);
 		if(relationArray[data->QueryRelArray[i]].colCount!=statsArray->cols[data->QueryRelArray[i]]){
-			printf("PR0BLEM");
-			sleep(20);
+			//printf("PR0BLEM");
+			//sleep(20);
 		}
 
 		temp_stats->array_with_stats[i]=malloc(temp_stats->cols[i]*sizeof(stats));
@@ -428,15 +613,15 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray,all_stats *s
 //
 
 //print stats
-printf("STARTING STATS\n");
-for(i=0;i<temp_stats->rels;i++){
-	printf("rel %d\n",i);
+//printf("STARTING STATS\n");
+/*for(i=0;i<temp_stats->rels;i++){
+	//printf("rel %d\n",i);
 	for(j=0;j<temp_stats->cols[i];j++){
-		printf("col %d l=%ld u=%ld f=%ld d=%ld\n",j,temp_stats->array_with_stats[i][j].l,temp_stats->array_with_stats[i][j].u,temp_stats->array_with_stats[i][j].f,temp_stats->array_with_stats[i][j].d);
+		//printf("col %d l=%ld u=%ld f=%ld d=%ld\n",j,temp_stats->array_with_stats[i][j].l,temp_stats->array_with_stats[i][j].u,temp_stats->array_with_stats[i][j].f,temp_stats->array_with_stats[i][j].d);
 	}
-	printf("\n\n");
+	//printf("\n\n");
 }
-printf("--------------\n");
+printf("--------------\n");*/
 //
 
 
@@ -493,7 +678,7 @@ printf("--------------\n");
 					free(column->tuples);
 					free(column);
 //print stats
-printf("FILTER STATS\n");
+/*printf("FILTER STATS\n");
 for(i=0;i<temp_stats->rels;i++){
 	printf("rel %d\n",i);
 	for(j=0;j<temp_stats->cols[i];j++){
@@ -501,7 +686,7 @@ for(i=0;i<temp_stats->rels;i++){
 	}
 	printf("\n\n");
 }
-printf("--------------\n");
+printf("--------------\n");*/
 //
 				}
 			}
@@ -509,13 +694,13 @@ printf("--------------\n");
 			{
 //kalw thn sun gia na dw thn seira
 int *seira;
-seira=malloc(data->numPredJoinTwoRel*sizeof(int));;
+seira=malloc(data->numPredJoinTwoRel*sizeof(int));
 seira=JoinEnumeration(data,temp_stats);
-printf("READWORKFILE-seira ");
-for(int qwertyuiop=0;qwertyuiop<data->numPredJoinTwoRel;qwertyuiop++){
-	printf("(%d) %d ",qwertyuiop,seira[qwertyuiop]);
+//printf("READWORKFILE-seira ");
+/*for(int qwertyuiop=0;qwertyuiop<data->numPredJoinTwoRel;qwertyuiop++){
+	//printf("(%d) %d ",qwertyuiop,seira[qwertyuiop]);
 }
-printf("\n");
+printf("\n");*/
 //
 				leftTeam=0;
 				rightTeam=0;
@@ -532,7 +717,7 @@ printf("\n");
 				    double cpu_time_used;
 				    start = clock();
 ////edw dialegw thn seira twn kathgorhmatwn
-				    /*if(data->numPredJoinTwoRel!=1 )
+				   /* if(data->numPredJoinTwoRel!=1 )
 				    {
 				    	indx=checkIfOneRelationJoinExists(data,middleResArray,middleResultsCounter,i);
 						if(indx==-1)			//eimaste se TwoRelationJoin kai theloume na vroume ta statistika gia kathe kathgorhma//
@@ -541,7 +726,7 @@ printf("\n");
 						}
 				    }*/
 ////end - edw dialegw thn seira twn kathgorhmatwn
-
+				    //printf("index=%d\n",indx);
 					end = clock();
 					cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 					//printf("\nTime = %f\n",cpu_time_used);
@@ -589,12 +774,6 @@ printf("\n");
 					resultList *resultList1,*resultList2;
 					if(leftRelationId==rightRelationId || (leftTeam==rightTeam && leftColumnPosInMiddleArray!=-1 && rightColumnPosInMiddleArray!=-1))			//JoinOneRelationArray
 					{
-if(leftTeam==rightTeam && leftColumnPosInMiddleArray!=-1 && rightColumnPosInMiddleArray!=-1){
-	printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
-}
-if(leftRelationId==rightRelationId){
-	printf("BBBBBBBBBBBBBBBBBBBBBBBBBBBB");
-}
 						//printf("One Relation Join\n");
 						resultList1=sameRelationJoin(leftColumn,rightColumn);
 						data->twoRelationPredArray[indx].selected=1;
@@ -721,14 +900,51 @@ if(leftRelationId==rightRelationId){
 							{
 								if(middleResArray[j].relation==relationIndex && middleResArray[j].relation_id==relationId)
 								{
-									column=setColumnFromMiddleArray(middleResArray,relationIndex,columnIndx,j,relationArray);
-									long sum=SumOneColumnRelation(column);
+								    clock_t start, end;
+								    double cpu_time_used;
+								    start = clock();
+								    int arrayIndx=j;
+								    long sum=0;
+									for(int k=0;k<middleResArray[arrayIndx].rowIdsNum;k++)
+									{
+										int index=middleResArray[arrayIndx].rowIds[k];
+										sum+=relationArray[relationIndex].table[columnIndx][index];
+										//temp->tuples[k].id=k;
+									}
+
+									//column=setColumnFromMiddleArray(middleResArray,relationIndex,columnIndx,j,relationArray);
+									end = clock();
+									cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+									//printf("SetCol Time = %f\n",cpu_time_used);
+									//long sum=SumOneColumnRelation(column);
+									//end = clock();
+									//cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+									//printf("Sum Time = %f\n",cpu_time_used);
+									/*Job_Scheduler* job_scheduler;
+									job_scheduler=malloc(sizeof(Job_Scheduler));
+									job_scheduler=initialize_scheduler(THREADS_NUM,NULL,NULL);
+									Job *job;
+									int segSize=middleResArray[arrayIndx].rowIdsNum/THREADS_NUM;
+									for(int i=0;i<THREADS_NUM;i++){
+										job=initializeJob("partition");
+										job->partitionjob.start=i*segSize;
+										job->partitionjob.end=job->partitionjob.start+segSize;
+										job->partitionjob.rel='S';
+										if(i==THREADS_NUM-1)
+											job->partitionjob.end+=relS->num_of_tuples%THREADS_NUM;
+										submit_Job(job_scheduler,job);
+									}*/
+
 									if(sum==0)
-										printf("NULL ");
+										printf("NULL");
 									else
-										printf("%ld ",sum);
-									free(column->tuples);
-									free(column);
+										printf("%ld",sum);
+									if(i!=data->numViewQuery-1)
+									{
+										printf(" ");
+									}
+									//free(column->tuples);
+									//free(column);
 								}
 							}
 						}
@@ -1116,7 +1332,7 @@ void createStatsFromFirstArray(statistics_array **statsArray,multiColumnRelation
 
 		//////////////////////
 		/*int curValue=relationArray[relationIndx].table[columnIndx][j]%hash_num;
-		
+
 		int flag=1;
 		for(int l=0;l<pointers[curValue];l++){
 			if(dis_values[curValue][l]==relationArray[relationIndx].table[columnIndx][j]){
@@ -1251,7 +1467,7 @@ int checkIfOneRelationJoinExists(queryDataIndex* data,middleResults* middleResAr
 			return k;
 		}
 	}
-	return -1;
+	return tempValue;
 }
 void changeRowIdNumOfTeam(middleResults *array,int team,int numRows,int countMiddleArray){
 	int i;
@@ -1653,7 +1869,7 @@ middleResults executeFilter(oneColumnRelation* column,int value,char typeOperati
 				double base,power;
 				base=1-(1.0*temp_stats->array_with_stats[relationId][columnIndx].f)/prev_f;
 				power=(1.0*temp_stats->array_with_stats[relationId][i].f)/temp_stats->array_with_stats[relationId][i].d;
-				printf("= base=%f power=%f\n",base,power);
+				//printf("= base=%f power=%f\n",base,power);
 				temp_stats->array_with_stats[relationId][i].d=temp_stats->array_with_stats[relationId][i].d*(1-pow(base,power));
 				temp_stats->array_with_stats[relationId][i].f=temp_stats->array_with_stats[relationId][columnIndx].f;
 
@@ -1678,7 +1894,7 @@ middleResults executeFilter(oneColumnRelation* column,int value,char typeOperati
 		if(value<temp_stats->array_with_stats[relationId][columnIndx].l){
 			value=temp_stats->array_with_stats[relationId][columnIndx].l;
 		}
-		
+
 		double suntelesths;
 		suntelesths=(1.0*temp_stats->array_with_stats[relationId][columnIndx].u-value)/(1.0*temp_stats->array_with_stats[relationId][columnIndx].u-temp_stats->array_with_stats[relationId][columnIndx].l);
 
@@ -1692,7 +1908,7 @@ middleResults executeFilter(oneColumnRelation* column,int value,char typeOperati
 				double base,power;
 				base=1-(1.0*temp_stats->array_with_stats[relationId][columnIndx].f)/prev_f;
 				power=(1.0*temp_stats->array_with_stats[relationId][i].f)/(1.0*temp_stats->array_with_stats[relationId][i].d);
-				printf("> base=%f power=%f\n",base,power);
+				//printf("> base=%f power=%f\n",base,power);
 				temp_stats->array_with_stats[relationId][i].d=temp_stats->array_with_stats[relationId][i].d*(1-pow(base,power));
 				temp_stats->array_with_stats[relationId][i].f=temp_stats->array_with_stats[relationId][columnIndx].f;
 
@@ -1717,7 +1933,7 @@ middleResults executeFilter(oneColumnRelation* column,int value,char typeOperati
 		if(value>temp_stats->array_with_stats[relationId][columnIndx].u){
 			value=temp_stats->array_with_stats[relationId][columnIndx].u;
 		}
-		
+
 		double suntelesths;
 		suntelesths=(1.0*value-temp_stats->array_with_stats[relationId][columnIndx].l)/(1.0*temp_stats->array_with_stats[relationId][columnIndx].u-temp_stats->array_with_stats[relationId][columnIndx].l);
 
@@ -1731,7 +1947,7 @@ middleResults executeFilter(oneColumnRelation* column,int value,char typeOperati
 				double base,power;
 				base=1-(1.0*temp_stats->array_with_stats[relationId][columnIndx].f)/prev_f;
 				power=(1.0*temp_stats->array_with_stats[relationId][i].f)/(1.0*temp_stats->array_with_stats[relationId][i].d);
-				printf("< base=%f power=%f\n",base,power);
+				//printf("< base=%f power=%f\n",base,power);
 				temp_stats->array_with_stats[relationId][i].d=temp_stats->array_with_stats[relationId][i].d*(1-pow(base,power));
 				temp_stats->array_with_stats[relationId][i].f=temp_stats->array_with_stats[relationId][columnIndx].f;
 
@@ -1804,18 +2020,18 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 	}
 
 	//print graph
-	printf("\nGRAPH\n");
-	for(i=0;i<data->numRelQuery;i++){
+	//printf("\nGRAPH\n");
+	/*for(i=0;i<data->numRelQuery;i++){
 		for(j=0;j<data->numRelQuery;j++){
-			printf("%d ",graph[i][j]);
+			//printf("%d ",graph[i][j]);
 		}
 		printf("\n");
 	}
-	printf("\n\n");
+	printf("\n\n");*/
 	//
 
 	//print stats
-	printf("BEFORE JOIN STATS\n");
+	/*printf("BEFORE JOIN STATS\n");
 	for(i=0;i<before_joins_stats->rels;i++){
 		printf("rel %d\n",i);
 		for(j=0;j<before_joins_stats->cols[i];j++){
@@ -1823,7 +2039,7 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 		}
 		printf("\n\n");
 	}
-	printf("--------------\n");
+	printf("--------------\n");*/
 	//
 
 	//ta filter ta exw treksei me thn seira pou mou erxontai, opote edw 8a dw mono ta join
@@ -1838,7 +2054,7 @@ int leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx;
 		}
 
 		for(i=0;i<data->numRelQuery;i++){//to prwto for apo thn ekfwnhsh
-printf("1st for\n");
+			//printf("1st for\n");
 			int *set,cost;
 			set=malloc(data->numRelQuery*sizeof(int));
 			for(j=0;j<data->numRelQuery;j++){
@@ -1879,7 +2095,7 @@ printf("1st for\n");
 				}
 			}
 
-			
+
 			if(graph[i][i]==1){//exoume join se sthles tou idiou pinaka (sameJoin)
 				///////////////////
 				//ftiaxnw ta stats !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1925,7 +2141,7 @@ printf("1st for\n");
 					else{
 						base=1-(1.0*temp_stats->array_with_stats[leftRelationId][leftColumnIndx].f)/prev_f;
 						power=(1.0*temp_stats->array_with_stats[leftRelationId][leftColumnIndx].f)/temp_stats->array_with_stats[leftRelationId][leftColumnIndx].d;
-						printf("same1 base=%f power=%f\n",base,power);
+						//printf("same1 base=%f power=%f\n",base,power);
 						temp_stats->array_with_stats[leftRelationId][leftColumnIndx].d=temp_stats->array_with_stats[leftRelationId][leftColumnIndx].d*(1-pow(base,power));
 						temp_stats->array_with_stats[rightRelationId][rightColumnIndx].d=temp_stats->array_with_stats[leftRelationId][leftColumnIndx].d;
 					}
@@ -1941,7 +2157,7 @@ printf("1st for\n");
 								else{
 									base=1-(1.0*temp_stats->array_with_stats[leftRelationId][leftColumnIndx].f)/prev_f;
 									power=(1.0*temp_stats->array_with_stats[leftRelationId][j].f)/temp_stats->array_with_stats[leftRelationId][j].d;
-									printf("same2 base=%f power=%f\n",base,power);
+									//printf("same2 base=%f power=%f\n",base,power);
 									temp_stats->array_with_stats[leftRelationId][j].d=temp_stats->array_with_stats[leftRelationId][j].d*(1-pow(base,power));
 									temp_stats->array_with_stats[leftRelationId][j].f=temp_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
 								}
@@ -1952,31 +2168,31 @@ printf("1st for\n");
 				///////////////////////
 				cost=temp_stats->array_with_stats[rightRelationId][rightColumnIndx].f;//mallon 8a agnow to cost gia thn prwth fora
 //ALLA PREPEI NA TO BALW STO RETURN
-				printf("bazw sthn lista 1\n");
+				//printf("bazw sthn lista 1\n");
 				insertList(&(btree[0].startlist),cost,set,data->numRelQuery,teams,teamCount,temp_stats,seira,data->numPredJoinTwoRel,seira_point);
 			}
 			else{
 				cost=0;
-				printf("bazw sthn lista 2\n");
+				//printf("bazw sthn lista 2\n");
 				insertList(&(btree[0].startlist),cost,set,data->numRelQuery,teams,teamCount,temp_stats,seira,data->numPredJoinTwoRel,seira_point);
 			}
 		}
 //////////////
 //print
-printList(btree[0].startlist,data->numRelQuery,data->numPredJoinTwoRel);
+//printList(btree[0].startlist,data->numRelQuery,data->numPredJoinTwoRel);
 ////////////////
 
 	//to spaw se 2 kommatia sto prwto 8a kanw opws kai panw alla gia 2 sxeseis(wste na ftiaksw kai ena best tree) kai sto allo 8a pairnw to best kai 8a to sugkrinw
 		listnode *temp;
 		temp=btree[0].startlist;
 		while(temp!=NULL){
-printf("zxcvbnm allagh\n");
+//printf("zxcvbnm allagh\n");
 			for(j=0;j<data->numRelQuery;j++){//to for me to R pou den anhkei sto S
 				if(temp->set[j]==0){//den to exoume xrhsimopoihsei st0 sugkekrimeno set , ara to 8eloume
 					//opote paw sto graph kai elegxw an ennonetai me kapoio
 					//for(k=0;k<data->numRelQuery;k++){//an k==j to exw eleksei panw opote edw to
 					for(k=j+1;k<data->numRelQuery;k++){//den 8elw ta k opou einai mikrotera apo to j giati exw ftiaksei autes tis omades
-printf("zxcvbnm %d %d\n",j,k);
+//printf("zxcvbnm %d %d\n",j,k);
 						if( k!=j && temp->set[k]==1 && graph[j][k]==1 ){//an to k einai sto set kai sundaietai me to j tote to 8eloume
 							//pairnw ta dedomena apo thn lista
 							int *set,*teams,teamCount,cost;
@@ -1997,11 +2213,11 @@ printf("zxcvbnm %d %d\n",j,k);
 								seira[i]=temp->seira[i];
 							}
 							//
-							printf("i just took set : ");
-							for(i=0;i<data->numRelQuery;i++){
-								printf("%d ",set[i]);
-							}
-							printf("\n\n");
+							//printf("i just took set : ");
+							/*for(i=0;i<data->numRelQuery;i++){
+								//printf("%d ",set[i]);
+							}*/
+							//printf("\n\n");
 
 							local_stats=malloc(sizeof(all_stats));
 							local_stats->rels=temp->local_stats->rels;
@@ -2037,14 +2253,14 @@ all_stats *temp_stats;
 			}
 
 */
-printf("QWERTY1\n\n");					//upologizw to cost , 
-							for(i=0;i<data->numPredJoinTwoRel;i++){//koitazw ola ta kathgorhmata na dw ti prakseis 
+//printf("QWERTY1\n\n");					//upologizw to cost ,
+							for(i=0;i<data->numPredJoinTwoRel;i++){//koitazw ola ta kathgorhmata na dw ti prakseis
 								if( (data->twoRelationPredArray[i].left->rel==j && data->twoRelationPredArray[i].right->rel==k) || (data->twoRelationPredArray[i].left->rel==k && data->twoRelationPredArray[i].right->rel==j) ){//koitazw an ta rel uparxoun sta kathgorhmata
-printf("QWERTY2\n");
+//printf("QWERTY2\n");
 									seira[seira_point]=i;
 									seira_point++;
 									if(teams[j]==teams[k] && teams[j]!=0 ){//elegxw tis omades , dld an 8a kanw radix h samejoin
-printf("QWERTY3\n");
+//printf("QWERTY3\n");
 										int indx=i;
 										leftRelationId = data->twoRelationPredArray[indx].left->rel;
 										leftColumnIndx =data->twoRelationPredArray[indx].left->col;
@@ -2078,7 +2294,7 @@ printf("QWERTY3\n");
 										else{
 											base=1-(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].f)/prev_f;
 											power=(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].f)/local_stats->array_with_stats[leftRelationId][leftColumnIndx].d;
-											printf("same3 base=%f power=%f\n",base,power);
+											//printf("same3 base=%f power=%f\n",base,power);
 											local_stats->array_with_stats[leftRelationId][leftColumnIndx].d=local_stats->array_with_stats[leftRelationId][leftColumnIndx].d*(1-pow(base,power));
 											local_stats->array_with_stats[rightRelationId][rightColumnIndx].d=local_stats->array_with_stats[leftRelationId][leftColumnIndx].d;
 										}
@@ -2094,7 +2310,7 @@ printf("QWERTY3\n");
 												else{
 													base=1-(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].f)/prev_f;
 													power=(1.0*local_stats->array_with_stats[leftRelationId][q].f)/local_stats->array_with_stats[leftRelationId][q].d;
-													printf("same4 base=%f power=%f\n",base,power);
+													//printf("same4 base=%f power=%f\n",base,power);
 													local_stats->array_with_stats[leftRelationId][q].d=local_stats->array_with_stats[leftRelationId][q].d*(1-pow(base,power));
 													local_stats->array_with_stats[leftRelationId][q].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
 												}
@@ -2110,7 +2326,7 @@ printf("QWERTY3\n");
 												else{
 													base=1-(1.0*local_stats->array_with_stats[rightRelationId][rightColumnIndx].f)/prev_f;
 													power=(1.0*local_stats->array_with_stats[rightRelationId][q].f)/local_stats->array_with_stats[rightRelationId][q].d;
-													printf("same5 base=%f power=%f\n",base,power);
+													//printf("same5 base=%f power=%f\n",base,power);
 													local_stats->array_with_stats[rightRelationId][q].d=local_stats->array_with_stats[rightRelationId][q].d*(1-pow(base,power));
 													local_stats->array_with_stats[rightRelationId][q].f=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
 												}
@@ -2137,7 +2353,7 @@ printf("QWERTY3\n");
 										//edw den xreiazetai na allaksw omades
 									}
 									else{//exw radix
-printf("QWERTY4\n");
+//printf("QWERTY4\n");
 										int indx=i;
 										leftRelationId = data->twoRelationPredArray[indx].left->rel;
 										leftColumnIndx = data->twoRelationPredArray[indx].left->col;
@@ -2171,7 +2387,7 @@ printf("QWERTY4\n");
 										local_stats->array_with_stats[rightRelationId][rightColumnIndx].d=local_stats->array_with_stats[leftRelationId][leftColumnIndx].d;
 
 										cost=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-printf("AAAA n=%d d=%ld cost=%d\n",n,local_stats->array_with_stats[rightRelationId][rightColumnIndx].d,cost);
+//printf("AAAA n=%d d=%ld cost=%d\n",n,local_stats->array_with_stats[rightRelationId][rightColumnIndx].d,cost);
 
 										double base,power;
 										//gia tous pinakes pou phran meros
@@ -2186,18 +2402,18 @@ printf("AAAA n=%d d=%ld cost=%d\n",n,local_stats->array_with_stats[rightRelation
 												else{
 													base=1-(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].d)/prev_d_A;
 													power=(1.0*local_stats->array_with_stats[leftRelationId][q].f)/local_stats->array_with_stats[leftRelationId][q].d;
-													//printf("radix1 base=%f power=%f pow=%f \n",base,power,pow(base,power));
+													////printf("radix1 base=%f power=%f pow=%f \n",base,power,pow(base,power));
 													if(base>0){//
 														local_stats->array_with_stats[leftRelationId][q].d=local_stats->array_with_stats[leftRelationId][q].d*(1-pow(base,power));
 														local_stats->array_with_stats[leftRelationId][q].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
 													}//
 													else{//an exw arnhtikh bash
-printf("arnhtikh bash\n");
+//printf("arnhtikh bash\n");
 														base=-base;
 														local_stats->array_with_stats[leftRelationId][q].d=local_stats->array_with_stats[leftRelationId][q].d*(1+pow(base,power));
 														local_stats->array_with_stats[leftRelationId][q].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
 													}//
-													printf("radix1 base=%f power=%f pow=%f \n",base,power,pow(base,power));
+													//printf("radix1 base=%f power=%f pow=%f \n",base,power,pow(base,power));
 												}
 											}
 										}
@@ -2211,7 +2427,7 @@ printf("arnhtikh bash\n");
 												else{
 													base=1-(1.0*local_stats->array_with_stats[rightRelationId][rightColumnIndx].d)/prev_d_B;
 													power=(1.0*local_stats->array_with_stats[rightRelationId][q].f)/local_stats->array_with_stats[rightRelationId][q].d;
-													printf("radix2 base=%f power=%f\n",base,power);
+													//printf("radix2 base=%f power=%f\n",base,power);
 													if(base>0){//
 														local_stats->array_with_stats[rightRelationId][q].d=local_stats->array_with_stats[rightRelationId][q].d*(1-pow(base,power));
 														local_stats->array_with_stats[rightRelationId][q].f=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
@@ -2239,7 +2455,7 @@ printf("arnhtikh bash\n");
 													else{
 														base=1-(1.0*local_stats->array_with_stats[rightRelationId][rightColumnIndx].d)/prev_d_B;
 														power=(1.0*local_stats->array_with_stats[rightRelationId][q].f)/local_stats->array_with_stats[rightRelationId][q].d;
-														printf("radix3 base=%f power=%f\n",base,power);
+														//printf("radix3 base=%f power=%f\n",base,power);
 														if(base>0){//
 															local_stats->array_with_stats[rightRelationId][q].d=local_stats->array_with_stats[rightRelationId][q].d*(1-pow(base,power));
 															local_stats->array_with_stats[rightRelationId][q].f=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
@@ -2262,7 +2478,7 @@ printf("arnhtikh bash\n");
 													else{
 														base=1-(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].d)/prev_d_B;
 														power=(1.0*local_stats->array_with_stats[leftRelationId][q].f)/local_stats->array_with_stats[leftRelationId][q].d;
-														printf("radix4 base=%f power=%f\n",base,power);
+														//printf("radix4 base=%f power=%f\n",base,power);
 														if(base>0){//
 															local_stats->array_with_stats[leftRelationId][q].d=local_stats->array_with_stats[leftRelationId][q].d*(1-pow(base,power));
 															local_stats->array_with_stats[leftRelationId][q].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
@@ -2278,11 +2494,11 @@ printf("arnhtikh bash\n");
 										}
 										//
 								//insert
-								printf("111before insert set : ");
-								for(int qaz=0;qaz<data->numRelQuery;qaz++){
-									printf("(%d) %d ",qaz,set[qaz]);
+								//printf("111before insert set : ");
+								/*for(int qaz=0;qaz<data->numRelQuery;qaz++){
+									//printf("(%d) %d ",qaz,set[qaz]);
 								}
-								printf("\n\n");
+								printf("\n\n");*/
 										//allazw ta teams
 										int newteam;
 										if(teams[rightRelationId]==0 && teams[leftRelationId]==0){
@@ -2317,16 +2533,16 @@ printf("arnhtikh bash\n");
 								}
 							}
 							//insert
-							printf("before insert set : ");
-							for(int qaz=0;qaz<data->numRelQuery;qaz++){
+							//printf("before insert set : ");
+							/*for(int qaz=0;qaz<data->numRelQuery;qaz++){
 								printf("(%d) %d ",qaz,set[qaz]);
 							}
-							printf("\n\n");
+							printf("\n\n");*/
 							insertList(&(btree[1].startlist),cost,set,data->numRelQuery,teams,teamCount,local_stats,seira,data->numPredJoinTwoRel,seira_point);
 							//kai na kanw to besttree
 							if(btree[1].BestNode==NULL){
 								btree[1].BestNode=btree[1].startlist;
-								printf("best_tree_1\n");
+								//printf("best_tree_1\n");
 							}
 							if(btree[1].BestNode->cost>cost){
 								listnode *temp;
@@ -2335,7 +2551,7 @@ printf("arnhtikh bash\n");
 									temp=temp->next;
 								}
 								btree[1].BestNode=temp;//o kaluteros kombos einai o teleutaios pou molis ebala
-								printf("best_tree_2\n");
+								//printf("best_tree_2\n");
 							}
 						}
 					}
@@ -2344,30 +2560,30 @@ printf("arnhtikh bash\n");
 			temp=temp->next;
 		}
 //
-printf("TELOS TO 2 LOOP");
-printList(btree[1].startlist,data->numRelQuery,data->numPredJoinTwoRel);
+//printf("TELOS TO 2 LOOP");
+//printList(btree[1].startlist,data->numRelQuery,data->numPredJoinTwoRel);
 //sleep(10);
 //
 
 //LOGIKA GIA TO YPOLOIPO 8A EINAI IDIO ME TO KATW
 for (int subteam=2;subteam<data->numRelQuery;subteam++){
-	printf("subteam = %d\n",subteam);
+	//printf("subteam = %d\n",subteam);
 	listnode *temp;
 	temp=btree[subteam-1].BestNode;
 	if(temp==NULL){
 		printf("einai null\n");
 	}
 	else{
-		printf("exei mesa\n");
+		//printf("exei mesa\n");
 	}
 	for(j=0;j<data->numRelQuery;j++){//to for me to R pou den anhkei sto S
 				if(temp->set[j]==0){//den to exoume xrhsimopoihsei st0 sugkekrimeno set , ara to 8eloume
 					//opote paw sto graph kai elegxw an ennonetai me kapoio
 					for(k=0;k<data->numRelQuery;k++){//an k==j to exw eleksei panw opote edw to
 					//for(k=j+1;k<data->numRelQuery;k++){//den 8elw ta k opou einai mikrotera apo to j giati exw ftiaksei autes tis omades
-printf("zxcvbnm2 %d %d\n",j,k);
+//printf("zxcvbnm2 %d %d\n",j,k);
 						if( k!=j && temp->set[k]==1 && graph[j][k]==1 ){//an to k einai sto set kai sundaietai me to j tote to 8eloume
-printf("zxcvbnm3 %d %d\n",j,k);
+//printf("zxcvbnm3 %d %d\n",j,k);
 							//pairnw ta dedomena apo thn lista
 							int *set,*teams,teamCount,cost;
 							all_stats *local_stats;
@@ -2387,11 +2603,11 @@ printf("zxcvbnm3 %d %d\n",j,k);
 								seira[i]=temp->seira[i];
 							}
 							//
-							printf("i just took set : ");
-							for(i=0;i<data->numRelQuery;i++){
+							//printf("i just took set : ");
+							/*for(i=0;i<data->numRelQuery;i++){
 								printf("%d ",set[i]);
 							}
-							printf("\n\n");
+							printf("\n\n");*/
 
 							local_stats=malloc(sizeof(all_stats));
 							local_stats->rels=temp->local_stats->rels;
@@ -2427,14 +2643,14 @@ all_stats *temp_stats;
 			}
 
 */
-printf("QWERTY1\n\n");					//upologizw to cost , 
-							for(i=0;i<data->numPredJoinTwoRel;i++){//koitazw ola ta kathgorhmata na dw ti prakseis 
+//printf("QWERTY1\n\n");					//upologizw to cost ,
+							for(i=0;i<data->numPredJoinTwoRel;i++){//koitazw ola ta kathgorhmata na dw ti prakseis
 								if( (data->twoRelationPredArray[i].left->rel==j && data->twoRelationPredArray[i].right->rel==k) || (data->twoRelationPredArray[i].left->rel==k && data->twoRelationPredArray[i].right->rel==j) ){//koitazw an ta rel uparxoun sta kathgorhmata
-printf("QWERTY2\n");
+//printf("QWERTY2\n");
 									seira[seira_point]=i;
 									seira_point++;
 									if(teams[j]==teams[k] && teams[j]!=0 ){//elegxw tis omades , dld an 8a kanw radix h samejoin
-printf("QWERTY3\n");
+//printf("QWERTY3\n");
 										int indx=i;
 										leftRelationId = data->twoRelationPredArray[indx].left->rel;
 										leftColumnIndx =data->twoRelationPredArray[indx].left->col;
@@ -2468,7 +2684,7 @@ printf("QWERTY3\n");
 										else{
 											base=1-(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].f)/prev_f;
 											power=(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].f)/local_stats->array_with_stats[leftRelationId][leftColumnIndx].d;
-											printf("same3 base=%f power=%f\n",base,power);
+											//printf("same3 base=%f power=%f\n",base,power);
 											local_stats->array_with_stats[leftRelationId][leftColumnIndx].d=local_stats->array_with_stats[leftRelationId][leftColumnIndx].d*(1-pow(base,power));
 											local_stats->array_with_stats[rightRelationId][rightColumnIndx].d=local_stats->array_with_stats[leftRelationId][leftColumnIndx].d;
 										}
@@ -2484,7 +2700,7 @@ printf("QWERTY3\n");
 												else{
 													base=1-(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].f)/prev_f;
 													power=(1.0*local_stats->array_with_stats[leftRelationId][q].f)/local_stats->array_with_stats[leftRelationId][q].d;
-													printf("same4 base=%f power=%f\n",base,power);
+													//printf("same4 base=%f power=%f\n",base,power);
 													local_stats->array_with_stats[leftRelationId][q].d=local_stats->array_with_stats[leftRelationId][q].d*(1-pow(base,power));
 													local_stats->array_with_stats[leftRelationId][q].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
 												}
@@ -2500,7 +2716,7 @@ printf("QWERTY3\n");
 												else{
 													base=1-(1.0*local_stats->array_with_stats[rightRelationId][rightColumnIndx].f)/prev_f;
 													power=(1.0*local_stats->array_with_stats[rightRelationId][q].f)/local_stats->array_with_stats[rightRelationId][q].d;
-													printf("same5 base=%f power=%f\n",base,power);
+													//printf("same5 base=%f power=%f\n",base,power);
 													local_stats->array_with_stats[rightRelationId][q].d=local_stats->array_with_stats[rightRelationId][q].d*(1-pow(base,power));
 													local_stats->array_with_stats[rightRelationId][q].f=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
 												}
@@ -2527,7 +2743,7 @@ printf("QWERTY3\n");
 										//edw den xreiazetai na allaksw omades
 									}
 									else{//exw radix
-printf("QWERTY4\n");
+//printf("QWERTY4\n");
 										int indx=i;
 										leftRelationId = data->twoRelationPredArray[indx].left->rel;
 										leftColumnIndx = data->twoRelationPredArray[indx].left->col;
@@ -2561,7 +2777,7 @@ printf("QWERTY4\n");
 										local_stats->array_with_stats[rightRelationId][rightColumnIndx].d=local_stats->array_with_stats[leftRelationId][leftColumnIndx].d;
 
 										cost=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-printf("AAAA n=%d d=%ld cost=%d\n",n,local_stats->array_with_stats[rightRelationId][rightColumnIndx].d,cost);
+//printf("AAAA n=%d d=%ld cost=%d\n",n,local_stats->array_with_stats[rightRelationId][rightColumnIndx].d,cost);
 
 										double base,power;
 										//gia tous pinakes pou phran meros
@@ -2576,18 +2792,18 @@ printf("AAAA n=%d d=%ld cost=%d\n",n,local_stats->array_with_stats[rightRelation
 												else{
 													base=1-(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].d)/prev_d_A;
 													power=(1.0*local_stats->array_with_stats[leftRelationId][q].f)/local_stats->array_with_stats[leftRelationId][q].d;
-													//printf("radix1 base=%f power=%f pow=%f \n",base,power,pow(base,power));
+													////printf("radix1 base=%f power=%f pow=%f \n",base,power,pow(base,power));
 													if(base>0){//
 														local_stats->array_with_stats[leftRelationId][q].d=local_stats->array_with_stats[leftRelationId][q].d*(1-pow(base,power));
 														local_stats->array_with_stats[leftRelationId][q].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
 													}//
 													else{//an exw arnhtikh bash
-printf("arnhtikh bash\n");
+//printf("arnhtikh bash\n");
 														base=-base;
 														local_stats->array_with_stats[leftRelationId][q].d=local_stats->array_with_stats[leftRelationId][q].d*(1+pow(base,power));
 														local_stats->array_with_stats[leftRelationId][q].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
 													}//
-													printf("radix1 base=%f power=%f pow=%f \n",base,power,pow(base,power));
+													//printf("radix1 base=%f power=%f pow=%f \n",base,power,pow(base,power));
 												}
 											}
 										}
@@ -2601,7 +2817,7 @@ printf("arnhtikh bash\n");
 												else{
 													base=1-(1.0*local_stats->array_with_stats[rightRelationId][rightColumnIndx].d)/prev_d_B;
 													power=(1.0*local_stats->array_with_stats[rightRelationId][q].f)/local_stats->array_with_stats[rightRelationId][q].d;
-													printf("radix2 base=%f power=%f\n",base,power);
+													//printf("radix2 base=%f power=%f\n",base,power);
 													if(base>0){//
 														local_stats->array_with_stats[rightRelationId][q].d=local_stats->array_with_stats[rightRelationId][q].d*(1-pow(base,power));
 														local_stats->array_with_stats[rightRelationId][q].f=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
@@ -2629,7 +2845,7 @@ printf("arnhtikh bash\n");
 													else{
 														base=1-(1.0*local_stats->array_with_stats[rightRelationId][rightColumnIndx].d)/prev_d_B;
 														power=(1.0*local_stats->array_with_stats[rightRelationId][q].f)/local_stats->array_with_stats[rightRelationId][q].d;
-														printf("radix3 base=%f power=%f\n",base,power);
+														//printf("radix3 base=%f power=%f\n",base,power);
 														if(base>0){//
 															local_stats->array_with_stats[rightRelationId][q].d=local_stats->array_with_stats[rightRelationId][q].d*(1-pow(base,power));
 															local_stats->array_with_stats[rightRelationId][q].f=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
@@ -2652,7 +2868,7 @@ printf("arnhtikh bash\n");
 													else{
 														base=1-(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].d)/prev_d_B;
 														power=(1.0*local_stats->array_with_stats[leftRelationId][q].f)/local_stats->array_with_stats[leftRelationId][q].d;
-														printf("radix4 base=%f power=%f\n",base,power);
+														//printf("radix4 base=%f power=%f\n",base,power);
 														if(base>0){//
 															local_stats->array_with_stats[leftRelationId][q].d=local_stats->array_with_stats[leftRelationId][q].d*(1-pow(base,power));
 															local_stats->array_with_stats[leftRelationId][q].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
@@ -2668,11 +2884,11 @@ printf("arnhtikh bash\n");
 										}
 										//
 								//insert
-								printf("111before insert set : ");
-								for(int qaz=0;qaz<data->numRelQuery;qaz++){
+								//printf("111before insert set : ");
+								/*for(int qaz=0;qaz<data->numRelQuery;qaz++){
 									printf("(%d) %d ",qaz,set[qaz]);
 								}
-								printf("\n\n");
+								printf("\n\n");*/
 										//allazw ta teams
 										int newteam;
 										if(teams[rightRelationId]==0 && teams[leftRelationId]==0){
@@ -2707,15 +2923,15 @@ printf("arnhtikh bash\n");
 								}
 							}
 							//insert
-							printf("before insert set in : ");
-							for(int qaz=0;qaz<data->numRelQuery;qaz++){
-								printf("(%d) %d ",qaz,set[qaz]);
+							//printf("before insert set in : ");
+							/*for(int qaz=0;qaz<data->numRelQuery;qaz++){
+								//printf("(%d) %d ",qaz,set[qaz]);
 							}
-							printf("\n\n");
+							printf("\n\n");*/
 							insertList(&(btree[subteam].startlist),cost,set,data->numRelQuery,teams,teamCount,local_stats,seira,data->numPredJoinTwoRel,seira_point);
 							//kai na kanw to besttree
 							if(btree[subteam].BestNode==NULL){
-								printf("ebala 1\n");
+								//printf("ebala 1\n");
 								btree[subteam].BestNode=btree[subteam].startlist;
 							}
 							if(btree[subteam].BestNode->cost>cost){
@@ -2725,17 +2941,17 @@ printf("arnhtikh bash\n");
 									temp2=temp2->next;
 								}
 								btree[subteam].BestNode=temp2;//o kaluteros kombos einai o teleutaios pou molis ebala
-								printf("ebala 2\n");
+								//printf("ebala 2\n");
 							}
 						}
 					}
 				}
 			}
-	printf("printList\n");
-	printList(btree[subteam].startlist,data->numRelQuery,data->numPredJoinTwoRel);
+	//printf("printList\n");
+	//printList(btree[subteam].startlist,data->numRelQuery,data->numPredJoinTwoRel);
 }
-printf("TELIKO PRINT LISTAS\n");
-	printList(btree[data->numRelQuery-1].startlist,data->numRelQuery,data->numPredJoinTwoRel);
+//printf("TELIKO PRINT LISTAS\n");
+	//printList(btree[data->numRelQuery-1].startlist,data->numRelQuery,data->numPredJoinTwoRel);
 return btree[data->numRelQuery-1].BestNode->seira;
 //
 
@@ -2750,7 +2966,7 @@ return btree[data->numRelQuery-1].BestNode->seira;
 						for(k=0;k<data->numRelQuery;k++){//an k==j to exw eleksei panw opote edw to
 							if( k!=j && temp->set[k]==1 && graph[j][k]==1 ){//an to k einai sto set kai sundaietai me to j tote to 8eloume
 								//upologizw to cost
-								
+
 							}
 						}
 					}
@@ -2766,7 +2982,7 @@ return btree[data->numRelQuery-1].BestNode->seira;
 }
 
 void insertList(listnode **list,int cost,int *set,int size,int *teams,int teamCount,all_stats *stats,int *seira,int seira_size,int seira_point){
-printf("start insert\n");
+//printf("start insert\n");
 	if((*list)==NULL){
 		(*list)=malloc(sizeof(listnode));
 		(*list)->cost=cost;
@@ -2812,7 +3028,7 @@ printf("start insert\n");
 		temp->next->local_stats=stats;
 		temp->next->next=NULL;
 	}
-printf("end insert\n");
+//printf("end insert\n");
 }
 
 void printList(listnode *list,int max,int max_seira){
@@ -2851,7 +3067,7 @@ void printList(listnode *list,int max,int max_seira){
 }
 
 void deleteBestTree(bestTree *tree){
-	
+
 }
 
 

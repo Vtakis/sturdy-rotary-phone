@@ -24,8 +24,7 @@ pthread_mutex_t write_to_histS= PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  new_cond=PTHREAD_COND_INITIALIZER;
 pthread_mutex_t resList_counter_mutex= PTHREAD_MUTEX_INITIALIZER;
 
-
-int ending=0;
+int ending;
 int id_counter=0;
 int resList_counter=0;
 int threads_exited=0;
@@ -39,7 +38,8 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
     int thread_mutex_place=0;
 	thread_param* x=(thread_param*)j;
 	int start;
-
+	ending=0;
+	//printf("Eimai to thread %d or %ld kai ksekinaw\n",x->id,pthread_self());
 	//x->sch->shared_data.histArrayR=malloc(x->sch->execution_threads*sizeof(hist*));
 	//x->sch->shared_data.histArrayS=malloc(x->sch->execution_threads*sizeof(hist*));
 
@@ -56,14 +56,27 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
 		pthread_mutex_lock(&mutex[thread_mutex_place]);
 		//printf("I am thread %d and leave pos %d\n",x->id,thread_mutex_place);
 		while(x->sch->q->jobs[thread_mutex_place].isEmpty==true){			//oso h thesh pou exei parei ena thread sthn oura einai adeia tote perimenei sot condition variable//
-			//printf("I am thread %d and waiting with position %d\n",x->id,thread_mutex_place);
-			//if(ending==1)exit(0);
+			//printf("I am thread %d and waiting with position %d   ending=%d  and jobs %d\n",x->id,thread_mutex_place,ending,x->sch->q->jobs_counter);
+
+			if(ending==1){
+				//printf("Eimai to thread %d or %ld kai teleiwnw me thesh %d\n",x->id,pthread_self(),thread_mutex_place);
+				pthread_mutex_lock(&threads_exited_mutex);
+				threads_exited++;
+				//pthread_cond_signal(&wait_hist_cond);
+				pthread_mutex_unlock(&threads_exited_mutex);
+				pthread_mutex_unlock(&mutex[thread_mutex_place]);
+				//sleep(10);
+				//return NULL;
+				//exit(x->id);
+				pthread_exit(&x->id);
+			}
 			pthread_cond_wait(&new_cond,&mutex[thread_mutex_place]);
+
 			//printf("I am thread %d and woke up with position %d\n",x->id,thread_mutex_place);
 			//sleep(10);
 		}
 		//printf("I am thread %d and i start work at pos %d\n",x->id,thread_mutex_place);
-		//sleep(10);
+		//sleep(2);
 		//x->sch->q->jobs_counter--;
 		pthread_mutex_unlock(&mutex[thread_mutex_place]);
 
@@ -107,12 +120,14 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
 				ht=createHashTable(*(x->sch->shared_data.RR),startR,endR);
 				compareRelations(ht,*(x->sch->shared_data.RS),startS,endS,*(x->sch->shared_data.RR),resList,1);		// 1 -> hashedRr
 				deleteHashTable(&ht);
+				//printResults(resList);
 			}
 			else
 			{
 				ht=createHashTable(*(x->sch->shared_data.RS),startS,endS);
 				compareRelations(ht,*(x->sch->shared_data.RR),startR,endR,*(x->sch->shared_data.RS),resList,0);		// 0 -> hashedRs
 				deleteHashTable(&ht);
+				//printResults(resList);
 			}
 			pthread_mutex_lock(&resList_counter_mutex);
 			x->sch->shared_data.resList[resList_counter] = resList;
@@ -120,32 +135,103 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
 			//printf("Listcounter=%d\n",resList_counter);
 			pthread_mutex_unlock(&resList_counter_mutex);
 		}
+		//printf("1)Thread %d -- jobs %d\n",x->id,x->sch->q->jobs_counter);
 		pthread_mutex_lock( &job_counter_mutex);
 		x->sch->q->jobs_counter--;
 		x->sch->q->jobs[thread_mutex_place].isEmpty=true;
-		//printf("Reduce Jobs=%d\n",x->sch->q->jobs_counter);
+		//printf("Thread %d wakes up central process with job counter %d\n",x->id,x->sch->q->jobs_counter);
+		//pthread_cond_signal(&wait_hist_cond);
+		//printf("Thread %d Reduce Jobs=%d\n",x->id,x->sch->q->jobs_counter);
 		pthread_mutex_unlock(&job_counter_mutex);
+		//printf("2)Thread %d -- jobs %d\n",x->id,x->sch->q->jobs_counter);
 		//printf("Id=%d Counter=%d\n",x->id,x->sch->q->jobs_counter);
+		//if(x->sch->q->jobs_counter==0)
 		pthread_cond_signal(&wait_hist_cond);
 
-	}
 
-	//printf("I am thread %d and waked up with position=%d\n",x->id,thread_mutex_place);
-	sleep(10);
-	exit(0);
+
+	}
 }
-void sleep_producer(Job_Scheduler *job_scheduler)
+void sleep_producer(Job_Scheduler *job_scheduler,int end)
 {
-	while(job_scheduler->q->jobs_counter!=0)
+	//printf("Mpika gia upno\n");
+	pthread_mutex_lock(&job_counter_mutex);
+	while(job_scheduler->q->jobs_counter>0)
 	{
 		//printf("Eimai h kentrikh diergasia kai perimenw %d\n",job_scheduler->q->jobs_counter);
 		//printf("%d\n",job_scheduler->q->jobs_counter);
-		pthread_cond_wait(&wait_hist_cond,&wait_hist_mutex);
-		//printf("Eimai h kentrikh diergasia kai ksupnhsa\n");
+		pthread_cond_wait(&wait_hist_cond,&job_counter_mutex);
+		//printf("Eimai h kentrikh diergasia kai ksupnhsa me %d\n",job_scheduler->q->jobs_counter);
+	}
+	pthread_mutex_unlock(&job_counter_mutex);
+	//
+	/*if(end==1)
+	{
+		ending=1;
+		pthread_cond_broadcast(&new_cond);
+		while(threads_exited!=job_scheduler->execution_threads)
+		{
+			//printf("threads exited=%d\n",threads_exited);
+			ending=1;
+			//pthread_cond_wait(&wait_hist_cond,&wait_hist_mutex);
+			pthread_cond_broadcast(&new_cond);
+		}
+	}*/
+	if(end==1)
+	{
+		//printf("Job Counter %d\n",job_scheduler->q->jobs_counter);
+		//delete_threads(job_scheduler);
+		ending=1;
+		//printf("Ksupnaw ola ta threads\n");
+		pthread_cond_broadcast(&new_cond);
+		//printf("Ta ksuphsa\n");
+		//delete_threads(&job_scheduler);
+	}
+	else
+	{
+		//printf("Job Finished\n");
 	}
 	resList_counter=0;
 
 }
+void delete_threads(Job_Scheduler** schedule)//katharizei ton jobscheduler
+{
+    int i;
+	int err;
+	//ending=1;
+  //  for(i=0;i<schedule->execution_threads;i++)
+    {
+      //  pthread_cond_broadcast(&new_cond);
+    }
+	for (i =0 ; i <(*schedule)->execution_threads ; i++)
+	{
+		 pthread_cond_broadcast(&new_cond);
+		 printf("Ksupnaw ta threads\n");
+		if ( (err = pthread_join (*((*schedule)->tids+i) , NULL )))
+		{
+			perror (" pthread_join " );
+			exit (1) ;
+		}
+	}
+	printf("deleted\n");
+	free((*schedule)->tids);
+	free((*schedule)->q->jobs);
+	free((*schedule)->q);
+	for(i=0;i<5000;i++)
+	{
+		pthread_mutex_destroy(&mutex[i]);
+		//pthread_cond_destroy(&read_cond[i]);
+	}
+	free((*schedule));
+	//free((*temp));
+	free(mutex);
+	pthread_cond_destroy(&new_cond);
+	pthread_cond_destroy(&wait_hist_cond);
+	pthread_mutex_destroy(&start_mutex);
+	pthread_mutex_destroy(&job_counter_mutex);
+	pthread_mutex_destroy(&resList_counter_mutex);
+}
+
 void submit_Job(Job_Scheduler* schedule,Job *Job){
 	pthread_mutex_lock(&mutex[schedule->q->end]);
 	if((*Job).histFlag==true)
@@ -181,7 +267,8 @@ void submit_Job(Job_Scheduler* schedule,Job *Job){
 	//printf("Increase Jobs=%d\n",schedule->q->jobs_counter);
 	//sleep(15);
 	pthread_cond_broadcast(&new_cond);
-	//sleep(5);
+	//printf("Ksupnhma gia douleia STHN THESH %d\n",schedule->q->end-1);
+	//sleep(1);
 
 }
 void execute_job(thread_param *x,int thread_mutex_place)//voithitiki tou worker gia na ektelesei tin ergasia
@@ -213,6 +300,7 @@ void execute_job(thread_param *x,int thread_mutex_place)//voithitiki tou worker 
 
 Job_Scheduler* initialize_scheduler(int execution_threads,oneColumnRelation *R,oneColumnRelation *S)//arxikopoiisi JobScheduler
 {
+	//printf("Kanw INITIALIZE\n");
 	Job_Scheduler* scheduler=malloc(sizeof(Job_Scheduler));
 	pthread_t *workers;
 	Queue* queue=malloc(sizeof(Queue));//dimiourgeia buffer
@@ -222,6 +310,7 @@ Job_Scheduler* initialize_scheduler(int execution_threads,oneColumnRelation *R,o
 	queue->jobs_counter=0;
 	queue->jobs=malloc(queue->size*sizeof(Job));
 	ending=0;
+	threads_exited=0;
 	mutex=malloc(queue->size*sizeof(pthread_mutex_t));//dimiourgeia mutex gia kathe thesi tou pinaka
 	//read_cond=malloc(queue->size*sizeof(pthread_cond_t));//kai ena condition variable gia kathe thesi tou pinaka
 	int j;
@@ -251,6 +340,7 @@ Job_Scheduler* initialize_scheduler(int execution_threads,oneColumnRelation *R,o
 	thread_param *temp1;
 	temp1=malloc(scheduler->execution_threads*sizeof(thread_param));
 	//temp1=*temp;
+
     for(i=0;i<scheduler->execution_threads;i++)//dimiourgia ton thread
 	{
 		temp1[i].sch=scheduler;
@@ -259,12 +349,13 @@ Job_Scheduler* initialize_scheduler(int execution_threads,oneColumnRelation *R,o
 		temp1[i].S=S;
 		temp1[i].HistR=NULL;
 		temp1[i].HistS=NULL;
-		if ((err=pthread_create( (scheduler->tids)+i , NULL , Worker ,(void*)(temp1+i))))		/*ftiaxnw ta threads workers*/
+		if ((err=pthread_create( (scheduler->tids)+i  , NULL , Worker ,(void*)(temp1+i))))		/*ftiaxnw ta threads workers*/
 		{
 			perror (" pthread_create " );
 			exit (1) ;
 		}
 	}
+	//printf("EPISTREFW\n");
 	return scheduler;
 }
 Job* initializeJob(char *type_of_job)		// type_of_job : "hist" , "partition" ,"join"//
@@ -294,6 +385,7 @@ Job* initializeJob(char *type_of_job)		// type_of_job : "hist" , "partition" ,"j
         job->joinjob.createHashTable = createHashTable;
         job->joinjob.deleteHashTable = deleteHashTable;
 	}
+
 	return job;
 }
 
@@ -348,37 +440,6 @@ void reset_queue(Queue *q)//arxikopoiei tin oura
 	q->start=0;
 	q->end=0;
 	id_counter=0;
-}
-void delete_threads(Job_Scheduler** schedule)//katharizei ton jobscheduler
-{
-    int i;
-	int err;
-	ending=1;
-  //  for(i=0;i<schedule->execution_threads;i++)
-    {
-        pthread_cond_broadcast(&new_cond);
-    }
-	for (i =0 ; i <(*schedule)->execution_threads ; i++)
-	{
-		if ( (err = pthread_join (*( (*schedule)->tids+i) , NULL )))
-		{
-			perror (" pthread_join " );
-			exit (1) ;
-		}
-	}
-	//free((*schedule)->tids);
-	//free((*schedule)->q->jobs);
-	//free((*schedule)->q);
-	/*for(i=0;i<5000;i++)
-	{
-		pthread_mutex_destroy(&mutex[i]);
-		pthread_cond_destroy(&read_cond[i]);
-	}*/
-	//free((*schedule));
-	//free((*temp));
-	//free(mutex);
-	//free(read_cond);
-	//pthread_mutex_destroy(&start_mutex);
 }
 /*submit_job(Job_Scheduler* schedule,Job* job,int join_id ,int partition_id ,int hist_id,oneColumnRelation *reOrderedArray , oneColumnRelation* array,
 		int32_t start,int32_t end,int32_t num ,indexHT *ht,oneColumnRelation *relSegment,oneColumnRelation *relation,hist* histSum)//upovoli mias ergasias ston buffer
