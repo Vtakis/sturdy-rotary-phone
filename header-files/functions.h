@@ -37,6 +37,8 @@ void lessThanFilterStatsCalculator(queryDataIndex *data,all_stats *statsArray,in
 void sameJoinStatsCalculator(queryDataIndex *data,all_stats *statsArray,int *teams,int leftRelationId,int leftColumnIndx,int rightRelationId,int rightColumnIndx);
 void RadixStatsCalculator(queryDataIndex *data,all_stats *statsArray,int *teams,int leftRelationId,int leftColumnIndx,int rightRelationId,int rightColumnIndx);
 
+void print_stats_function(all_stats *statsArray);
+
 struct bestTree{//to offset+1 einai to posa rel exei to set
 	listnode *startlist;
 	listnode *endlist;
