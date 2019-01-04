@@ -152,8 +152,8 @@ int main(int argc,char** argv)
 			}
 			statsArray->array_with_stats[i][j].d=d;
 
-			printf("stats %ld %ld %ld %ld\n",statsArray->array_with_stats[i][j].l,statsArray->array_with_stats[i][j].u,statsArray->array_with_stats[i][j].f,statsArray->array_with_stats[i][j].d);
-			printf("check %ld %ld %d\n",relationArray[i].stats[j].min,relationArray[i].stats[j].max,relationArray[i].rowCount);
+			//printf("stats %ld %ld %ld %ld\n",statsArray->array_with_stats[i][j].l,statsArray->array_with_stats[i][j].u,statsArray->array_with_stats[i][j].f,statsArray->array_with_stats[i][j].d);
+			//printf("check %ld %ld %d\n",relationArray[i].stats[j].min,relationArray[i].stats[j].max,relationArray[i].rowCount);
 					}
 					fclose(fp);
 	}

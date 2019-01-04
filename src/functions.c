@@ -583,7 +583,7 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray,all_stats *s
 		if(strcmp(queryString,"F") && c!=EOF)
 		{
 			oneColumnRelation *column;
-			printf("\n\n%d)%s\n",y,queryString);
+			//printf("\n\n%d)%s\n",y,queryString);
 			y++;
 			data=analyzeQuery(queryString);
 
@@ -613,8 +613,8 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray,all_stats *s
 //
 
 //print stats
-printf("STARTING STATS\n");
-print_stats_function(temp_stats);
+//printf("STARTING STATS\n");
+//print_stats_function(temp_stats);
 //
 
 
@@ -2025,8 +2025,8 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 	//
 
 	//print stats
-	printf("BEFORE JOIN STATS\n");
-	print_stats_function(before_joins_stats);
+	//printf("BEFORE JOIN STATS\n");
+	//print_stats_function(before_joins_stats);
 	//
 
 	//ta filter ta exw treksei me thn seira pou mou erxontai, opote edw 8a dw mono ta join
@@ -2097,8 +2097,8 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 						sameJoinStatsCalculator(data,temp_stats,teams,leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
 
 						//print stats
-						printf("AFTER SAME REL JOIN STATS %d %d %d %d\n",leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
-						print_stats_function(temp_stats);
+						//printf("AFTER SAME REL JOIN STATS %d %d %d %d\n",leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
+						//print_stats_function(temp_stats);
 						//
 					}
 
@@ -2131,7 +2131,7 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 					for(k=j+1;k<data->numRelQuery;k++){//den 8elw ta k opou einai mikrotera apo to j giati exw ftiaksei autes tis omades
 						//printf("zxcvbnm %d %d\n",j,k);
 						if( k!=j && temp->set[k]==1 && graph[j][k]==1 ){//an to k einai sto set kai sundaietai me to j tote to 8eloume
-							printf("zxcvbnm1 %d %d\n",j,k);
+							//printf("zxcvbnm1 %d %d\n",j,k);
 							//pairnw ta dedomena apo thn lista
 							int *set,*teams,teamCount,cost;
 							all_stats *local_stats;
@@ -2189,8 +2189,8 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 										//edw den xreiazetai na allaksw omades
 
 										//print stats
-										printf("AFTER SAME TEAM 1 JOIN STATS %d %d %d %d\n",leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
-										print_stats_function(local_stats);
+										//printf("AFTER SAME TEAM 1 JOIN STATS %d %d %d %d\n",leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
+										//print_stats_function(local_stats);
 										//
 									}
 									else{//exw radix
@@ -2242,8 +2242,8 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 										//set[k]=1;
 
 										//print stats
-										printf("AFTER RADIX 1 JOIN STATS %d %d %d %d\n",leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
-										print_stats_function(local_stats);
+										//printf("AFTER RADIX 1 JOIN STATS %d %d %d %d\n",leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
+										//print_stats_function(local_stats);
 										//
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 									}
@@ -2288,10 +2288,10 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 			listnode *temp;
 			temp=btree[subteam-1].BestNode;
 			if(temp==NULL){
-				printf("einai null\n");
+				//printf("einai null\n");
 			}
 			else{
-				printf("exei mesa\n");
+				//printf("exei mesa\n");
 			}
 			for(j=0;j<data->numRelQuery;j++){//to for me to R pou den anhkei sto S
 				if(temp->set[j]==0){//den to exoume xrhsimopoihsei st0 sugkekrimeno set , ara to 8eloume
@@ -2300,7 +2300,7 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 					//for(k=j+1;k<data->numRelQuery;k++){//den 8elw ta k opou einai mikrotera apo to j giati exw ftiaksei autes tis omades
 						//printf("zxcvbnm %d %d\n",j,k);
 						if( k!=j && temp->set[k]==1 && graph[j][k]==1 ){//an to k einai sto set kai sundaietai me to j tote to 8eloume
-							printf("zxcvbnm2 %d %d\n",j,k);
+							//printf("zxcvbnm2 %d %d\n",j,k);
 							//pairnw ta dedomena apo thn lista
 							int *set,*teams,teamCount,cost;
 							all_stats *local_stats;
@@ -2358,8 +2358,8 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 										//edw den xreiazetai na allaksw omades
 
 										//print stats
-										printf("AFTER SAME TEAM 2 JOIN STATS %d %d %d %d\n",leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
-										print_stats_function(local_stats);
+										//printf("AFTER SAME TEAM 2 JOIN STATS %d %d %d %d\n",leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
+										//print_stats_function(local_stats);
 										//
 									}
 									else{//exw radix
@@ -2411,8 +2411,8 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 										//set[k]=1;
 
 										//print stats
-										printf("AFTER RADIX 2 JOIN STATS %d %d %d %d\n",leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
-										print_stats_function(local_stats);
+										//printf("AFTER RADIX 2 JOIN STATS %d %d %d %d\n",leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
+										//print_stats_function(local_stats);
 										//
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 									}
@@ -2428,7 +2428,7 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 							//kai na kanw to besttree
 							if(btree[subteam].BestNode==NULL){
 								btree[subteam].BestNode=btree[subteam].startlist;
-								printf("best_tree_1\n");
+								//printf("best_tree_1\n");
 							}
 							if(btree[subteam].BestNode->cost>cost){
 								listnode *temp2;
@@ -2437,7 +2437,7 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 									temp2=temp2->next;
 								}
 								btree[subteam].BestNode=temp2;//o kaluteros kombos einai o teleutaios pou molis ebala
-								printf("best_tree_2\n");
+								//printf("best_tree_2\n");
 							}
 						}
 					}
@@ -2478,11 +2478,17 @@ void greaterThanFilterStatsCalculator(queryDataIndex *data,all_stats *statsArray
 	for(int i=0;i<statsArray->cols[relationId];i++){
 		if(i!=columnIndx){
 			double base,power;
-			base=1-(1.0*statsArray->array_with_stats[relationId][columnIndx].f)/prev_f;
-			power=(1.0*statsArray->array_with_stats[relationId][i].f)/(1.0*statsArray->array_with_stats[relationId][i].d);
-			//printf("> base=%f power=%f\n",base,power);
-			statsArray->array_with_stats[relationId][i].d=statsArray->array_with_stats[relationId][i].d*(1-pow(base,power));
-			statsArray->array_with_stats[relationId][i].f=statsArray->array_with_stats[relationId][columnIndx].f;
+			if(prev_f==0 || statsArray->array_with_stats[relationId][i].d==0 || statsArray->array_with_stats[relationId][i].f==0){
+				statsArray->array_with_stats[relationId][i].d=0;
+				statsArray->array_with_stats[relationId][i].f=0;
+			}
+			else{
+				base=1-(1.0*statsArray->array_with_stats[relationId][columnIndx].f)/prev_f;
+				power=(1.0*statsArray->array_with_stats[relationId][i].f)/(1.0*statsArray->array_with_stats[relationId][i].d);
+				//printf("> base=%f power=%f\n",base,power);
+				statsArray->array_with_stats[relationId][i].d=statsArray->array_with_stats[relationId][i].d*(1-pow(base,power));
+				statsArray->array_with_stats[relationId][i].f=statsArray->array_with_stats[relationId][columnIndx].f;
+			}
 
 			if(statsArray->array_with_stats[relationId][i].f>0 && statsArray->array_with_stats[relationId][i].d==0){
 				statsArray->array_with_stats[relationId][i].d=1;
@@ -2494,8 +2500,12 @@ void greaterThanFilterStatsCalculator(queryDataIndex *data,all_stats *statsArray
 	for(int j=0;j<statsArray->rels;j++){
 		if(j!=relationId && teams[j]==teams[relationId] && teams[j]!=0){
 			for(int i=0;i<statsArray->cols[j];i++){
-				if(i!=columnIndx){
-					double base,power;
+				double base,power;
+				if(prev_f==0 || statsArray->array_with_stats[j][i].d==0 || statsArray->array_with_stats[j][i].f==0){
+					statsArray->array_with_stats[j][i].d=0;
+					statsArray->array_with_stats[j][i].f=0;
+				}
+				else{
 					base=1-(1.0*statsArray->array_with_stats[relationId][columnIndx].f)/prev_f;
 					power=(1.0*statsArray->array_with_stats[j][i].f)/(1.0*statsArray->array_with_stats[j][i].d);
 					//printf("> base=%f power=%f\n",base,power);
@@ -2532,11 +2542,17 @@ void lessThanFilterStatsCalculator(queryDataIndex *data,all_stats *statsArray,in
 	for(int i=0;i<statsArray->cols[relationId];i++){
 		if(i!=columnIndx){
 			double base,power;
-			base=1-(1.0*statsArray->array_with_stats[relationId][columnIndx].f)/prev_f;
-			power=(1.0*statsArray->array_with_stats[relationId][i].f)/(1.0*statsArray->array_with_stats[relationId][i].d);
-			//printf("> base=%f power=%f\n",base,power);
-			statsArray->array_with_stats[relationId][i].d=statsArray->array_with_stats[relationId][i].d*(1-pow(base,power));
-			statsArray->array_with_stats[relationId][i].f=statsArray->array_with_stats[relationId][columnIndx].f;
+			if(prev_f==0 || statsArray->array_with_stats[relationId][i].d==0 || statsArray->array_with_stats[relationId][i].f==0){
+				statsArray->array_with_stats[relationId][i].d=0;
+				statsArray->array_with_stats[relationId][i].f=0;
+			}
+			else{
+				base=1-(1.0*statsArray->array_with_stats[relationId][columnIndx].f)/prev_f;
+				power=(1.0*statsArray->array_with_stats[relationId][i].f)/(1.0*statsArray->array_with_stats[relationId][i].d);
+				//printf("> base=%f power=%f\n",base,power);
+				statsArray->array_with_stats[relationId][i].d=statsArray->array_with_stats[relationId][i].d*(1-pow(base,power));
+				statsArray->array_with_stats[relationId][i].f=statsArray->array_with_stats[relationId][columnIndx].f;
+			}
 
 			if(statsArray->array_with_stats[relationId][i].f>0 && statsArray->array_with_stats[relationId][i].d==0){
 				statsArray->array_with_stats[relationId][i].d=1;
@@ -2548,17 +2564,21 @@ void lessThanFilterStatsCalculator(queryDataIndex *data,all_stats *statsArray,in
 	for(int j=0;j<statsArray->rels;j++){
 		if(j!=relationId && teams[j]==teams[relationId] && teams[j]!=0){
 			for(int i=0;i<statsArray->cols[j];i++){
-				if(i!=columnIndx){
-					double base,power;
+				double base,power;
+				if(prev_f==0 || statsArray->array_with_stats[j][i].d==0 || statsArray->array_with_stats[j][i].f==0){
+					statsArray->array_with_stats[j][i].d=0;
+					statsArray->array_with_stats[j][i].f=0;
+				}
+				else{
 					base=1-(1.0*statsArray->array_with_stats[relationId][columnIndx].f)/prev_f;
 					power=(1.0*statsArray->array_with_stats[j][i].f)/(1.0*statsArray->array_with_stats[j][i].d);
 					//printf("> base=%f power=%f\n",base,power);
 					statsArray->array_with_stats[j][i].d=statsArray->array_with_stats[j][i].d*(1-pow(base,power));
 					statsArray->array_with_stats[j][i].f=statsArray->array_with_stats[relationId][columnIndx].f;
+				}
 
-					if(statsArray->array_with_stats[j][i].f>0 && statsArray->array_with_stats[j][i].d==0){
-						statsArray->array_with_stats[j][i].d=1;
-					}
+				if(statsArray->array_with_stats[j][i].f>0 && statsArray->array_with_stats[j][i].d==0){
+					statsArray->array_with_stats[j][i].d=1;
 				}
 			}
 		}
@@ -2602,7 +2622,7 @@ void sameJoinStatsCalculator(queryDataIndex *data,all_stats *statsArray,int *tea
 
 	//gia tis upoloipes sthles twn 2 relation tou query
 	//exoume 2 periptwseis
-	//a)oi sthles na einai ston idio pinaka , auto 8a ginei prin arxisoun na sxhmatizontai omades opote den xreiazetai na allaksw tpt allo
+	//a)oi sthles na einai ston idio pinaka , auto 8a ginei prin arxisoun na sxhmatizontai omades opote den xreiazetai na allaksw allo pinaka
 	if(leftRelationId==rightRelationId){
 		for(int i=0;i<statsArray->cols[leftRelationId];i++){
 			if(i!=leftColumnIndx && i!=rightColumnIndx){
@@ -2709,8 +2729,8 @@ void RadixStatsCalculator(queryDataIndex *data,all_stats *statsArray,int *teams,
 	}
 
 	//print stats
-	printf("AFTER RADIX JOIN - FIX MIN STATS %d %d %d %d\n",leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
-	print_stats_function(statsArray);
+	//printf("AFTER RADIX JOIN - FIX MIN STATS %d %d %d %d\n",leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
+	//print_stats_function(statsArray);
 	//
 
 	if(statsArray->array_with_stats[leftRelationId][leftColumnIndx].u < statsArray->array_with_stats[rightRelationId][rightColumnIndx].u){
@@ -2721,8 +2741,8 @@ void RadixStatsCalculator(queryDataIndex *data,all_stats *statsArray,int *teams,
 	}
 
 	//print stats
-	printf("AFTER RADIX JOIN - FIX MAX STATS %d %d %d %d\n",leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
-	print_stats_function(statsArray);
+	//printf("AFTER RADIX JOIN - FIX MAX STATS %d %d %d %d\n",leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
+	//print_stats_function(statsArray);
 	//
 
 	//gia tis sthles ths radix
@@ -2741,14 +2761,14 @@ void RadixStatsCalculator(queryDataIndex *data,all_stats *statsArray,int *teams,
 	//allazw tis upoloipes sthles tou left pinaka
 	for(int i=0;i<statsArray->cols[leftRelationId];i++){
 		if(i!=leftColumnIndx){
-			if(prev_d_A==0 || statsArray->array_with_stats[leftRelationId][i].d==0 || statsArray->array_with_stats[leftRelationId][i].f){
+			if(prev_d_A==0 || statsArray->array_with_stats[leftRelationId][i].d==0 || statsArray->array_with_stats[leftRelationId][i].f==0){
 				statsArray->array_with_stats[leftRelationId][i].d=0;
 				statsArray->array_with_stats[leftRelationId][i].f=0;
 			}
 			else{
 				base=1-(1.0*statsArray->array_with_stats[leftRelationId][leftColumnIndx].d)/prev_d_A;
 				power=(1.0*statsArray->array_with_stats[leftRelationId][i].f)/statsArray->array_with_stats[leftRelationId][i].d;
-				printf("radix 1 base=%f power=%f pow=%f\n",base,power,1-pow(base,power));
+				//printf("radix 1 base=%f power=%f pow=%f\n",base,power,1-pow(base,power));
 				statsArray->array_with_stats[leftRelationId][i].d=statsArray->array_with_stats[leftRelationId][i].d*(1-pow(base,power));
 				statsArray->array_with_stats[leftRelationId][i].f=statsArray->array_with_stats[leftRelationId][leftColumnIndx].f;
 			}
@@ -2766,7 +2786,7 @@ void RadixStatsCalculator(queryDataIndex *data,all_stats *statsArray,int *teams,
 					else{
 						base=1-(1.0*statsArray->array_with_stats[leftRelationId][leftColumnIndx].d)/prev_d_A;
 						power=(1.0*statsArray->array_with_stats[j][i].f)/statsArray->array_with_stats[j][i].d;
-						printf("radix 2 base=%f power=%f\n",base,power);
+						//printf("radix 2 base=%f power=%f\n",base,power);
 						statsArray->array_with_stats[j][i].d=statsArray->array_with_stats[j][i].d*(1-pow(base,power));
 						statsArray->array_with_stats[j][i].f=statsArray->array_with_stats[j][leftColumnIndx].f;
 					}
@@ -2777,14 +2797,14 @@ void RadixStatsCalculator(queryDataIndex *data,all_stats *statsArray,int *teams,
 	//allazw tis upoloipes sthles tou right pinaka
 	for(int i=0;i<statsArray->cols[rightRelationId];i++){
 		if(i!=rightColumnIndx){
-			if(prev_d_B==0 || statsArray->array_with_stats[rightRelationId][i].d==0){
+			if(prev_d_B==0 || statsArray->array_with_stats[rightRelationId][i].d==0 || statsArray->array_with_stats[rightRelationId][i].f==0){
 				statsArray->array_with_stats[rightRelationId][i].d=0;
 				statsArray->array_with_stats[rightRelationId][i].f=0;
 			}
 			else{
 				base=1-(1.0*statsArray->array_with_stats[rightRelationId][rightColumnIndx].d)/prev_d_B;
 				power=(1.0*statsArray->array_with_stats[rightRelationId][i].f)/statsArray->array_with_stats[rightRelationId][i].d;
-				printf("radix 3 base=%f power=%f\n",base,power);
+				//printf("radix 3 base=%f power=%f\n",base,power);
 				statsArray->array_with_stats[rightRelationId][i].d=statsArray->array_with_stats[rightRelationId][i].d*(1-pow(base,power));
 				statsArray->array_with_stats[rightRelationId][i].f=statsArray->array_with_stats[rightRelationId][rightColumnIndx].f;
 			}
@@ -2802,7 +2822,7 @@ void RadixStatsCalculator(queryDataIndex *data,all_stats *statsArray,int *teams,
 					else{
 						base=1-(1.0*statsArray->array_with_stats[rightRelationId][rightColumnIndx].d)/prev_d_B;
 						power=(1.0*statsArray->array_with_stats[j][i].f)/statsArray->array_with_stats[j][i].d;
-						printf("radix 4 base=%f power=%f\n",base,power);
+						//printf("radix 4 base=%f power=%f\n",base,power);
 						statsArray->array_with_stats[j][i].d=statsArray->array_with_stats[j][i].d*(1-pow(base,power));
 						statsArray->array_with_stats[j][i].f=statsArray->array_with_stats[j][rightColumnIndx].f;
 					}
