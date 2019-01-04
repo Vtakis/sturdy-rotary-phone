@@ -717,14 +717,14 @@ printf("\n");*/
 				    double cpu_time_used;
 				    start = clock();
 ////edw dialegw thn seira twn kathgorhmatwn
-				   /* if(data->numPredJoinTwoRel!=1 )
+				    if(data->numPredJoinTwoRel!=1 )
 				    {
 				    	indx=checkIfOneRelationJoinExists(data,middleResArray,middleResultsCounter,i);
 						if(indx==-1)			//eimaste se TwoRelationJoin kai theloume na vroume ta statistika gia kathe kathgorhma//
 						{
 							indx=createStatsAndFindPred(data,middleResArray,middleResultsCounter,relationArray);
 						}
-				    }*/
+				    }
 ////end - edw dialegw thn seira twn kathgorhmatwn
 				    //printf("index=%d\n",indx);
 					end = clock();
@@ -2043,7 +2043,7 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 	//
 
 	//ta filter ta exw treksei me thn seira pou mou erxontai, opote edw 8a dw mono ta join
-int leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx;
+	int leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx;
 	if(data->numPredJoinTwoRel>0){
 		//initialize btree
 		btree=malloc(data->numRelQuery*sizeof(bestTree));
@@ -2097,79 +2097,24 @@ int leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx;
 
 
 			if(graph[i][i]==1){//exoume join se sthles tou idiou pinaka (sameJoin)
-				///////////////////
-				//ftiaxnw ta stats !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-				//int indx=i;
 				for(k=0;k<data->numPredJoinTwoRel;k++){
-					if(data->twoRelationPredArray[k].left->rel!=data->twoRelationPredArray[k].right->rel){
-						continue;
+					if(data->twoRelationPredArray[k].left->rel==i && data->twoRelationPredArray[k].right->rel==i){
+						seira[seira_point]=k;
+						seira_point++;
+
+						int indx=k;
+						leftRelationId = data->twoRelationPredArray[indx].left->rel;
+						leftColumnIndx =data->twoRelationPredArray[indx].left->col;
+						rightRelationId = data->twoRelationPredArray[indx].right->rel;
+						rightColumnIndx= data->twoRelationPredArray[indx].right->col;
+						sameJoinStatsCalculator(data,temp_stats,teams,leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
 					}
 
-					seira[seira_point]=k;
-					seira_point++;
+					cost=temp_stats->array_with_stats[rightRelationId][rightColumnIndx].f;//mallon 8a agnow to cost gia thn prwth fora
 
-					int indx=k;
-					leftRelationId = data->twoRelationPredArray[indx].left->rel;
-					leftColumnIndx =data->twoRelationPredArray[indx].left->col;
-					rightRelationId = data->twoRelationPredArray[indx].right->rel;
-					rightColumnIndx= data->twoRelationPredArray[indx].right->col;
-					//gia tis sthles tou join
-					if(temp_stats->array_with_stats[leftRelationId][leftColumnIndx].l > temp_stats->array_with_stats[rightRelationId][rightColumnIndx].l){
-						temp_stats->array_with_stats[rightRelationId][rightColumnIndx].l=temp_stats->array_with_stats[leftRelationId][leftColumnIndx].l;
-					}
-					else{
-						temp_stats->array_with_stats[leftRelationId][leftColumnIndx].l=temp_stats->array_with_stats[rightRelationId][rightColumnIndx].l;
-					}
-
-					if(temp_stats->array_with_stats[leftRelationId][leftColumnIndx].u < temp_stats->array_with_stats[rightRelationId][rightColumnIndx].u){
-						temp_stats->array_with_stats[rightRelationId][rightColumnIndx].u=temp_stats->array_with_stats[leftRelationId][leftColumnIndx].u;
-					}
-					else{
-						temp_stats->array_with_stats[leftRelationId][leftColumnIndx].u=temp_stats->array_with_stats[rightRelationId][rightColumnIndx].u;
-					}
-
-					int prev_f=temp_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-					int n=temp_stats->array_with_stats[leftRelationId][leftColumnIndx].u-temp_stats->array_with_stats[rightRelationId][rightColumnIndx].l+1;
-					temp_stats->array_with_stats[leftRelationId][leftColumnIndx].f=temp_stats->array_with_stats[leftRelationId][leftColumnIndx].f/n;
-					temp_stats->array_with_stats[rightRelationId][rightColumnIndx].f=temp_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-
-					double base,power;
-					if(prev_f==0 || temp_stats->array_with_stats[leftRelationId][leftColumnIndx].d==0){
-						temp_stats->array_with_stats[leftRelationId][leftColumnIndx].d=0;
-						temp_stats->array_with_stats[rightRelationId][rightColumnIndx].d=0;
-					}
-					else{
-						base=1-(1.0*temp_stats->array_with_stats[leftRelationId][leftColumnIndx].f)/prev_f;
-						power=(1.0*temp_stats->array_with_stats[leftRelationId][leftColumnIndx].f)/temp_stats->array_with_stats[leftRelationId][leftColumnIndx].d;
-						//printf("same1 base=%f power=%f\n",base,power);
-						temp_stats->array_with_stats[leftRelationId][leftColumnIndx].d=temp_stats->array_with_stats[leftRelationId][leftColumnIndx].d*(1-pow(base,power));
-						temp_stats->array_with_stats[rightRelationId][rightColumnIndx].d=temp_stats->array_with_stats[leftRelationId][leftColumnIndx].d;
-					}
-
-					//gia tis upoloipes sthles twn 2 relation tou query
-					if(leftRelationId==rightRelationId){
-						for(j=0;j<temp_stats->cols[leftRelationId];j++){
-							if(j!=leftColumnIndx && j!=rightColumnIndx){
-								if(prev_f==0 || temp_stats->array_with_stats[leftRelationId][j].d==0){
-									temp_stats->array_with_stats[leftRelationId][j].d=0;
-									temp_stats->array_with_stats[leftRelationId][j].f=0;
-								}
-								else{
-									base=1-(1.0*temp_stats->array_with_stats[leftRelationId][leftColumnIndx].f)/prev_f;
-									power=(1.0*temp_stats->array_with_stats[leftRelationId][j].f)/temp_stats->array_with_stats[leftRelationId][j].d;
-									//printf("same2 base=%f power=%f\n",base,power);
-									temp_stats->array_with_stats[leftRelationId][j].d=temp_stats->array_with_stats[leftRelationId][j].d*(1-pow(base,power));
-									temp_stats->array_with_stats[leftRelationId][j].f=temp_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-								}
-							}
-						}
-					}
+					//printf("bazw sthn lista 1\n");
+					insertList(&(btree[0].startlist),cost,set,data->numRelQuery,teams,teamCount,temp_stats,seira,data->numPredJoinTwoRel,seira_point);
 				}
-				///////////////////////
-				cost=temp_stats->array_with_stats[rightRelationId][rightColumnIndx].f;//mallon 8a agnow to cost gia thn prwth fora
-//ALLA PREPEI NA TO BALW STO RETURN
-				//printf("bazw sthn lista 1\n");
-				insertList(&(btree[0].startlist),cost,set,data->numRelQuery,teams,teamCount,temp_stats,seira,data->numPredJoinTwoRel,seira_point);
 			}
 			else{
 				cost=0;
@@ -2177,23 +2122,24 @@ int leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx;
 				insertList(&(btree[0].startlist),cost,set,data->numRelQuery,teams,teamCount,temp_stats,seira,data->numPredJoinTwoRel,seira_point);
 			}
 		}
-//////////////
-//print
-//printList(btree[0].startlist,data->numRelQuery,data->numPredJoinTwoRel);
-////////////////
+		//////////////
+		//print
+		//printList(btree[0].startlist,data->numRelQuery,data->numPredJoinTwoRel);
+		////////////////
 
-	//to spaw se 2 kommatia sto prwto 8a kanw opws kai panw alla gia 2 sxeseis(wste na ftiaksw kai ena best tree) kai sto allo 8a pairnw to best kai 8a to sugkrinw
+		//to spaw se 2 kommatia sto prwto 8a kanw opws kai panw alla gia 2 sxeseis(wste na ftiaksw kai ena best tree) kai sto allo 8a pairnw to best kai 8a to sugkrinw
 		listnode *temp;
 		temp=btree[0].startlist;
 		while(temp!=NULL){
-//printf("zxcvbnm allagh\n");
+		//printf("zxcvbnm allagh\n");
 			for(j=0;j<data->numRelQuery;j++){//to for me to R pou den anhkei sto S
 				if(temp->set[j]==0){//den to exoume xrhsimopoihsei st0 sugkekrimeno set , ara to 8eloume
 					//opote paw sto graph kai elegxw an ennonetai me kapoio
 					//for(k=0;k<data->numRelQuery;k++){//an k==j to exw eleksei panw opote edw to
 					for(k=j+1;k<data->numRelQuery;k++){//den 8elw ta k opou einai mikrotera apo to j giati exw ftiaksei autes tis omades
-//printf("zxcvbnm %d %d\n",j,k);
+						//printf("zxcvbnm %d %d\n",j,k);
 						if( k!=j && temp->set[k]==1 && graph[j][k]==1 ){//an to k einai sto set kai sundaietai me to j tote to 8eloume
+							printf("zxcvbnm1 %d %d\n",j,k);
 							//pairnw ta dedomena apo thn lista
 							int *set,*teams,teamCount,cost;
 							all_stats *local_stats;
@@ -2234,122 +2180,20 @@ int leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx;
 								}
 							}
 
-//proxeiro
-/*
-all_stats *temp_stats;
-			temp_stats=malloc(sizeof(all_stats));
-			temp_stats->rels=before_joins_stats->rels;
-			temp_stats->cols=malloc(temp_stats->rels*sizeof(int));
-			temp_stats->array_with_stats=malloc(temp_stats->rels*sizeof(stats *));
-			for(j=0;j<temp_stats->rels;j++){
-				temp_stats->cols[j]=before_joins_stats->cols[j];
-				temp_stats->array_with_stats[j]=malloc(temp_stats->cols[j]*sizeof(stats));
-				for(k=0;k<temp_stats->cols[j];k++){
-					temp_stats->array_with_stats[j][k].l=before_joins_stats->array_with_stats[j][k].l;
-					temp_stats->array_with_stats[j][k].u=before_joins_stats->array_with_stats[j][k].u;
-					temp_stats->array_with_stats[j][k].f=before_joins_stats->array_with_stats[j][k].f;
-					temp_stats->array_with_stats[j][k].d=before_joins_stats->array_with_stats[j][k].d;
-				}
-			}
-
-*/
-//printf("QWERTY1\n\n");					//upologizw to cost ,
+							//upologizw to cost ,
 							for(i=0;i<data->numPredJoinTwoRel;i++){//koitazw ola ta kathgorhmata na dw ti prakseis
 								if( (data->twoRelationPredArray[i].left->rel==j && data->twoRelationPredArray[i].right->rel==k) || (data->twoRelationPredArray[i].left->rel==k && data->twoRelationPredArray[i].right->rel==j) ){//koitazw an ta rel uparxoun sta kathgorhmata
-//printf("QWERTY2\n");
 									seira[seira_point]=i;
 									seira_point++;
 									if(teams[j]==teams[k] && teams[j]!=0 ){//elegxw tis omades , dld an 8a kanw radix h samejoin
-//printf("QWERTY3\n");
 										int indx=i;
 										leftRelationId = data->twoRelationPredArray[indx].left->rel;
 										leftColumnIndx =data->twoRelationPredArray[indx].left->col;
 										rightRelationId = data->twoRelationPredArray[indx].right->rel;
 										rightColumnIndx= data->twoRelationPredArray[indx].right->col;
-										//gia tis sthles tou join
-										if(local_stats->array_with_stats[leftRelationId][leftColumnIndx].l > local_stats->array_with_stats[rightRelationId][rightColumnIndx].l){
-											local_stats->array_with_stats[rightRelationId][rightColumnIndx].l=local_stats->array_with_stats[leftRelationId][leftColumnIndx].l;
-										}
-										else{
-											local_stats->array_with_stats[leftRelationId][leftColumnIndx].l=local_stats->array_with_stats[rightRelationId][rightColumnIndx].l;
-										}
 
-										if(local_stats->array_with_stats[leftRelationId][leftColumnIndx].u < local_stats->array_with_stats[rightRelationId][rightColumnIndx].u){
-											local_stats->array_with_stats[rightRelationId][rightColumnIndx].u=local_stats->array_with_stats[leftRelationId][leftColumnIndx].u;
-										}
-										else{
-											local_stats->array_with_stats[leftRelationId][leftColumnIndx].u=local_stats->array_with_stats[rightRelationId][rightColumnIndx].u;
-										}
-
-										int prev_f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-										int n=local_stats->array_with_stats[leftRelationId][leftColumnIndx].u-local_stats->array_with_stats[rightRelationId][rightColumnIndx].l+1;
-										local_stats->array_with_stats[leftRelationId][leftColumnIndx].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f/n;
-										local_stats->array_with_stats[rightRelationId][rightColumnIndx].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-
-										double base,power;
-										if(prev_f==0 || local_stats->array_with_stats[leftRelationId][leftColumnIndx].d==0){
-											local_stats->array_with_stats[leftRelationId][leftColumnIndx].d=0;
-											local_stats->array_with_stats[rightRelationId][rightColumnIndx].d=0;
-										}
-										else{
-											base=1-(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].f)/prev_f;
-											power=(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].f)/local_stats->array_with_stats[leftRelationId][leftColumnIndx].d;
-											//printf("same3 base=%f power=%f\n",base,power);
-											local_stats->array_with_stats[leftRelationId][leftColumnIndx].d=local_stats->array_with_stats[leftRelationId][leftColumnIndx].d*(1-pow(base,power));
-											local_stats->array_with_stats[rightRelationId][rightColumnIndx].d=local_stats->array_with_stats[leftRelationId][leftColumnIndx].d;
-										}
-										cost=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-
-										//gia tis upoloipes sthles twn 2 relation tou query
-										for(int q=0;q<local_stats->cols[leftRelationId];q++){
-											if(q!=leftColumnIndx){
-												if(prev_f==0 || local_stats->array_with_stats[leftRelationId][q].d==0){
-													local_stats->array_with_stats[leftRelationId][q].d=0;
-													local_stats->array_with_stats[leftRelationId][q].f=0;
-												}
-												else{
-													base=1-(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].f)/prev_f;
-													power=(1.0*local_stats->array_with_stats[leftRelationId][q].f)/local_stats->array_with_stats[leftRelationId][q].d;
-													//printf("same4 base=%f power=%f\n",base,power);
-													local_stats->array_with_stats[leftRelationId][q].d=local_stats->array_with_stats[leftRelationId][q].d*(1-pow(base,power));
-													local_stats->array_with_stats[leftRelationId][q].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-												}
-											}
-										}
-
-										for(int q=0;q<local_stats->cols[rightRelationId];q++){
-											if(q!=rightColumnIndx){
-												if(prev_f==0 || local_stats->array_with_stats[rightRelationId][q].d==0){
-													local_stats->array_with_stats[rightRelationId][q].d=0;
-													local_stats->array_with_stats[rightRelationId][q].f=0;
-												}
-												else{
-													base=1-(1.0*local_stats->array_with_stats[rightRelationId][rightColumnIndx].f)/prev_f;
-													power=(1.0*local_stats->array_with_stats[rightRelationId][q].f)/local_stats->array_with_stats[rightRelationId][q].d;
-													//printf("same5 base=%f power=%f\n",base,power);
-													local_stats->array_with_stats[rightRelationId][q].d=local_stats->array_with_stats[rightRelationId][q].d*(1-pow(base,power));
-													local_stats->array_with_stats[rightRelationId][q].f=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
-												}
-											}
-										}
-
-										//gia ta upoloipa rel pou anhkoun sthn omada
-										for(int q=0;q<data->numRelQuery;q++){
-											if(teams[q]==teams[j]){
-												for(int m=0;m<local_stats->cols[q];m++){
-													if(prev_f==0 || local_stats->array_with_stats[q][m].d==0){
-														local_stats->array_with_stats[q][m].d=0;
-														local_stats->array_with_stats[q][m].f=0;
-													}
-													else{
-														base=1-1.0*(local_stats->array_with_stats[rightRelationId][rightColumnIndx].f/prev_f);
-														power=(1.0*local_stats->array_with_stats[q][m].f)/local_stats->array_with_stats[q][m].d;
-														local_stats->array_with_stats[q][m].d=local_stats->array_with_stats[q][m].d*(1-pow(base,power));
-														local_stats->array_with_stats[q][m].f=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
-													}
-												}
-											}
-										}
+										sameJoinStatsCalculator(data,local_stats,teams,leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
+										cost=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
 										//edw den xreiazetai na allaksw omades
 									}
 									else{//exw radix
@@ -2360,145 +2204,16 @@ all_stats *temp_stats;
 										rightRelationId = data->twoRelationPredArray[indx].right->rel;
 										rightColumnIndx= data->twoRelationPredArray[indx].right->col;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-										//gia tis sthles tou radix
-										if(local_stats->array_with_stats[leftRelationId][leftColumnIndx].l > local_stats->array_with_stats[rightRelationId][rightColumnIndx].l){
-											local_stats->array_with_stats[rightRelationId][rightColumnIndx].l=local_stats->array_with_stats[leftRelationId][leftColumnIndx].l;
-										}
-										else{
-											local_stats->array_with_stats[leftRelationId][leftColumnIndx].l=local_stats->array_with_stats[rightRelationId][rightColumnIndx].l;
-										}
-
-										if(local_stats->array_with_stats[leftRelationId][leftColumnIndx].u < local_stats->array_with_stats[rightRelationId][rightColumnIndx].u){
-											local_stats->array_with_stats[rightRelationId][rightColumnIndx].u=local_stats->array_with_stats[leftRelationId][leftColumnIndx].u;
-										}
-										else{
-											local_stats->array_with_stats[leftRelationId][leftColumnIndx].u=local_stats->array_with_stats[rightRelationId][rightColumnIndx].u;
-										}
-
-										int prev_d_A=local_stats->array_with_stats[leftRelationId][leftColumnIndx].d;
-										int prev_d_B=local_stats->array_with_stats[rightRelationId][rightColumnIndx].d;
-										int n=local_stats->array_with_stats[leftRelationId][leftColumnIndx].u-local_stats->array_with_stats[rightRelationId][rightColumnIndx].l+1;
-
-										local_stats->array_with_stats[leftRelationId][leftColumnIndx].f=(local_stats->array_with_stats[leftRelationId][leftColumnIndx].f*local_stats->array_with_stats[rightRelationId][rightColumnIndx].f)/n;
-										local_stats->array_with_stats[rightRelationId][rightColumnIndx].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-
-										local_stats->array_with_stats[leftRelationId][leftColumnIndx].d=(local_stats->array_with_stats[leftRelationId][leftColumnIndx].d*local_stats->array_with_stats[rightRelationId][rightColumnIndx].d)/n;
-										local_stats->array_with_stats[rightRelationId][rightColumnIndx].d=local_stats->array_with_stats[leftRelationId][leftColumnIndx].d;
-
-										cost=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-//printf("AAAA n=%d d=%ld cost=%d\n",n,local_stats->array_with_stats[rightRelationId][rightColumnIndx].d,cost);
-
-										double base,power;
-										//gia tous pinakes pou phran meros
-//OPOU EXW "POW" ELEGXW AN H BASH EINAI 8ETIKH , AUTO GINETAI MONO STHN RADIX POU MPOREI NA EXW PERISOTERA APOTELESMATA APOTI OTAN KSEKINHSA]
-
-										for(int q=0;q<local_stats->cols[leftRelationId];q++){
-											if(q!=leftColumnIndx){
-												if(prev_d_A==0 || local_stats->array_with_stats[leftRelationId][q].d==0){
-													local_stats->array_with_stats[leftRelationId][q].d=0;
-													local_stats->array_with_stats[leftRelationId][q].f=0;
-												}
-												else{
-													base=1-(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].d)/prev_d_A;
-													power=(1.0*local_stats->array_with_stats[leftRelationId][q].f)/local_stats->array_with_stats[leftRelationId][q].d;
-													////printf("radix1 base=%f power=%f pow=%f \n",base,power,pow(base,power));
-													if(base>0){//
-														local_stats->array_with_stats[leftRelationId][q].d=local_stats->array_with_stats[leftRelationId][q].d*(1-pow(base,power));
-														local_stats->array_with_stats[leftRelationId][q].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-													}//
-													else{//an exw arnhtikh bash
-//printf("arnhtikh bash\n");
-														base=-base;
-														local_stats->array_with_stats[leftRelationId][q].d=local_stats->array_with_stats[leftRelationId][q].d*(1+pow(base,power));
-														local_stats->array_with_stats[leftRelationId][q].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-													}//
-													//printf("radix1 base=%f power=%f pow=%f \n",base,power,pow(base,power));
-												}
-											}
-										}
-
-										for(int q=0;q<local_stats->cols[rightRelationId];q++){
-											if(q!=rightColumnIndx){
-												if(prev_d_B==0 || local_stats->array_with_stats[rightRelationId][q].d==0){
-													local_stats->array_with_stats[leftRelationId][q].d=0;
-													local_stats->array_with_stats[rightRelationId][q].f=0;
-												}
-												else{
-													base=1-(1.0*local_stats->array_with_stats[rightRelationId][rightColumnIndx].d)/prev_d_B;
-													power=(1.0*local_stats->array_with_stats[rightRelationId][q].f)/local_stats->array_with_stats[rightRelationId][q].d;
-													//printf("radix2 base=%f power=%f\n",base,power);
-													if(base>0){//
-														local_stats->array_with_stats[rightRelationId][q].d=local_stats->array_with_stats[rightRelationId][q].d*(1-pow(base,power));
-														local_stats->array_with_stats[rightRelationId][q].f=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
-													}
-													else{
-														base=-base;
-														local_stats->array_with_stats[rightRelationId][q].d=local_stats->array_with_stats[rightRelationId][q].d*(1+pow(base,power));
-														local_stats->array_with_stats[rightRelationId][q].f=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
-													}
-												}
-											}
-										}
-
-
-										//gia tous upoloipous pinakes sthn omada
-										//for(q=0;q<middleResultsCounter;q++){
-										//	if(middleResArray[q].team==leftTeam && middleResArray[q].relation_id!=leftRelationId){
-										for(int q=0;q<data->numRelQuery;q++){
-											if( teams[q]==teams[rightRelationId] && q!=rightRelationId && teams[q]!=0 ){
-												for(int m=0;m<local_stats->cols[q];m++){
-													if(prev_d_B==0 || local_stats->array_with_stats[rightRelationId][q].d==0){
-														local_stats->array_with_stats[rightRelationId][q].d=0;
-														local_stats->array_with_stats[rightRelationId][q].f=0;
-													}
-													else{
-														base=1-(1.0*local_stats->array_with_stats[rightRelationId][rightColumnIndx].d)/prev_d_B;
-														power=(1.0*local_stats->array_with_stats[rightRelationId][q].f)/local_stats->array_with_stats[rightRelationId][q].d;
-														//printf("radix3 base=%f power=%f\n",base,power);
-														if(base>0){//
-															local_stats->array_with_stats[rightRelationId][q].d=local_stats->array_with_stats[rightRelationId][q].d*(1-pow(base,power));
-															local_stats->array_with_stats[rightRelationId][q].f=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
-														}
-														else{
-															base=-base;
-															local_stats->array_with_stats[rightRelationId][q].d=local_stats->array_with_stats[rightRelationId][q].d*(1+pow(base,power));
-															local_stats->array_with_stats[rightRelationId][q].f=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
-														}
-													}
-												}
-											}
-
-											if( teams[q]==teams[leftRelationId] && q!=leftRelationId && teams[q]!=0 ){
-												for(int m=0;m<local_stats->cols[q];m++){
-													if(prev_d_B==0 || local_stats->array_with_stats[leftRelationId][q].d==0){
-														local_stats->array_with_stats[leftRelationId][q].d=0;
-														local_stats->array_with_stats[leftRelationId][q].f=0;
-													}
-													else{
-														base=1-(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].d)/prev_d_B;
-														power=(1.0*local_stats->array_with_stats[leftRelationId][q].f)/local_stats->array_with_stats[leftRelationId][q].d;
-														//printf("radix4 base=%f power=%f\n",base,power);
-														if(base>0){//
-															local_stats->array_with_stats[leftRelationId][q].d=local_stats->array_with_stats[leftRelationId][q].d*(1-pow(base,power));
-															local_stats->array_with_stats[leftRelationId][q].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-														}
-														else{
-															base=-base;
-															local_stats->array_with_stats[leftRelationId][q].d=local_stats->array_with_stats[leftRelationId][q].d*(1+pow(base,power));
-															local_stats->array_with_stats[leftRelationId][q].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-														}
-													}
-												}
-											}
-										}
+										RadixStatsCalculator(data,local_stats,teams,leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
+										cost=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
 										//
-								//insert
-								//printf("111before insert set : ");
-								/*for(int qaz=0;qaz<data->numRelQuery;qaz++){
-									//printf("(%d) %d ",qaz,set[qaz]);
-								}
-								printf("\n\n");*/
+										//insert
+										//printf("111before insert set : ");
+										/*for(int qaz=0;qaz<data->numRelQuery;qaz++){
+											//printf("(%d) %d ",qaz,set[qaz]);
+										}
+										printf("\n\n");*/
+
 										//allazw ta teams
 										int newteam;
 										if(teams[rightRelationId]==0 && teams[leftRelationId]==0){
@@ -2545,12 +2260,12 @@ all_stats *temp_stats;
 								//printf("best_tree_1\n");
 							}
 							if(btree[1].BestNode->cost>cost){
-								listnode *temp;
-								temp=btree[1].startlist;
-								while(temp->next!=NULL){
-									temp=temp->next;
+								listnode *temp2;
+								temp2=btree[1].startlist;
+								while(temp2->next!=NULL){
+									temp2=temp2->next;
 								}
-								btree[1].BestNode=temp;//o kaluteros kombos einai o teleutaios pou molis ebala
+								btree[1].BestNode=temp2;//o kaluteros kombos einai o teleutaios pou molis ebala
 								//printf("best_tree_2\n");
 							}
 						}
@@ -2566,24 +2281,24 @@ all_stats *temp_stats;
 //
 
 //LOGIKA GIA TO YPOLOIPO 8A EINAI IDIO ME TO KATW
-for (int subteam=2;subteam<data->numRelQuery;subteam++){
-	//printf("subteam = %d\n",subteam);
-	listnode *temp;
-	temp=btree[subteam-1].BestNode;
-	if(temp==NULL){
-		printf("einai null\n");
-	}
-	else{
-		//printf("exei mesa\n");
-	}
-	for(j=0;j<data->numRelQuery;j++){//to for me to R pou den anhkei sto S
+		for(int subteam=2;subteam<data->numRelQuery;subteam++){
+			//printf("subteam = %d\n",subteam);
+			listnode *temp;
+			temp=btree[subteam-1].BestNode;
+			if(temp==NULL){
+				printf("einai null\n");
+			}
+			else{
+				printf("exei mesa\n");
+			}
+			for(j=0;j<data->numRelQuery;j++){//to for me to R pou den anhkei sto S
 				if(temp->set[j]==0){//den to exoume xrhsimopoihsei st0 sugkekrimeno set , ara to 8eloume
 					//opote paw sto graph kai elegxw an ennonetai me kapoio
 					for(k=0;k<data->numRelQuery;k++){//an k==j to exw eleksei panw opote edw to
 					//for(k=j+1;k<data->numRelQuery;k++){//den 8elw ta k opou einai mikrotera apo to j giati exw ftiaksei autes tis omades
-//printf("zxcvbnm2 %d %d\n",j,k);
+						//printf("zxcvbnm %d %d\n",j,k);
 						if( k!=j && temp->set[k]==1 && graph[j][k]==1 ){//an to k einai sto set kai sundaietai me to j tote to 8eloume
-//printf("zxcvbnm3 %d %d\n",j,k);
+							printf("zxcvbnm2 %d %d\n",j,k);
 							//pairnw ta dedomena apo thn lista
 							int *set,*teams,teamCount,cost;
 							all_stats *local_stats;
@@ -2605,9 +2320,9 @@ for (int subteam=2;subteam<data->numRelQuery;subteam++){
 							//
 							//printf("i just took set : ");
 							/*for(i=0;i<data->numRelQuery;i++){
-								printf("%d ",set[i]);
-							}
-							printf("\n\n");*/
+								//printf("%d ",set[i]);
+							}*/
+							//printf("\n\n");
 
 							local_stats=malloc(sizeof(all_stats));
 							local_stats->rels=temp->local_stats->rels;
@@ -2624,122 +2339,20 @@ for (int subteam=2;subteam<data->numRelQuery;subteam++){
 								}
 							}
 
-//proxeiro
-/*
-all_stats *temp_stats;
-			temp_stats=malloc(sizeof(all_stats));
-			temp_stats->rels=before_joins_stats->rels;
-			temp_stats->cols=malloc(temp_stats->rels*sizeof(int));
-			temp_stats->array_with_stats=malloc(temp_stats->rels*sizeof(stats *));
-			for(j=0;j<temp_stats->rels;j++){
-				temp_stats->cols[j]=before_joins_stats->cols[j];
-				temp_stats->array_with_stats[j]=malloc(temp_stats->cols[j]*sizeof(stats));
-				for(k=0;k<temp_stats->cols[j];k++){
-					temp_stats->array_with_stats[j][k].l=before_joins_stats->array_with_stats[j][k].l;
-					temp_stats->array_with_stats[j][k].u=before_joins_stats->array_with_stats[j][k].u;
-					temp_stats->array_with_stats[j][k].f=before_joins_stats->array_with_stats[j][k].f;
-					temp_stats->array_with_stats[j][k].d=before_joins_stats->array_with_stats[j][k].d;
-				}
-			}
-
-*/
-//printf("QWERTY1\n\n");					//upologizw to cost ,
+							//upologizw to cost ,
 							for(i=0;i<data->numPredJoinTwoRel;i++){//koitazw ola ta kathgorhmata na dw ti prakseis
 								if( (data->twoRelationPredArray[i].left->rel==j && data->twoRelationPredArray[i].right->rel==k) || (data->twoRelationPredArray[i].left->rel==k && data->twoRelationPredArray[i].right->rel==j) ){//koitazw an ta rel uparxoun sta kathgorhmata
-//printf("QWERTY2\n");
 									seira[seira_point]=i;
 									seira_point++;
 									if(teams[j]==teams[k] && teams[j]!=0 ){//elegxw tis omades , dld an 8a kanw radix h samejoin
-//printf("QWERTY3\n");
 										int indx=i;
 										leftRelationId = data->twoRelationPredArray[indx].left->rel;
 										leftColumnIndx =data->twoRelationPredArray[indx].left->col;
 										rightRelationId = data->twoRelationPredArray[indx].right->rel;
 										rightColumnIndx= data->twoRelationPredArray[indx].right->col;
-										//gia tis sthles tou join
-										if(local_stats->array_with_stats[leftRelationId][leftColumnIndx].l > local_stats->array_with_stats[rightRelationId][rightColumnIndx].l){
-											local_stats->array_with_stats[rightRelationId][rightColumnIndx].l=local_stats->array_with_stats[leftRelationId][leftColumnIndx].l;
-										}
-										else{
-											local_stats->array_with_stats[leftRelationId][leftColumnIndx].l=local_stats->array_with_stats[rightRelationId][rightColumnIndx].l;
-										}
 
-										if(local_stats->array_with_stats[leftRelationId][leftColumnIndx].u < local_stats->array_with_stats[rightRelationId][rightColumnIndx].u){
-											local_stats->array_with_stats[rightRelationId][rightColumnIndx].u=local_stats->array_with_stats[leftRelationId][leftColumnIndx].u;
-										}
-										else{
-											local_stats->array_with_stats[leftRelationId][leftColumnIndx].u=local_stats->array_with_stats[rightRelationId][rightColumnIndx].u;
-										}
-
-										int prev_f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-										int n=local_stats->array_with_stats[leftRelationId][leftColumnIndx].u-local_stats->array_with_stats[rightRelationId][rightColumnIndx].l+1;
-										local_stats->array_with_stats[leftRelationId][leftColumnIndx].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f/n;
-										local_stats->array_with_stats[rightRelationId][rightColumnIndx].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-
-										double base,power;
-										if(prev_f==0 || local_stats->array_with_stats[leftRelationId][leftColumnIndx].d==0){
-											local_stats->array_with_stats[leftRelationId][leftColumnIndx].d=0;
-											local_stats->array_with_stats[rightRelationId][rightColumnIndx].d=0;
-										}
-										else{
-											base=1-(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].f)/prev_f;
-											power=(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].f)/local_stats->array_with_stats[leftRelationId][leftColumnIndx].d;
-											//printf("same3 base=%f power=%f\n",base,power);
-											local_stats->array_with_stats[leftRelationId][leftColumnIndx].d=local_stats->array_with_stats[leftRelationId][leftColumnIndx].d*(1-pow(base,power));
-											local_stats->array_with_stats[rightRelationId][rightColumnIndx].d=local_stats->array_with_stats[leftRelationId][leftColumnIndx].d;
-										}
-										cost=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-
-										//gia tis upoloipes sthles twn 2 relation tou query
-										for(int q=0;q<local_stats->cols[leftRelationId];q++){
-											if(q!=leftColumnIndx){
-												if(prev_f==0 || local_stats->array_with_stats[leftRelationId][q].d==0){
-													local_stats->array_with_stats[leftRelationId][q].d=0;
-													local_stats->array_with_stats[leftRelationId][q].f=0;
-												}
-												else{
-													base=1-(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].f)/prev_f;
-													power=(1.0*local_stats->array_with_stats[leftRelationId][q].f)/local_stats->array_with_stats[leftRelationId][q].d;
-													//printf("same4 base=%f power=%f\n",base,power);
-													local_stats->array_with_stats[leftRelationId][q].d=local_stats->array_with_stats[leftRelationId][q].d*(1-pow(base,power));
-													local_stats->array_with_stats[leftRelationId][q].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-												}
-											}
-										}
-
-										for(int q=0;q<local_stats->cols[rightRelationId];q++){
-											if(q!=rightColumnIndx){
-												if(prev_f==0 || local_stats->array_with_stats[rightRelationId][q].d==0){
-													local_stats->array_with_stats[rightRelationId][q].d=0;
-													local_stats->array_with_stats[rightRelationId][q].f=0;
-												}
-												else{
-													base=1-(1.0*local_stats->array_with_stats[rightRelationId][rightColumnIndx].f)/prev_f;
-													power=(1.0*local_stats->array_with_stats[rightRelationId][q].f)/local_stats->array_with_stats[rightRelationId][q].d;
-													//printf("same5 base=%f power=%f\n",base,power);
-													local_stats->array_with_stats[rightRelationId][q].d=local_stats->array_with_stats[rightRelationId][q].d*(1-pow(base,power));
-													local_stats->array_with_stats[rightRelationId][q].f=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
-												}
-											}
-										}
-
-										//gia ta upoloipa rel pou anhkoun sthn omada
-										for(int q=0;q<data->numRelQuery;q++){
-											if(teams[q]==teams[j]){
-												for(int m=0;m<local_stats->cols[q];m++){
-													if(prev_f==0 || local_stats->array_with_stats[q][m].d==0){
-														local_stats->array_with_stats[q][m].d=0;
-														local_stats->array_with_stats[q][m].f=0;
-													}
-													else{
-														base=1-1.0*(local_stats->array_with_stats[rightRelationId][rightColumnIndx].f/prev_f);
-														power=(1.0*local_stats->array_with_stats[q][m].f)/local_stats->array_with_stats[q][m].d;
-														local_stats->array_with_stats[q][m].d=local_stats->array_with_stats[q][m].d*(1-pow(base,power));
-														local_stats->array_with_stats[q][m].f=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
-													}
-												}
-											}
-										}
+										sameJoinStatsCalculator(data,local_stats,teams,leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
+										cost=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
 										//edw den xreiazetai na allaksw omades
 									}
 									else{//exw radix
@@ -2750,145 +2363,16 @@ all_stats *temp_stats;
 										rightRelationId = data->twoRelationPredArray[indx].right->rel;
 										rightColumnIndx= data->twoRelationPredArray[indx].right->col;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-										//gia tis sthles tou radix
-										if(local_stats->array_with_stats[leftRelationId][leftColumnIndx].l > local_stats->array_with_stats[rightRelationId][rightColumnIndx].l){
-											local_stats->array_with_stats[rightRelationId][rightColumnIndx].l=local_stats->array_with_stats[leftRelationId][leftColumnIndx].l;
-										}
-										else{
-											local_stats->array_with_stats[leftRelationId][leftColumnIndx].l=local_stats->array_with_stats[rightRelationId][rightColumnIndx].l;
-										}
-
-										if(local_stats->array_with_stats[leftRelationId][leftColumnIndx].u < local_stats->array_with_stats[rightRelationId][rightColumnIndx].u){
-											local_stats->array_with_stats[rightRelationId][rightColumnIndx].u=local_stats->array_with_stats[leftRelationId][leftColumnIndx].u;
-										}
-										else{
-											local_stats->array_with_stats[leftRelationId][leftColumnIndx].u=local_stats->array_with_stats[rightRelationId][rightColumnIndx].u;
-										}
-
-										int prev_d_A=local_stats->array_with_stats[leftRelationId][leftColumnIndx].d;
-										int prev_d_B=local_stats->array_with_stats[rightRelationId][rightColumnIndx].d;
-										int n=local_stats->array_with_stats[leftRelationId][leftColumnIndx].u-local_stats->array_with_stats[rightRelationId][rightColumnIndx].l+1;
-
-										local_stats->array_with_stats[leftRelationId][leftColumnIndx].f=(local_stats->array_with_stats[leftRelationId][leftColumnIndx].f*local_stats->array_with_stats[rightRelationId][rightColumnIndx].f)/n;
-										local_stats->array_with_stats[rightRelationId][rightColumnIndx].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-
-										local_stats->array_with_stats[leftRelationId][leftColumnIndx].d=(local_stats->array_with_stats[leftRelationId][leftColumnIndx].d*local_stats->array_with_stats[rightRelationId][rightColumnIndx].d)/n;
-										local_stats->array_with_stats[rightRelationId][rightColumnIndx].d=local_stats->array_with_stats[leftRelationId][leftColumnIndx].d;
-
-										cost=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-//printf("AAAA n=%d d=%ld cost=%d\n",n,local_stats->array_with_stats[rightRelationId][rightColumnIndx].d,cost);
-
-										double base,power;
-										//gia tous pinakes pou phran meros
-//OPOU EXW "POW" ELEGXW AN H BASH EINAI 8ETIKH , AUTO GINETAI MONO STHN RADIX POU MPOREI NA EXW PERISOTERA APOTELESMATA APOTI OTAN KSEKINHSA]
-
-										for(int q=0;q<local_stats->cols[leftRelationId];q++){
-											if(q!=leftColumnIndx){
-												if(prev_d_A==0 || local_stats->array_with_stats[leftRelationId][q].d==0){
-													local_stats->array_with_stats[leftRelationId][q].d=0;
-													local_stats->array_with_stats[leftRelationId][q].f=0;
-												}
-												else{
-													base=1-(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].d)/prev_d_A;
-													power=(1.0*local_stats->array_with_stats[leftRelationId][q].f)/local_stats->array_with_stats[leftRelationId][q].d;
-													////printf("radix1 base=%f power=%f pow=%f \n",base,power,pow(base,power));
-													if(base>0){//
-														local_stats->array_with_stats[leftRelationId][q].d=local_stats->array_with_stats[leftRelationId][q].d*(1-pow(base,power));
-														local_stats->array_with_stats[leftRelationId][q].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-													}//
-													else{//an exw arnhtikh bash
-//printf("arnhtikh bash\n");
-														base=-base;
-														local_stats->array_with_stats[leftRelationId][q].d=local_stats->array_with_stats[leftRelationId][q].d*(1+pow(base,power));
-														local_stats->array_with_stats[leftRelationId][q].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-													}//
-													//printf("radix1 base=%f power=%f pow=%f \n",base,power,pow(base,power));
-												}
-											}
-										}
-
-										for(int q=0;q<local_stats->cols[rightRelationId];q++){
-											if(q!=rightColumnIndx){
-												if(prev_d_B==0 || local_stats->array_with_stats[rightRelationId][q].d==0){
-													local_stats->array_with_stats[leftRelationId][q].d=0;
-													local_stats->array_with_stats[rightRelationId][q].f=0;
-												}
-												else{
-													base=1-(1.0*local_stats->array_with_stats[rightRelationId][rightColumnIndx].d)/prev_d_B;
-													power=(1.0*local_stats->array_with_stats[rightRelationId][q].f)/local_stats->array_with_stats[rightRelationId][q].d;
-													//printf("radix2 base=%f power=%f\n",base,power);
-													if(base>0){//
-														local_stats->array_with_stats[rightRelationId][q].d=local_stats->array_with_stats[rightRelationId][q].d*(1-pow(base,power));
-														local_stats->array_with_stats[rightRelationId][q].f=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
-													}
-													else{
-														base=-base;
-														local_stats->array_with_stats[rightRelationId][q].d=local_stats->array_with_stats[rightRelationId][q].d*(1+pow(base,power));
-														local_stats->array_with_stats[rightRelationId][q].f=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
-													}
-												}
-											}
-										}
-
-
-										//gia tous upoloipous pinakes sthn omada
-										//for(q=0;q<middleResultsCounter;q++){
-										//	if(middleResArray[q].team==leftTeam && middleResArray[q].relation_id!=leftRelationId){
-										for(int q=0;q<data->numRelQuery;q++){
-											if( teams[q]==teams[rightRelationId] && q!=rightRelationId && teams[q]!=0 ){
-												for(int m=0;m<local_stats->cols[q];m++){
-													if(prev_d_B==0 || local_stats->array_with_stats[rightRelationId][q].d==0){
-														local_stats->array_with_stats[rightRelationId][q].d=0;
-														local_stats->array_with_stats[rightRelationId][q].f=0;
-													}
-													else{
-														base=1-(1.0*local_stats->array_with_stats[rightRelationId][rightColumnIndx].d)/prev_d_B;
-														power=(1.0*local_stats->array_with_stats[rightRelationId][q].f)/local_stats->array_with_stats[rightRelationId][q].d;
-														//printf("radix3 base=%f power=%f\n",base,power);
-														if(base>0){//
-															local_stats->array_with_stats[rightRelationId][q].d=local_stats->array_with_stats[rightRelationId][q].d*(1-pow(base,power));
-															local_stats->array_with_stats[rightRelationId][q].f=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
-														}
-														else{
-															base=-base;
-															local_stats->array_with_stats[rightRelationId][q].d=local_stats->array_with_stats[rightRelationId][q].d*(1+pow(base,power));
-															local_stats->array_with_stats[rightRelationId][q].f=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
-														}
-													}
-												}
-											}
-
-											if( teams[q]==teams[leftRelationId] && q!=leftRelationId && teams[q]!=0 ){
-												for(int m=0;m<local_stats->cols[q];m++){
-													if(prev_d_B==0 || local_stats->array_with_stats[leftRelationId][q].d==0){
-														local_stats->array_with_stats[leftRelationId][q].d=0;
-														local_stats->array_with_stats[leftRelationId][q].f=0;
-													}
-													else{
-														base=1-(1.0*local_stats->array_with_stats[leftRelationId][leftColumnIndx].d)/prev_d_B;
-														power=(1.0*local_stats->array_with_stats[leftRelationId][q].f)/local_stats->array_with_stats[leftRelationId][q].d;
-														//printf("radix4 base=%f power=%f\n",base,power);
-														if(base>0){//
-															local_stats->array_with_stats[leftRelationId][q].d=local_stats->array_with_stats[leftRelationId][q].d*(1-pow(base,power));
-															local_stats->array_with_stats[leftRelationId][q].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-														}
-														else{
-															base=-base;
-															local_stats->array_with_stats[leftRelationId][q].d=local_stats->array_with_stats[leftRelationId][q].d*(1+pow(base,power));
-															local_stats->array_with_stats[leftRelationId][q].f=local_stats->array_with_stats[leftRelationId][leftColumnIndx].f;
-														}
-													}
-												}
-											}
-										}
+										RadixStatsCalculator(data,local_stats,teams,leftRelationId,leftColumnIndx,rightRelationId,rightColumnIndx);
+										cost=local_stats->array_with_stats[rightRelationId][rightColumnIndx].f;
 										//
-								//insert
-								//printf("111before insert set : ");
-								/*for(int qaz=0;qaz<data->numRelQuery;qaz++){
-									printf("(%d) %d ",qaz,set[qaz]);
-								}
-								printf("\n\n");*/
+										//insert
+										//printf("111before insert set : ");
+										/*for(int qaz=0;qaz<data->numRelQuery;qaz++){
+											//printf("(%d) %d ",qaz,set[qaz]);
+										}
+										printf("\n\n");*/
+
 										//allazw ta teams
 										int newteam;
 										if(teams[rightRelationId]==0 && teams[leftRelationId]==0){
@@ -2923,16 +2407,16 @@ all_stats *temp_stats;
 								}
 							}
 							//insert
-							//printf("before insert set in : ");
+							//printf("before insert set : ");
 							/*for(int qaz=0;qaz<data->numRelQuery;qaz++){
-								//printf("(%d) %d ",qaz,set[qaz]);
+								printf("(%d) %d ",qaz,set[qaz]);
 							}
 							printf("\n\n");*/
 							insertList(&(btree[subteam].startlist),cost,set,data->numRelQuery,teams,teamCount,local_stats,seira,data->numPredJoinTwoRel,seira_point);
 							//kai na kanw to besttree
 							if(btree[subteam].BestNode==NULL){
-								//printf("ebala 1\n");
 								btree[subteam].BestNode=btree[subteam].startlist;
+								printf("best_tree_1\n");
 							}
 							if(btree[subteam].BestNode->cost>cost){
 								listnode *temp2;
@@ -2941,43 +2425,368 @@ all_stats *temp_stats;
 									temp2=temp2->next;
 								}
 								btree[subteam].BestNode=temp2;//o kaluteros kombos einai o teleutaios pou molis ebala
-								//printf("ebala 2\n");
+								printf("best_tree_2\n");
 							}
 						}
 					}
 				}
 			}
-	//printf("printList\n");
-	//printList(btree[subteam].startlist,data->numRelQuery,data->numPredJoinTwoRel);
-}
-//printf("TELIKO PRINT LISTAS\n");
-	//printList(btree[data->numRelQuery-1].startlist,data->numRelQuery,data->numPredJoinTwoRel);
-return btree[data->numRelQuery-1].BestNode->seira;
+			//printf("printList\n");
+			//printList(btree[subteam].startlist,data->numRelQuery,data->numPredJoinTwoRel);
+		}
+		//printf("TELIKO PRINT LISTAS\n");
+		//printList(btree[data->numRelQuery-1].startlist,data->numRelQuery,data->numPredJoinTwoRel);
+		return btree[data->numRelQuery-1].BestNode->seira;
 //
 
-/*//kanw mia allagh ston psedokwsika , sto for pou leei |S|=i , egw pairnw amesws to best tree
-		for(i=1;i<data->numRelQuery;i++){//2nd
-			listnode *temp;
-			temp=btree[i-1].startlist;
-			while(temp!=NULL){//for all set of rels size of i
-				for(j=0;j<data->numRelQuery;j++){//to for me to R pou den anhkei sto S
-					if(temp->set[j]==0){//den to exoume xrhsimopoihsei st0 sugkekrimeno set , ara to 8eloume
-						//opote paw sto graph kai elegxw an ennonetai me kapoio
-						for(k=0;k<data->numRelQuery;k++){//an k==j to exw eleksei panw opote edw to
-							if( k!=j && temp->set[k]==1 && graph[j][k]==1 ){//an to k einai sto set kai sundaietai me to j tote to 8eloume
-								//upologizw to cost
-
-							}
-						}
-					}
-				}
-				temp=temp->next;
-			}
-		}
-*/
 	}
 	else{
 		return NULL;
+	}
+}
+
+void greaterThanFilterStatsCalculator(queryDataIndex *data,all_stats *statsArray,int *teams,int relationId,int columnIndx,int value){// R.A>value
+
+	int prev_f=statsArray->array_with_stats[relationId][columnIndx].f;
+	//stats
+	if(value<statsArray->array_with_stats[relationId][columnIndx].l){//ta stats den allazoun , gt ta pairnw ola
+		value=statsArray->array_with_stats[relationId][columnIndx].l;
+		return;
+	}
+
+	//gia thn sthlh tou filter
+	double suntelesths;
+	suntelesths=(1.0*statsArray->array_with_stats[relationId][columnIndx].u-value)/(1.0*statsArray->array_with_stats[relationId][columnIndx].u-statsArray->array_with_stats[relationId][columnIndx].l);
+
+	statsArray->array_with_stats[relationId][columnIndx].l=value;
+	statsArray->array_with_stats[relationId][columnIndx].d=suntelesths*statsArray->array_with_stats[relationId][columnIndx].d;
+	statsArray->array_with_stats[relationId][columnIndx].f=suntelesths*statsArray->array_with_stats[relationId][columnIndx].f;
+
+	//stats gia tis upoloipes sthles tou pinaka
+	for(int i=0;i<statsArray->cols[relationId];i++){
+		if(i!=columnIndx){
+			double base,power;
+			base=1-(1.0*statsArray->array_with_stats[relationId][columnIndx].f)/prev_f;
+			power=(1.0*statsArray->array_with_stats[relationId][i].f)/(1.0*statsArray->array_with_stats[relationId][i].d);
+			//printf("> base=%f power=%f\n",base,power);
+			statsArray->array_with_stats[relationId][i].d=statsArray->array_with_stats[relationId][i].d*(1-pow(base,power));
+			statsArray->array_with_stats[relationId][i].f=statsArray->array_with_stats[relationId][columnIndx].f;
+
+			if(statsArray->array_with_stats[relationId][i].f>0 && statsArray->array_with_stats[relationId][i].d==0){
+				statsArray->array_with_stats[relationId][i].d=1;
+			}
+		}
+	}
+
+	//stats gia tous upoloipous pinakes ths omadas pou anhkei h sthlh
+	for(int j=0;j<statsArray->rels;j++){
+		if(j!=relationId && teams[j]==teams[relationId] && teams[j]!=0){
+			for(int i=0;i<statsArray->cols[j];i++){
+				if(i!=columnIndx){
+					double base,power;
+					base=1-(1.0*statsArray->array_with_stats[relationId][columnIndx].f)/prev_f;
+					power=(1.0*statsArray->array_with_stats[j][i].f)/(1.0*statsArray->array_with_stats[j][i].d);
+					//printf("> base=%f power=%f\n",base,power);
+					statsArray->array_with_stats[j][i].d=statsArray->array_with_stats[j][i].d*(1-pow(base,power));
+					statsArray->array_with_stats[j][i].f=statsArray->array_with_stats[relationId][columnIndx].f;
+
+					if(statsArray->array_with_stats[j][i].f>0 && statsArray->array_with_stats[j][i].d==0){
+						statsArray->array_with_stats[j][i].d=1;
+					}
+				}
+			}
+		}
+	}
+}
+
+void lessThanFilterStatsCalculator(queryDataIndex *data,all_stats *statsArray,int *teams,int relationId,int columnIndx,int value){// R.A<value
+
+	int prev_f=statsArray->array_with_stats[relationId][columnIndx].f;
+	//stats
+	if(value>statsArray->array_with_stats[relationId][columnIndx].u){//ta stats den allazoun , gt ta pairnw ola
+		value=statsArray->array_with_stats[relationId][columnIndx].u;
+		return;
+	}
+
+	//gia thn sthlh tou filter
+	double suntelesths;
+	suntelesths=(1.0*value-statsArray->array_with_stats[relationId][columnIndx].l)/(1.0*statsArray->array_with_stats[relationId][columnIndx].u-statsArray->array_with_stats[relationId][columnIndx].l);
+
+	statsArray->array_with_stats[relationId][columnIndx].u=value;
+	statsArray->array_with_stats[relationId][columnIndx].d=suntelesths*statsArray->array_with_stats[relationId][columnIndx].d;
+	statsArray->array_with_stats[relationId][columnIndx].f=suntelesths*statsArray->array_with_stats[relationId][columnIndx].f;
+
+	//stats gia tis upoloipes sthles tou pinaka
+	for(int i=0;i<statsArray->cols[relationId];i++){
+		if(i!=columnIndx){
+			double base,power;
+			base=1-(1.0*statsArray->array_with_stats[relationId][columnIndx].f)/prev_f;
+			power=(1.0*statsArray->array_with_stats[relationId][i].f)/(1.0*statsArray->array_with_stats[relationId][i].d);
+			//printf("> base=%f power=%f\n",base,power);
+			statsArray->array_with_stats[relationId][i].d=statsArray->array_with_stats[relationId][i].d*(1-pow(base,power));
+			statsArray->array_with_stats[relationId][i].f=statsArray->array_with_stats[relationId][columnIndx].f;
+
+			if(statsArray->array_with_stats[relationId][i].f>0 && statsArray->array_with_stats[relationId][i].d==0){
+				statsArray->array_with_stats[relationId][i].d=1;
+			}
+		}
+	}
+
+	//stats gia tous upoloipous pinakes ths omadas pou anhkei h sthlh
+	for(int j=0;j<statsArray->rels;j++){
+		if(j!=relationId && teams[j]==teams[relationId] && teams[j]!=0){
+			for(int i=0;i<statsArray->cols[j];i++){
+				if(i!=columnIndx){
+					double base,power;
+					base=1-(1.0*statsArray->array_with_stats[relationId][columnIndx].f)/prev_f;
+					power=(1.0*statsArray->array_with_stats[j][i].f)/(1.0*statsArray->array_with_stats[j][i].d);
+					//printf("> base=%f power=%f\n",base,power);
+					statsArray->array_with_stats[j][i].d=statsArray->array_with_stats[j][i].d*(1-pow(base,power));
+					statsArray->array_with_stats[j][i].f=statsArray->array_with_stats[relationId][columnIndx].f;
+
+					if(statsArray->array_with_stats[j][i].f>0 && statsArray->array_with_stats[j][i].d==0){
+						statsArray->array_with_stats[j][i].d=1;
+					}
+				}
+			}
+		}
+	}
+}
+
+void sameJoinStatsCalculator(queryDataIndex *data,all_stats *statsArray,int *teams,int leftRelationId,int leftColumnIndx,int rightRelationId,int rightColumnIndx){
+
+	//gia tis sthles tou join
+	if(statsArray->array_with_stats[leftRelationId][leftColumnIndx].l > statsArray->array_with_stats[rightRelationId][rightColumnIndx].l){
+		statsArray->array_with_stats[rightRelationId][rightColumnIndx].l=statsArray->array_with_stats[leftRelationId][leftColumnIndx].l;
+	}
+	else{
+		statsArray->array_with_stats[leftRelationId][leftColumnIndx].l=statsArray->array_with_stats[rightRelationId][rightColumnIndx].l;
+	}
+
+	if(statsArray->array_with_stats[leftRelationId][leftColumnIndx].u < statsArray->array_with_stats[rightRelationId][rightColumnIndx].u){
+		statsArray->array_with_stats[rightRelationId][rightColumnIndx].u=statsArray->array_with_stats[leftRelationId][leftColumnIndx].u;
+	}
+	else{
+		statsArray->array_with_stats[leftRelationId][leftColumnIndx].u=statsArray->array_with_stats[rightRelationId][rightColumnIndx].u;
+	}
+
+	int prev_f=statsArray->array_with_stats[leftRelationId][leftColumnIndx].f;
+	int n=statsArray->array_with_stats[leftRelationId][leftColumnIndx].u-statsArray->array_with_stats[rightRelationId][rightColumnIndx].l+1;
+	statsArray->array_with_stats[leftRelationId][leftColumnIndx].f=statsArray->array_with_stats[leftRelationId][leftColumnIndx].f/n;
+	statsArray->array_with_stats[rightRelationId][rightColumnIndx].f=statsArray->array_with_stats[leftRelationId][leftColumnIndx].f;
+
+	double base,power;
+	if(prev_f==0 || statsArray->array_with_stats[leftRelationId][leftColumnIndx].d==0){//mporei auto na prepei na periexei kai ta 4 panw
+		statsArray->array_with_stats[leftRelationId][leftColumnIndx].d=0;
+		statsArray->array_with_stats[rightRelationId][rightColumnIndx].d=0;
+	}
+	else{
+		base=1-(1.0*statsArray->array_with_stats[leftRelationId][leftColumnIndx].f)/prev_f;
+		power=(1.0*statsArray->array_with_stats[leftRelationId][leftColumnIndx].f)/statsArray->array_with_stats[leftRelationId][leftColumnIndx].d;
+		//printf("same3 base=%f power=%f\n",base,power);
+		statsArray->array_with_stats[leftRelationId][leftColumnIndx].d=statsArray->array_with_stats[leftRelationId][leftColumnIndx].d*(1-pow(base,power));
+		statsArray->array_with_stats[rightRelationId][rightColumnIndx].d=statsArray->array_with_stats[leftRelationId][leftColumnIndx].d;
+	}
+
+	//gia tis upoloipes sthles twn 2 relation tou query
+	//exoume 2 periptwseis
+	//a)oi sthles na einai ston idio pinaka , auto 8a ginei prin arxisoun na sxhmatizontai omades opote den xreiazetai na allaksw tpt allo
+	if(leftRelationId==rightRelationId){
+		for(int i=0;i<statsArray->cols[leftRelationId];i++){
+			if(i!=leftColumnIndx && i!=rightColumnIndx){
+				if(prev_f==0 || statsArray->array_with_stats[leftRelationId][i].d==0){
+					statsArray->array_with_stats[leftRelationId][i].d=0;
+					statsArray->array_with_stats[leftRelationId][i].f=0;
+				}
+				else{
+					base=1-(1.0*statsArray->array_with_stats[leftRelationId][leftColumnIndx].f)/prev_f;
+					power=(1.0*statsArray->array_with_stats[leftRelationId][i].f)/statsArray->array_with_stats[leftRelationId][i].d;
+					//printf("same4 base=%f power=%f\n",base,power);
+					statsArray->array_with_stats[leftRelationId][i].d=statsArray->array_with_stats[leftRelationId][i].d*(1-pow(base,power));
+					statsArray->array_with_stats[leftRelationId][i].f=statsArray->array_with_stats[leftRelationId][leftColumnIndx].f;
+				}
+			}
+		}
+	}
+	//b)oi sthles na einai se diaforetikous pinakes ths idias omadas
+	else{
+		//allazw tis upoloipes sthles tou left pinaka
+		for(int i=0;i<statsArray->cols[leftRelationId];i++){
+			if(i!=leftColumnIndx){
+				if(prev_f==0 || statsArray->array_with_stats[leftRelationId][i].d==0){
+					statsArray->array_with_stats[leftRelationId][i].d=0;
+					statsArray->array_with_stats[leftRelationId][i].f=0;
+				}
+				else{
+					base=1-(1.0*statsArray->array_with_stats[leftRelationId][leftColumnIndx].f)/prev_f;
+					power=(1.0*statsArray->array_with_stats[leftRelationId][i].f)/statsArray->array_with_stats[leftRelationId][i].d;
+					//printf("same4 base=%f power=%f\n",base,power);
+					statsArray->array_with_stats[leftRelationId][i].d=statsArray->array_with_stats[leftRelationId][i].d*(1-pow(base,power));
+					statsArray->array_with_stats[leftRelationId][i].f=statsArray->array_with_stats[leftRelationId][leftColumnIndx].f;
+				}
+			}
+		}
+
+		//allazw olous tous pinakes sto team tou left
+		/*for(int j=0;j<statsArray->rels;j++){
+			if(j!=leftRelationId && teams[j]==teams[leftRelationId] && teams[j]!=0){
+				for(int i=0;i<statsArray->cols[j];i++){
+					if(i!=leftColumnIndx){
+						if(prev_f==0 || statsArray->array_with_stats[j][i].d==0){
+							statsArray->array_with_stats[j][i].d=0;
+							statsArray->array_with_stats[j][i].f=0;
+						}
+						else{
+							base=1-(1.0*statsArray->array_with_stats[j][leftColumnIndx].f)/prev_f;
+							power=(1.0*statsArray->array_with_stats[j][i].f)/statsArray->array_with_stats[j][i].d;
+							//printf("same4 base=%f power=%f\n",base,power);
+							statsArray->array_with_stats[j][i].d=statsArray->array_with_stats[j][i].d*(1-pow(base,power));
+							statsArray->array_with_stats[j][i].f=statsArray->array_with_stats[j][leftColumnIndx].f;
+						}
+					}
+				}
+			}
+		}*/
+
+		//allazw tis upoloipes sthles tou right pinaka
+		for(int i=0;i<statsArray->cols[rightRelationId];i++){
+			if(i!=rightColumnIndx){
+				if(prev_f==0 || statsArray->array_with_stats[rightRelationId][i].d==0){
+					statsArray->array_with_stats[rightRelationId][i].d=0;
+					statsArray->array_with_stats[rightRelationId][i].f=0;
+				}
+				else{
+					base=1-(1.0*statsArray->array_with_stats[rightRelationId][rightColumnIndx].f)/prev_f;
+					power=(1.0*statsArray->array_with_stats[rightRelationId][i].f)/statsArray->array_with_stats[rightRelationId][i].d;
+					//printf("same4 base=%f power=%f\n",base,power);
+					statsArray->array_with_stats[rightRelationId][i].d=statsArray->array_with_stats[rightRelationId][i].d*(1-pow(base,power));
+					statsArray->array_with_stats[rightRelationId][i].f=statsArray->array_with_stats[rightRelationId][rightColumnIndx].f;
+				}
+			}
+		}
+
+		//allazw olous tous pinakes sto team
+		for(int j=0;j<statsArray->rels;j++){
+			if(j!=leftRelationId && j!=rightRelationId && teams[j]==teams[rightRelationId] && teams[j]!=0){
+				for(int i=0;i<statsArray->cols[j];i++){
+					if(prev_f==0 || statsArray->array_with_stats[j][i].d==0){
+						statsArray->array_with_stats[j][i].d=0;
+						statsArray->array_with_stats[j][i].f=0;
+					}
+					else{
+						base=1-(1.0*statsArray->array_with_stats[j][rightColumnIndx].f)/prev_f;
+						power=(1.0*statsArray->array_with_stats[j][i].f)/statsArray->array_with_stats[j][i].d;
+						//printf("same4 base=%f power=%f\n",base,power);
+						statsArray->array_with_stats[j][i].d=statsArray->array_with_stats[j][i].d*(1-pow(base,power));
+						statsArray->array_with_stats[j][i].f=statsArray->array_with_stats[j][rightColumnIndx].f;
+					}
+				}
+			}
+		}
+	}
+}
+
+void RadixStatsCalculator(queryDataIndex *data,all_stats *statsArray,int *teams,int leftRelationId,int leftColumnIndx,int rightRelationId,int rightColumnIndx){
+
+	//arxika kanw thn proetimasia me ta filters
+	if(statsArray->array_with_stats[leftRelationId][leftColumnIndx].l > statsArray->array_with_stats[rightRelationId][rightColumnIndx].l){
+		greaterThanFilterStatsCalculator(data,statsArray,teams,rightRelationId,rightColumnIndx,statsArray->array_with_stats[leftRelationId][leftColumnIndx].l);
+	}
+	else{
+		greaterThanFilterStatsCalculator(data,statsArray,teams,leftRelationId,leftColumnIndx,statsArray->array_with_stats[rightRelationId][rightColumnIndx].l);
+	}
+
+	if(statsArray->array_with_stats[leftRelationId][leftColumnIndx].u < statsArray->array_with_stats[rightRelationId][rightColumnIndx].u){
+		lessThanFilterStatsCalculator(data,statsArray,teams,rightRelationId,rightColumnIndx,statsArray->array_with_stats[leftRelationId][leftColumnIndx].u);
+	}
+	else{
+		lessThanFilterStatsCalculator(data,statsArray,teams,leftRelationId,leftColumnIndx,statsArray->array_with_stats[rightRelationId][rightColumnIndx].u);
+	}
+
+	//gia tis sthles ths radix
+	//ta u,l einai etoima
+	int prev_d_A=statsArray->array_with_stats[leftRelationId][leftColumnIndx].d;
+	int prev_d_B=statsArray->array_with_stats[rightRelationId][rightColumnIndx].d;
+	int n=statsArray->array_with_stats[leftRelationId][leftColumnIndx].u-statsArray->array_with_stats[rightRelationId][rightColumnIndx].l+1;
+
+	statsArray->array_with_stats[leftRelationId][leftColumnIndx].f=(statsArray->array_with_stats[leftRelationId][leftColumnIndx].f*statsArray->array_with_stats[rightRelationId][rightColumnIndx].f)/n;
+	statsArray->array_with_stats[rightRelationId][rightColumnIndx].f=statsArray->array_with_stats[leftRelationId][leftColumnIndx].f;
+
+	statsArray->array_with_stats[leftRelationId][leftColumnIndx].d=(statsArray->array_with_stats[leftRelationId][leftColumnIndx].d*statsArray->array_with_stats[rightRelationId][rightColumnIndx].d)/n;
+	statsArray->array_with_stats[rightRelationId][rightColumnIndx].d=statsArray->array_with_stats[leftRelationId][leftColumnIndx].d;
+
+	double base,power;
+	//allazw tis upoloipes sthles tou left pinaka
+	for(int i=0;i<statsArray->cols[leftRelationId];i++){
+		if(i!=leftColumnIndx){
+			if(prev_d_A==0 || statsArray->array_with_stats[leftRelationId][i].d==0){
+				statsArray->array_with_stats[leftRelationId][i].d=0;
+				statsArray->array_with_stats[leftRelationId][i].f=0;
+			}
+			else{
+				base=1-(1.0*statsArray->array_with_stats[leftRelationId][leftColumnIndx].d)/prev_d_A;
+				power=(1.0*statsArray->array_with_stats[leftRelationId][i].f)/statsArray->array_with_stats[leftRelationId][i].d;
+				//printf("same4 base=%f power=%f\n",base,power);
+				statsArray->array_with_stats[leftRelationId][i].d=statsArray->array_with_stats[leftRelationId][i].d*(1-pow(base,power));
+				statsArray->array_with_stats[leftRelationId][i].f=statsArray->array_with_stats[leftRelationId][leftColumnIndx].f;
+			}
+		}
+	}
+	//allazw olous tous pinakes sto team tou left
+	for(int j=0;j<statsArray->rels;j++){
+		if(j!=leftRelationId && teams[j]==teams[leftRelationId] && teams[j]!=0){
+			for(int i=0;i<statsArray->cols[j];i++){
+				if(i!=leftColumnIndx){
+					if(prev_d_A==0 || statsArray->array_with_stats[j][i].d==0){
+						statsArray->array_with_stats[j][i].d=0;
+						statsArray->array_with_stats[j][i].f=0;
+					}
+					else{
+						base=1-(1.0*statsArray->array_with_stats[j][leftColumnIndx].d)/prev_d_A;
+						power=(1.0*statsArray->array_with_stats[j][i].f)/statsArray->array_with_stats[j][i].d;
+						//printf("same4 base=%f power=%f\n",base,power);
+						statsArray->array_with_stats[j][i].d=statsArray->array_with_stats[j][i].d*(1-pow(base,power));
+						statsArray->array_with_stats[j][i].f=statsArray->array_with_stats[j][leftColumnIndx].f;
+					}
+				}
+			}
+		}
+	}
+	//allazw tis upoloipes sthles tou right pinaka
+	for(int i=0;i<statsArray->cols[rightRelationId];i++){
+		if(i!=rightColumnIndx){
+			if(prev_d_B==0 || statsArray->array_with_stats[rightRelationId][i].d==0){
+				statsArray->array_with_stats[rightRelationId][i].d=0;
+				statsArray->array_with_stats[rightRelationId][i].f=0;
+			}
+			else{
+				base=1-(1.0*statsArray->array_with_stats[rightRelationId][rightColumnIndx].d)/prev_d_B;
+				power=(1.0*statsArray->array_with_stats[rightRelationId][i].f)/statsArray->array_with_stats[rightRelationId][i].d;
+				//printf("same4 base=%f power=%f\n",base,power);
+				statsArray->array_with_stats[rightRelationId][i].d=statsArray->array_with_stats[rightRelationId][i].d*(1-pow(base,power));
+				statsArray->array_with_stats[rightRelationId][i].f=statsArray->array_with_stats[rightRelationId][rightColumnIndx].f;
+			}
+		}
+	}
+	//allazw olous tous pinakes sto team tou right
+	for(int j=0;j<statsArray->rels;j++){
+		if(j!=rightRelationId && teams[j]==teams[rightRelationId] && teams[j]!=0){
+			for(int i=0;i<statsArray->cols[j];i++){
+				if(i!=rightColumnIndx){
+					if(prev_d_B==0 || statsArray->array_with_stats[j][i].d==0){
+						statsArray->array_with_stats[j][i].d=0;
+						statsArray->array_with_stats[j][i].f=0;
+					}
+					else{
+						base=1-(1.0*statsArray->array_with_stats[j][rightColumnIndx].d)/prev_d_B;
+						power=(1.0*statsArray->array_with_stats[j][i].f)/statsArray->array_with_stats[j][i].d;
+						//printf("same4 base=%f power=%f\n",base,power);
+						statsArray->array_with_stats[j][i].d=statsArray->array_with_stats[j][i].d*(1-pow(base,power));
+						statsArray->array_with_stats[j][i].f=statsArray->array_with_stats[j][rightColumnIndx].f;
+					}
+				}
+			}
+		}
 	}
 }
 

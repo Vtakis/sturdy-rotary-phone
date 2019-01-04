@@ -32,6 +32,10 @@ typedef struct listnode listnode;
 #define FUNCTIONS_H_
 
 int *JoinEnumeration(queryDataIndex *data,all_stats *statsArray);
+void greaterThanFilterStatsCalculator(queryDataIndex *data,all_stats *statsArray,int *teams,int relationId,int columnIndx,int value);// R.A>k1
+void lessThanFilterStatsCalculator(queryDataIndex *data,all_stats *statsArray,int *teams,int relationId,int columnIndx,int value);// R.A<k2
+void sameJoinStatsCalculator(queryDataIndex *data,all_stats *statsArray,int *teams,int leftRelationId,int leftColumnIndx,int rightRelationId,int rightColumnIndx);
+void RadixStatsCalculator(queryDataIndex *data,all_stats *statsArray,int *teams,int leftRelationId,int leftColumnIndx,int rightRelationId,int rightColumnIndx);
 
 struct bestTree{//to offset+1 einai to posa rel exei to set
 	listnode *startlist;
