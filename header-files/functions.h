@@ -27,9 +27,17 @@ typedef struct stats stats;
 typedef struct all_stats all_stats;
 typedef struct bestTree bestTree;
 typedef struct listnode listnode;
+typedef struct relationData relationData;
+
 //
 #ifndef FUNCTIONS_H_
 #define FUNCTIONS_H_
+
+struct relationData{
+	multiColumnRelation *relationArray;
+	all_stats *statsArray;
+	char **relation;
+};
 
 int *JoinEnumeration(queryDataIndex *data,all_stats *statsArray);
 void greaterThanFilterStatsCalculator(queryDataIndex *data,all_stats *statsArray,int *teams,int relationId,int columnIndx,int value);// R.A>k1
@@ -222,6 +230,10 @@ struct queryDataIndex
 };
 ///////////////////////////////////////////////////////////
 
+char **readRelations(int *);
+void createRelations(int,multiColumnRelation **,all_stats **,char **);
+void executeBatches(multiColumnRelation *,all_stats *);
+
 int createStatsFromMiddleArray(statistics_array **statsArray,middleResults *middleResArray,int middleResultsCounter,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int arrayIndx,int *statsArrayCounter,int relationId);
 void createStatsFromFirstArray(statistics_array **statsArray,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int *statsArrayCounter,int relationId);
 
@@ -233,7 +245,7 @@ oneColumnRelation* setColumnFromMiddleArray(middleResults* middleResArray,int re
 oneColumnRelation* setColumnFromFirstArray(multiColumnRelation* relationArray,int relationIndx,int columnIndx);
 unsigned int hash(int32_t x,int);
 indexHT* initiliazeIndexHT(oneColumnRelation* ,int32_t);
-void createRelations(int32_t[],uint32_t,int32_t[],uint32_t,oneColumnRelation **,oneColumnRelation**);
+void createRelationsUT(int32_t[],uint32_t,int32_t[],uint32_t,oneColumnRelation **,oneColumnRelation**);
 resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS);
 hist* createHistArray(oneColumnRelation **rel,int start,int end);
 hist* createSumHistArray(hist *array);

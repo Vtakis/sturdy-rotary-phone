@@ -65,7 +65,7 @@ void testOneRelationJoin(void)
     	fclose(fp);
 
 		readFile(A,&size_A,B,&size_B);
-		createRelations(A,size_A,B,size_B,&S,&R);
+		createRelationsUT(A,size_A,B,size_B,&S,&R);
 		resList = sameRelationJoin(R,S);
 		CU_ASSERT(100== resList->numberOfResults);
         ////////////////////////////////////////////////////1 --- 0-99 -->1//////////////////////////////////////////////////
@@ -85,7 +85,7 @@ void testOneRelationJoin(void)
     	fclose(fp);
 
 		readFile(A,&size_A,B,&size_B);
-		createRelations(A,size_A,B,size_B,&S,&R);
+		createRelationsUT(A,size_A,B,size_B,&S,&R);
 		resList = sameRelationJoin(R,S);
 		CU_ASSERT(1== resList->numberOfResults);
         ////////////////////////////////////////////////////1 --- 1 -->1//////////////////////////////////////////////////
@@ -105,7 +105,7 @@ void testOneRelationJoin(void)
     	fclose(fp);
 
 		readFile(A,&size_A,B,&size_B);
-		createRelations(A,size_A,B,size_B,&S,&R);
+		createRelationsUT(A,size_A,B,size_B,&S,&R);
 		resList = sameRelationJoin(R,S);
 		CU_ASSERT(100== resList->numberOfResults);
         ////////////////////////////////////////////////////0-99 --- 99-0 -->0//////////////////////////////////////////////////
@@ -123,7 +123,7 @@ void testOneRelationJoin(void)
     	fclose(fp);
 
 		readFile(A,&size_A,B,&size_B);
-		createRelations(A,size_A,B,size_B,&S,&R);
+		createRelationsUT(A,size_A,B,size_B,&S,&R);
 		resList = sameRelationJoin(R,S);
 		CU_ASSERT(0== resList->numberOfResults);
 
@@ -159,7 +159,7 @@ void testRadixHashJoin(void)
     	fclose(fp);
 
 		readFile(A,&size_A,B,&size_B);
-		createRelations(A,size_A,B,size_B,&S,&R);
+		createRelationsUT(A,size_A,B,size_B,&S,&R);
 		resList = RadixHashJoin(R,S);
 		CU_ASSERT(100== resList->numberOfResults);
 		/////////////////////////////////////////////////////ola 1 -- ola 1 -->10.000/////////////////////////////////////////////////
@@ -178,7 +178,7 @@ void testRadixHashJoin(void)
     	fclose(fp);
 
 		readFile(A,&size_A,B,&size_B);
-		createRelations(A,size_A,B,size_B,&S,&R);
+		createRelationsUT(A,size_A,B,size_B,&S,&R);
 		resList = RadixHashJoin(R,S);
 		CU_ASSERT(10000== resList->numberOfResults);
 
@@ -199,7 +199,7 @@ void testRadixHashJoin(void)
     	fclose(fp);
 
 		readFile(A,&size_A,B,&size_B);
-		createRelations(A,size_A,B,size_B,&S,&R);
+		createRelationsUT(A,size_A,B,size_B,&S,&R);
 		resList = RadixHashJoin(R,S);
 		CU_ASSERT(100== resList->numberOfResults);
 
@@ -219,7 +219,7 @@ void testRadixHashJoin(void)
     	fclose(fp);
 
 		readFile(A,&size_A,B,&size_B);
-		createRelations(A,size_A,B,size_B,&S,&R);
+		createRelationsUT(A,size_A,B,size_B,&S,&R);
 		resList = RadixHashJoin(R,S);
 		CU_ASSERT(0== resList->numberOfResults);
 
@@ -239,7 +239,7 @@ void testRadixHashJoin(void)
     	fclose(fp);
 
 		readFile(A,&size_A,B,&size_B);
-		createRelations(A,size_A,B,size_B,&S,&R);
+		createRelationsUT(A,size_A,B,size_B,&S,&R);
 		resList = RadixHashJoin(R,S);
 		CU_ASSERT( 100 == resList->numberOfResults);
 
@@ -259,7 +259,7 @@ void testRadixHashJoin(void)
     	fclose(fp);
 
 		readFile(A,&size_A,B,&size_B);
-		createRelations(A,size_A,B,size_B,&S,&R);
+		createRelationsUT(A,size_A,B,size_B,&S,&R);
 		resList = RadixHashJoin(R,S);
 		CU_ASSERT( 2000 == resList->numberOfResults);
 
@@ -279,7 +279,7 @@ void testRadixHashJoin(void)
     	fclose(fp);
 
 		readFile(A,&size_A,B,&size_B);
-		createRelations(A,size_A,B,size_B,&S,&R);
+		createRelationsUT(A,size_A,B,size_B,&S,&R);
 		resList = RadixHashJoin(R,S);
 		CU_ASSERT( 1000 == resList->numberOfResults);
    }
