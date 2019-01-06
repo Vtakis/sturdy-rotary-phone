@@ -268,6 +268,6 @@ resultList* sameRelationJoin(oneColumnRelation *relR,oneColumnRelation *relS);
 resultListForJoin *initializeResultListForJoin(void);
 void insertResultForJoin(resultListForJoin *list,uint32_t id);
 void printResultsForJoin(resultListForJoin *list);
-void changeRowIdNumOfTeam(middleResults*,int,int,int);
+void changeRowIdNumOfTeam(middleResults*,int,int,int,int);
 int64_t SumOneColumnRelation(oneColumnRelation *R);
 #endif /* FUNCTIONS_H_ */
