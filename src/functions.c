@@ -11,9 +11,21 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <fcntl.h>
 
 pthread_mutex_t *reOrdered_mutex;
+int fd_set_blocking(int fd, int blocking) {
+    /* Save the current flags */
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags == -1)
+        return 0;
 
+    if (blocking)
+        flags &= ~O_NONBLOCK;
+    else
+        flags |= O_NONBLOCK;
+    return fcntl(fd, F_SETFL, flags) != -1;
+}
 void createRelationsUT(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,oneColumnRelation **S,oneColumnRelation **R){
 	int32_t i;
 
@@ -666,8 +678,26 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 	char buffer[4096];
 	char *token,*queryString;
 	//printf("bytes=%ld\n",bytes);
-	//while(1){
+	while(1)
+	{
+		//sleep(2);
+		memset(buffer,0,sizeof(buffer));
+		//fd_set_blocking(STDIN_FILENO,0);
 		ssize_t bytes = read(STDIN_FILENO,buffer,sizeof(buffer));
+		if(bytes==0)
+		{
+			break;
+		}
+		//char *line = NULL;
+		//size_t size;
+
+		/*if (getline(&line, sizeof(buffer), STDIN_FILENO) == -1) {
+			printf("No line\n");
+		}*/
+		//printf("%s\n",line);
+		//printf("Bytes readed %ld\n",bytes);
+		//write(STDOUT_FILENO,"Bytes Readed",strlen())
+		//printf("%s\n",buffer);
 		int numBatchQueries=1,cur=0;
 		token=strtok(buffer,"\n");
 
@@ -684,7 +714,6 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 			execQueries[numBatchQueries]=malloc(strlen(token)+1);
 			strcpy(execQueries[numBatchQueries++],token);
 		}
-
 		//FILE *query_f;
 		//query_f=fopen(filename,"r");
 		char c='a';
@@ -799,7 +828,7 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 						double cpu_time_used;
 						start = clock();
 	////edw dialegw thn seira twn kathgorhmatwn
-					   /* if(data->numPredJoinTwoRel!=1 )
+					    /*if(data->numPredJoinTwoRel!=1 )
 						{
 							indx=checkIfOneRelationJoinExists(data,middleResArray,middleResultsCounter,i);
 							if(indx==-1)			//eimaste se TwoRelationJoin kai theloume na vroume ta statistika gia kathe kathgorhma//
@@ -969,10 +998,14 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 						rightColumnPosInMiddleArray=-1;
 					}
 					teamCounter=1;
+
 					if(i==data->numPredJoinTwoRel)
 					{
 						if(data->numViewQuery>0)
 						{
+							char *answer=malloc(100*sizeof(char));
+							//answer=NULL;
+							memset(answer,0,strlen(answer));
 							for(i=0;i<data->numViewQuery;i++)
 							{
 								columnIndx = data->viewQueryArray[i].col;
@@ -1018,19 +1051,49 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 										}*/
 
 										if(sum==0)
-											printf("NULL");
+										{	//printf("NULL");
+											write(STDOUT_FILENO,"NULL",strlen("NULL"));
+											//strcpy(answer,"NULL");
+										}
 										else
-											printf("%ld",sum);
+										{	//printf("%ld",sum);
+											char *str;
+											str=malloc(100);
+											sprintf(str,"%ld",sum);
+											write(STDOUT_FILENO,str,strlen(str));
+											memset(str,0,strlen(str)+1);
+											/*if(!strcmp(answer,""))
+											{
+												sprintf(answer,"%ld",sum);
+											}
+											else
+											{
+												char *str;
+												str=malloc(20);
+												sprintf(str,"%ld",sum);
+												write(STDOUT_FILENO,str,strlen(str)+1);
+												strcat(answer,str);
+												//memset(str,0,strlen(str));
+											}*/
+
+										}
 										if(i!=data->numViewQuery-1)
 										{
-											printf(" ");
+											//printf(" ");
+											//strcat(answer," ");
+											write(STDOUT_FILENO," ",strlen(" "));
 										}
 										//free(column->tuples);
 										//free(column);
 									}
 								}
 							}
-							printf("\n");
+							//printf("\n");
+							//printf("answer =%s\n",answer);
+							//write(STDOUT_FILENO,answer,strlen(answer)+1);
+//							strcat(answer,"\n");
+							write(STDOUT_FILENO,"\n",strlen("\n"));
+
 						}
 					}
 					for(j=0;j<middleResultsCounter;j++){
@@ -1061,7 +1124,8 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 		free(data->predFilterArray);
 		free(data);
 		free(middleResArray);
-	//}
+		//bytes = read(STDIN_FILENO,buffer,sizeof(buffer));
+	}
 }
 ////////////////////////////////////////////////////////////////////////////
 

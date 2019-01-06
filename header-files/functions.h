@@ -236,7 +236,7 @@ void executeBatches(multiColumnRelation *,all_stats *);
 
 int createStatsFromMiddleArray(statistics_array **statsArray,middleResults *middleResArray,int middleResultsCounter,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int arrayIndx,int *statsArrayCounter,int relationId);
 void createStatsFromFirstArray(statistics_array **statsArray,multiColumnRelation *relationArray,int relationIndx,int columnIndx,int *statsArrayCounter,int relationId);
-
+int fd_set_blocking(int fd, int blocking);
 int createStatsAndFindPred(queryDataIndex *data,middleResults* middleResArray,int middleResultsCounter,multiColumnRelation* relationArray);
 int checkIfOneRelationJoinExists(queryDataIndex *,middleResults *,int,int indx);
 void setResultsToMiddleArray(resultList *list,middleResults *middleResultsArray,int index,int direction,int );

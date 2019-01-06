@@ -1,4 +1,6 @@
 #!/bin/bash
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-${DIR}/myexe ${DIR}/input-files/
+echo $DIR
+echo {DIR}
+${DIR}/myexe

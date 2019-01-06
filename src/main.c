@@ -4,17 +4,11 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdbool.h>
-#include <fcntl.h>
+
 #include <errno.h>
 
 
-static int set_nonblocking(int fd)
-// Set a file descriptor to be non-blocking
-{
-  int flags = fcntl(fd, F_GETFL, 0);
-  if (flags < 0) return flags;
-  return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-}
+
 
 int main(int argc,char** argv)
 {
