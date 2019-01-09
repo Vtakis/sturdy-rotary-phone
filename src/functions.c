@@ -1025,7 +1025,7 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 						rightColumnPosInMiddleArray=-1;
 					}
 					teamCounter=1;
-
+					free(seira);
 					if(i==data->numPredJoinTwoRel)
 					{
 						if(data->numViewQuery>0)
@@ -2298,12 +2298,30 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 
 					//printf("bazw sthn lista 1\n");
 					insertList(&(btree[0].startlist),cost,set,data->numRelQuery,teams,teamCount,temp_stats,seira,data->numPredJoinTwoRel,seira_point);
+					free(set);
+					free(teams);
+					for(j=0;j<temp_stats->rels;j++){
+						free(temp_stats->array_with_stats[j]);
+					}
+					free(temp_stats->array_with_stats);
+					free(temp_stats->cols);
+					free(temp_stats);
+					free(seira);
 				}
 			}
 			else{
 				cost=0;
 				//printf("bazw sthn lista 2\n");
 				insertList(&(btree[0].startlist),cost,set,data->numRelQuery,teams,teamCount,temp_stats,seira,data->numPredJoinTwoRel,seira_point);
+				free(set);
+				free(teams);
+				for(j=0;j<temp_stats->rels;j++){
+					free(temp_stats->array_with_stats[j]);
+				}
+				free(temp_stats->array_with_stats);
+				free(temp_stats->cols);
+				free(temp_stats);
+				free(seira);
 			}
 		}
 		//////////////
@@ -2462,6 +2480,18 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 								btree[1].BestNode=temp2;//o kaluteros kombos einai o teleutaios pou molis ebala
 								//printf("best_tree_2\n");
 							}
+
+
+							free(set);
+							free(teams);
+							free(seira);
+							//all_stats
+							for(j=0;j<local_stats->rels;j++){
+								free(local_stats->array_with_stats[j]);
+							}
+							free(local_stats->cols);
+							free(local_stats->array_with_stats);
+							free(local_stats);
 						}
 					}
 				}
@@ -2631,6 +2661,10 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 								btree[subteam].BestNode=temp2;//o kaluteros kombos einai o teleutaios pou molis ebala
 								//printf("best_tree_2\n");
 							}
+
+							free(set);
+							free(teams);
+							free(seira);
 						}
 					}
 				}
@@ -2640,7 +2674,45 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 		}
 		//printf("TELIKO PRINT LISTAS\n");
 		//printList(btree[data->numRelQuery-1].startlist,data->numRelQuery,data->numPredJoinTwoRel);
-		return btree[data->numRelQuery-1].BestNode->seira;
+
+		//free graph
+		for(i=0;i<data->numRelQuery;i++){
+			free(graph[i]);
+		}
+		free(graph);
+
+		//free btree
+		int *re_seira;
+		re_seira=malloc(data->numPredJoinTwoRel*sizeof(int));
+		memcpy(re_seira,btree[data->numRelQuery-1].BestNode->seira,data->numPredJoinTwoRel*sizeof(int));
+
+		for(i=0;i<data->numRelQuery;i++){
+			listnode *temp;
+			temp=btree[i].startlist;
+			while(temp!=NULL){
+				listnode *next_temp;
+
+				next_temp=temp->next;
+
+				free(temp->set);
+				free(temp->teams);
+				free(temp->seira);
+				//all_stats
+				for(j=0;j<temp->local_stats->rels;j++){
+					free(temp->local_stats->array_with_stats[j]);
+				}
+				free(temp->local_stats->cols);
+				free(temp->local_stats->array_with_stats);
+				free(temp->local_stats);
+				free(temp);
+
+				temp=next_temp;
+			}
+		}
+		free(btree);
+
+		//return btree[data->numRelQuery-1].BestNode->seira;
+		return re_seira;
 //
 
 	}
