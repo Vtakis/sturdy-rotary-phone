@@ -60,11 +60,11 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
 
 			if(ending==1){
 				//printf("Eimai to thread %d or %ld kai teleiwnw me thesh %d\n",x->id,pthread_self(),thread_mutex_place);
-				pthread_mutex_lock(&threads_exited_mutex);
+				/*pthread_mutex_lock(&threads_exited_mutex);
 				threads_exited++;
 				//pthread_cond_signal(&wait_hist_cond);
 				pthread_mutex_unlock(&threads_exited_mutex);
-				pthread_mutex_unlock(&mutex[thread_mutex_place]);
+				pthread_mutex_unlock(&mutex[thread_mutex_place]);*/
 				//sleep(10);
 				//return NULL;
 				//exit(x->id);
@@ -146,7 +146,9 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
 		//printf("2)Thread %d -- jobs %d\n",x->id,x->sch->q->jobs_counter);
 		//printf("Id=%d Counter=%d\n",x->id,x->sch->q->jobs_counter);
 		//if(x->sch->q->jobs_counter==0)
-		pthread_cond_signal(&wait_hist_cond);
+		//sleep(2);
+		if(x->sch->q->jobs_counter==0)
+			pthread_cond_signal(&wait_hist_cond);
 
 
 
@@ -185,6 +187,9 @@ void sleep_producer(Job_Scheduler *job_scheduler,int end)
 		//printf("Ksupnaw ola ta threads\n");
 		pthread_cond_broadcast(&new_cond);
 		//printf("Ta ksuphsa\n");
+		/*while(threads_exited!=job_scheduler->execution_threads)
+		{
+		}*/
 		//delete_threads(&job_scheduler);
 	}
 	else
@@ -198,38 +203,30 @@ void delete_threads(Job_Scheduler** schedule)//katharizei ton jobscheduler
 {
     int i;
 	int err;
-	//ending=1;
-  //  for(i=0;i<schedule->execution_threads;i++)
-    {
-      //  pthread_cond_broadcast(&new_cond);
-    }
-	for (i =0 ; i <(*schedule)->execution_threads ; i++)
+	//printf("deleted\n");
+	//free((*schedule)->tids);
+	//free((*schedule)->q->jobs);
+	//free((*schedule)->q);
+	/*for (i =0 ; i <(*schedule)->execution_threads ; i++)
 	{
-		 pthread_cond_broadcast(&new_cond);
-		 printf("Ksupnaw ta threads\n");
-		if ( (err = pthread_join (*((*schedule)->tids+i) , NULL )))
+		if ( (err = pthread_join (((*schedule)->tids[i]) ,NULL)))
 		{
 			perror (" pthread_join " );
 			exit (1) ;
 		}
-	}
-	printf("deleted\n");
-	free((*schedule)->tids);
-	free((*schedule)->q->jobs);
-	free((*schedule)->q);
+	}*/
 	for(i=0;i<5000;i++)
 	{
 		pthread_mutex_destroy(&mutex[i]);
-		//pthread_cond_destroy(&read_cond[i]);
 	}
-	free((*schedule));
-	//free((*temp));
+	//free((*schedule));
+
 	free(mutex);
-	pthread_cond_destroy(&new_cond);
+	/*pthread_cond_destroy(&new_cond);
 	pthread_cond_destroy(&wait_hist_cond);
 	pthread_mutex_destroy(&start_mutex);
 	pthread_mutex_destroy(&job_counter_mutex);
-	pthread_mutex_destroy(&resList_counter_mutex);
+	pthread_mutex_destroy(&resList_counter_mutex);*/
 }
 
 void submit_Job(Job_Scheduler* schedule,Job *Job){

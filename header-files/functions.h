@@ -140,13 +140,21 @@ struct statistics
 	uint64_t distinctValues;
 	float possibilityOfDistinct;
 };
-struct multiColumnRelation	//to struct anaferetai se enan kombo , ara kanw pinaka apo tetoia
+/*struct multiColumnRelation	//to struct anaferetai se enan kombo , ara kanw pinaka apo tetoia
 {
 	uint32_t rowCount;
 	uint32_t colCount;
 	uint64_t **table;
 	statistics *stats;
+};*/
+struct multiColumnRelation	//to struct anaferetai se enan kombo , ara kanw pinaka apo tetoia
+{
+	uint32_t rowCount;
+	uint32_t colCount;
+	uint64_t **table;
+	oneColumnRelation *columns;
 };
+
 struct oneColumnRelation
 {
 	tuple *tuples;

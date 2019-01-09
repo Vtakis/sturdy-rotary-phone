@@ -48,14 +48,12 @@ int main(int argc,char** argv)
 
 
 
-	/*for(i=0;i<number_of_files;i++){
-		for(j=0;j<data.relationArray[i].colCount;j++){
-			for(int k=0;k<data.relationArray[i].rowCount;k++)
-			//free(relationArray[i].table[j]);
-				printf("%ld\n",data.relationArray[i].table[j][k]);
+	for(i=0;i<number_of_files;i++){
+		for(j=0;j<relationArray[i].colCount;j++){
+			free(relationArray[i].columns[j].tuples);
 		}
-		//free(relationArray[i].table);
-	}*/
-	//free(relationArray);
+		free(relationArray[i].columns);
+	}
+	free(relationArray);
 
 }
