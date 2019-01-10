@@ -503,26 +503,26 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 
 			if(resList==NULL)
 			{
-				printf("Free1()\n");
+				//printf("Free1()\n");
 				free(resList[i]);
 				continue;
 			}
 			if(resList[i]==NULL)
 			{
-				printf("Free2()\n");
+				//printf("Free2()\n");
 				free(resList[i]);
 				continue;
 			}
 			if(resList[i]->start==NULL || resList[i]->end==NULL)
 			{
-				printf("Free3()\n");
+				//printf("Free3()\n");
 				free(resList[i]);
 				continue;
 			}
 			if(resList[first]->end==NULL)
 			{
 				resList[first]=resList[i];
-				printf("Free4()\n");
+				//printf("Free4()\n");
 				free(resList[i]);
 				continue;
 			}
@@ -885,15 +885,15 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 					//kalw thn sun gia na dw thn seira
 					int *seira;
 					seira=malloc(data->numPredJoinTwoRel*sizeof(int));
-					//seira=JoinEnumeration(data,temp_stats);
+					seira=JoinEnumeration(data,temp_stats);
 					leftTeam=0;
 					rightTeam=0;
 					int indx=0;
 					int leftColumnPosInMiddleArray=-1,rightColumnPosInMiddleArray=-1;
 
 					for(i=0;i<data->numPredJoinTwoRel;i++){//
-						indx=i;
-						//indx=seira[i];//
+						//indx=i;
+						indx=seira[i];//
 					//for(i=0;i<data->numPredJoinTwoRel;i++)
 					//{
 						oneColumnRelation *leftColumn;
@@ -1382,15 +1382,15 @@ void readWorkFile(char *filename,multiColumnRelation *relationArray,all_stats *s
 				//kalw thn sun gia na dw thn seira
 				int *seira;
 				seira=malloc(data->numPredJoinTwoRel*sizeof(int));
-				//seira=JoinEnumeration(data,temp_stats);
+				seira=JoinEnumeration(data,temp_stats);
 				leftTeam=0;
 				rightTeam=0;
 				int indx=0;
 				int leftColumnPosInMiddleArray=-1,rightColumnPosInMiddleArray=-1;
 
 				for(i=0;i<data->numPredJoinTwoRel;i++){//
-					indx=i;
-					//indx=seira[i];//
+					//indx=i;
+					indx=seira[i];//
 				//for(i=0;i<data->numPredJoinTwoRel;i++)
 				//{
 					oneColumnRelation *leftColumn;
@@ -2404,12 +2404,18 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 
 					//printf("bazw sthn lista 1\n");
 					insertList(&(btree[0].startlist),cost,set,data->numRelQuery,teams,teamCount,temp_stats,seira,data->numPredJoinTwoRel,seira_point);
+					free(set);
+					free(teams);
+					free(seira);
 				}
 			}
 			else{
 				cost=0;
 				//printf("bazw sthn lista 2\n");
 				insertList(&(btree[0].startlist),cost,set,data->numRelQuery,teams,teamCount,temp_stats,seira,data->numPredJoinTwoRel,seira_point);
+				free(set);
+				free(teams);
+				free(seira);
 			}
 		}
 		//////////////
@@ -2568,6 +2574,10 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 								btree[1].BestNode=temp2;//o kaluteros kombos einai o teleutaios pou molis ebala
 								//printf("best_tree_2\n");
 							}
+
+							free(set);
+							free(teams);
+							free(seira);
 						}
 					}
 				}
@@ -2737,6 +2747,10 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 								btree[subteam].BestNode=temp2;//o kaluteros kombos einai o teleutaios pou molis ebala
 								//printf("best_tree_2\n");
 							}
+
+							free(set);
+							free(teams);
+							free(seira);
 						}
 					}
 				}
@@ -2746,9 +2760,47 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 		}
 		//printf("TELIKO PRINT LISTAS\n");
 		//printList(btree[data->numRelQuery-1].startlist,data->numRelQuery,data->numPredJoinTwoRel);
-		return btree[data->numRelQuery-1].BestNode->seira;
-//
 
+
+		//return btree[data->numRelQuery-1].BestNode->seira;
+//
+		//free btree and create ret_seira
+		int *ret_seira;
+		ret_seira=malloc(data->numPredJoinTwoRel*sizeof(int));
+		for(j=0;j<data->numPredJoinTwoRel;j++){
+			ret_seira[j]=btree[data->numRelQuery-1].BestNode->seira[j];
+		}
+
+		for(j=0;j<data->numRelQuery;j++){
+			free(graph[j]);
+		}
+		free(graph);
+
+		listnode *temp_node,*next_node;
+		for(j=0;j<data->numRelQuery;j++){
+			temp_node=btree[j].startlist;
+			while(temp_node!=NULL){
+				next_node=temp_node->next;
+
+				free(temp_node->set);
+				free(temp_node->teams);
+				free(temp_node->seira);
+				///stats
+				for(k=0;k<temp_node->local_stats->rels;k++){
+					free(temp_node->local_stats->array_with_stats[k]);
+				}
+				free(temp_node->local_stats->array_with_stats);
+				free(temp_node->local_stats->cols);
+				free(temp_node->local_stats);
+
+				free(temp_node);
+				temp_node=next_node;
+			}
+		}
+		free(btree);
+
+		return ret_seira;
+		////////
 	}
 	else{
 		return NULL;
@@ -3160,6 +3212,7 @@ void insertList(listnode **list,int cost,int *set,int size,int *teams,int teamCo
 		}
 		temp->next=malloc(sizeof(listnode));
 		temp->next->cost=cost;
+printf("size = %d\n\n",size);
 		temp->next->set=malloc(size*sizeof(int));
 		temp->next->teams=malloc(size*sizeof(int));
 		//
