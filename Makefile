@@ -12,9 +12,9 @@ CCX=g++
 FLAGS=-c -g 
 
 all:$(OBJS) $(OBJS2)
-	$(CC) -g $(SOURCE) -o $(OUT) -lpthread -lm
+	$(CC) -g $(SOURCE) -o $(OUT) -lpthread -lm -O3
 	$(CC) -g $(SOURCE2) -o $(OUT2) -lcunit -lpthread -lm
-	$(CCX) -g $(SOURCE3) -o $(OUT3) 
+	$(CCX) -g $(SOURCE3) -o $(OUT3)
 
 src/main.o: src/main.c
 	$(CC) $(FLAGS) src/main.c

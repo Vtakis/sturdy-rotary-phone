@@ -98,8 +98,8 @@ struct thread_join_param
 
 };
 void sleep_producer(Job_Scheduler *job_scheduler,int);
-void submit_Job(Job_Scheduler* schedule,Job *Job);
-Job* initializeJob(char *type_of_job);		// type_of_job : "hist" , "partition" ,"join"//
+void submit_Job(Job_Scheduler* schedule,Job Job);
+Job initializeJob(char *type_of_job);		// type_of_job : "hist" , "partition" ,"join"//
 void printjobs(Job_Scheduler* schedule);
 Job_Scheduler* initialize_scheduler(int,oneColumnRelation*,oneColumnRelation*);
 void *HistWorker(void* i);

@@ -47,7 +47,15 @@ int main(int argc,char** argv)
 	//for()
 
 
-
+	for(i=0;i<number_of_files;i++)
+	{
+		free(statsArray->array_with_stats[i]);
+		free(relationFiles[i]);
+	}
+	free(statsArray->array_with_stats);
+	free(relationFiles);
+	free(statsArray->cols);
+	free(statsArray);
 	for(i=0;i<number_of_files;i++){
 		for(j=0;j<relationArray[i].colCount;j++){
 			free(relationArray[i].columns[j].tuples);
