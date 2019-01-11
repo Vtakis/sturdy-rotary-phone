@@ -13,23 +13,9 @@
 #include <pthread.h>
 #include <fcntl.h>
 
-FILE *fp;
 pthread_mutex_t *reOrdered_mutex;
-int fd_set_blocking(int fd, int blocking) {
-    /* Save the current flags */
-    int flags = fcntl(fd, F_GETFL, 0);
-    if (flags == -1)
-        return 0;
-
-    if (blocking)
-        flags &= ~O_NONBLOCK;
-    else
-        flags |= O_NONBLOCK;
-    return fcntl(fd, F_SETFL, flags) != -1;
-}
 void createRelationsUT(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,oneColumnRelation **S,oneColumnRelation **R){
 	int32_t i;
-
 	*S=malloc(sizeof(oneColumnRelation));
 	(*S)->num_of_tuples=size_A;
 	(*S)->tuples=malloc(size_A*sizeof(tuple));
@@ -46,7 +32,6 @@ void createRelationsUT(int32_t A[],uint32_t size_A,int32_t B[],uint32_t size_B,o
 	}
 }
 hist* createHistArray(oneColumnRelation **rel,int start,int end){
-
 	int32_t i;
 	hist *Hist;
 	Hist=malloc(sizeof(hist));
@@ -88,21 +73,14 @@ hist* createSumHistArray(hist *array){
 	free(array);
 	return Hist;
 }
-oneColumnRelation* createReOrderedArray(oneColumnRelation *array,hist *sumArray,int start,int end,oneColumnRelation *reOrderedArray){
-	//oneColumnRelation *reOrderedArray;
-
+void createReOrderedArray(oneColumnRelation *array,hist *sumArray,int start,int end,oneColumnRelation *reOrderedArray){
 	int32_t i;
-
 	for(i=start;i<end;i++){//to point mou dixnei pou prepei na balw to stoixeio
 		pthread_mutex_lock(&(reOrdered_mutex[array->tuples[i].value%sumArray->histSize]));
-		//printf("point = %d\n",sumArray->histArray[array->tuples[i].value%sumArray->histSize].point);
-		reOrderedArray->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].point].id=array->tuples[i].id;//koitazoume ton sumArray gia na brw to offset pou 8a balw to epomeno tuple
-		reOrderedArray->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].point++].value=array->tuples[i].value;//thn deuterh fora pou bazoume to value kanw ++ gia na deixnei sthn epomenh kenh 8esh
-
+			reOrderedArray->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].point].id=array->tuples[i].id;//koitazoume ton sumArray gia na brw to offset pou 8a balw to epomeno tuple
+			reOrderedArray->tuples[sumArray->histArray[array->tuples[i].value%sumArray->histSize].point++].value=array->tuples[i].value;//thn deuterh fora pou bazoume to value kanw ++ gia na deixnei sthn epomenh kenh 8esh
 		pthread_mutex_unlock(&(reOrdered_mutex[array->tuples[i].value%sumArray->histSize]));
 	}
-
-	//return reOrderedArray;
 }
 unsigned int hash(int32_t x,int mod) {
     x = ((x >> 16) ^ x) * 0x45d9f3b;
@@ -247,7 +225,6 @@ void printResults(resultList *list){
 	temp =list->start;
 	printf("\nRowidR\t\tRowidS\n");
 	while(temp!=NULL){
-		//printf("mesa\n");
 		for(int i=0;i<temp->rowSize;i++){
 			printf("%d\t\t%d\n",temp->row_Array[i].idR,temp->row_Array[i].idS);
 		}
@@ -293,20 +270,9 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 
 	Job_Scheduler* job_scheduler;
 	job_scheduler=initialize_scheduler(THREADS_NUM,relR,relS);
-
-	//job_scheduler->shared_data.histArrayR=malloc(pow(2,N)*sizeof(histNode));
-	//job_scheduler->shared_data.histArrayS=malloc(pow(2,N)*sizeof(histNode));
-
-
 	hist *histSumArrayR,*histSumArrayS;
 	oneColumnRelation *RS,*RR;
 
-	//printf("%d  %d\n",relR->num_of_tuples,relS->num_of_tuples);
-	//for(int i=0;i<relR->num_of_tuples;i++)
-	{
-		//printf("Value %d Id %d\n",relR->tuples[i].value,relR->tuples[i].id);
-	}
-	///
 	Job job;
 	int segSize=relR->num_of_tuples/THREADS_NUM;
 	for(int i=0;i<THREADS_NUM;i++){
@@ -318,8 +284,6 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 			job.histjob.end+=relR->num_of_tuples%THREADS_NUM;
 		submit_Job(job_scheduler,job);
 	}
-
-
 	segSize=relS->num_of_tuples/THREADS_NUM;
 	for(int i=0;i<THREADS_NUM;i++){
 		job=initializeJob("hist");
@@ -329,14 +293,8 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 		if(i==THREADS_NUM-1)
 			job.histjob.end+=relS->num_of_tuples%THREADS_NUM;
 		submit_Job(job_scheduler,job);
-		//printf("start=%d end=%d\n",job->histjob.start,job->histjob.end);
 	}
 
-
-	//sleep(20);
-	//printf("Teleiwsa\n");
-
-	///
 	hist *histR;
 	hist *histS;
 	histR=malloc(sizeof(hist));
@@ -351,21 +309,11 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 	}
 	sleep_producer(job_scheduler,0);
 	for(int c=0;c<THREADS_NUM;c++){
-		//printf("c=%d\n",c);
 		for(int q=0;q<histR->histSize;q++){
-			//printf("data from sch R: %d\n",job_scheduler->shared_data.histArrayR[c]->histArray[q].count);
-			//printf("data from sch S: %d\n",job_scheduler->shared_data.histArrayS[c]->histArray[q].count);
-
 			histR->histArray[q].count+=job_scheduler->shared_data.histArrayR[c]->histArray[q].count;
 			histS->histArray[q].count+=job_scheduler->shared_data.histArrayS[c]->histArray[q].count;
-			//free(job_scheduler->shared_data.histArrayS[c]->histArray);
-			//free(job_scheduler->shared_data.histArrayR[c]->histArray);
 		}
 	}
-	//printf("ok\n");
-	//free(job_scheduler->shared_data.histArrayR);
-	//free(job_scheduler->shared_data.histArrayS);
-
 	histSumArrayR=createSumHistArray(histR);
 	histSumArrayS=createSumHistArray(histS);//dhmiourgia hist sum arrays
 
@@ -381,13 +329,12 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 
 	job_scheduler->shared_data.histArrayR=&histSumArrayR;
 	job_scheduler->shared_data.histArrayS=&histSumArrayS;
-	//printf("ok\n");
 	reOrdered_mutex=malloc(histSumArrayR->histSize*sizeof(pthread_mutex_t));//dimiourgeia mutex gia kathe thesi tou pinaka
+
 	for(int j=0;j<histSumArrayR->histSize;j++)
 	{
 		pthread_mutex_init(&(reOrdered_mutex[j]),NULL);//arxikopoiisi ton mutex gia kathe thesi tou pinaka
 	}
-	//printf("ok\n");
 	RR=malloc(sizeof(oneColumnRelation));
 	RR->num_of_tuples=relR->num_of_tuples;
 	RR->tuples=malloc(relR->num_of_tuples*sizeof(tuple));
@@ -408,7 +355,6 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 		if(i==THREADS_NUM-1)
 			job.partitionjob.end+=relR->num_of_tuples%THREADS_NUM;
 		submit_Job(job_scheduler,job);
-		//free(job);
 	}
 
 	segSize=relS->num_of_tuples/THREADS_NUM;
@@ -420,18 +366,8 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 		if(i==THREADS_NUM-1)
 			job.partitionjob.end+=relS->num_of_tuples%THREADS_NUM;
 		submit_Job(job_scheduler,job);
-		//free(job);
 	}
 
-	//printf("ok\n");
-	//histSumArrayS=createSumHistArray(createHistArray(&relS,0,relS->num_of_tuples));//dhmiourgia hist sum arrays
-	//histSumArrayR=createSumHistArray(createHistArray(&relR,0,relR->num_of_tuples));
-	//RR=createReOrderedArray(relR,histSumArrayR);//dhmiourgia reordered array
-	//RS=createReOrderedArray(relS,histSumArrayS);
-	/*for(int i=0;i<THREADS_NUM;i++)
-	{
-		resList[i]=initializeResultList();
-	}*/
 	sleep_producer(job_scheduler,0);
 	for(int j=0;j<histSumArrayR->histSize;j++)
 	{
@@ -441,13 +377,10 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 
 	resultList **resList;
 	resList = malloc(histSumArrayR->histSize*sizeof(resultList*));
-	//resList=initializeResultList();
 	resultList *returnList;
 
 	int32_t startR=0,endR,startS=0,endS,counter = 0,cnt=0;
-
 	job_scheduler->shared_data.resList=resList;
-	//indexHT *ht;
 
 	while(1)
 	{
@@ -473,10 +406,6 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
             job.joinjob.endS=endS;
             job.joinjob.rel='S';
             submit_Job(job_scheduler,job);
-           // free(job);
-			/*ht=createHashTable(RS,startS,endS);
-			compareRelations(ht,RR,startR,endR,RS,resList,0);		// 0 -> hashedRs
-			deleteHashTable(&ht);*/
 		}
 		else
 		{
@@ -487,43 +416,29 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
             job.joinjob.endS=endS;
             job.joinjob.rel='R';
             submit_Job(job_scheduler,job);
-          //  free(job);
-			//ht=createHashTable(RR,startR,endR);
-			//compareRelations(ht,RS,startS,endS,RR,resList,1);		// 1 -> hashedRr
-			//deleteHashTable(&ht);
 		}
 	}
 	sleep_producer(job_scheduler,1);
-	//printf("cnt=%d\n",cnt);
 	int first=0;
 	for(int i=1;i<cnt;i++)
 	{
-			//printf("0)Nodes %d  Results %d\n",resList[0]->numberOfNodes,resList[0]->numberOfResults);
-			//printf("i)Nodes %d  Results %d\n",resList[i]->numberOfNodes,resList[i]->numberOfResults);
-
 			if(resList==NULL)
 			{
-				//printf("Free1()\n");
-				free(resList[i]);
 				continue;
 			}
 			if(resList[i]==NULL)
 			{
-				//printf("Free2()\n");
-				free(resList[i]);
 				continue;
 			}
 			if(resList[i]->start==NULL || resList[i]->end==NULL)
 			{
-				//printf("Free3()\n");
 				free(resList[i]);
 				continue;
 			}
 			if(resList[first]->end==NULL)
 			{
+				free(resList[first]);
 				resList[first]=resList[i];
-				//printf("Free4()\n");
-				free(resList[i]);
 				continue;
 			}
 			resList[first]->end->next=resList[i]->start;
@@ -536,13 +451,8 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 	{
 		resList[first]=initializeResultList();
 	}
-	//returnList = malloc(sizeof(resultList));
 	returnList=resList[first];
-	//free(resList[first]);
-
 	free(resList);
-
-	//delete_threads(&job_scheduler);
 
 	free(histSumArrayR->histArray);
 	free(histSumArrayR);
@@ -554,10 +464,6 @@ resultList* RadixHashJoin(oneColumnRelation *relR,oneColumnRelation *relS){
 	free(RR->tuples);
 	free(RR);
 
-	//free(relS->tuples);
-	//free(relS);
-	//free(relR->tuples);
-	//free(relR);
 	return returnList;
 }
 void writeFile(uint32_t size_A,uint32_t size_B){
@@ -614,8 +520,6 @@ void deleteResultList(resultList * reslist){
 	}
 	free(reslist);
 }
-
-
 char **readRelations(int *number_of_files){
 	char **relation,*token,buffer[4096];
 	if(read(STDIN_FILENO,buffer,sizeof(buffer))==-1)
@@ -635,15 +539,10 @@ char **readRelations(int *number_of_files){
 			break;
 		relation=realloc(relation,(*number_of_files+1)*sizeof(char*));
 		relation[*number_of_files]=malloc(strlen(token)+1);
-		//strcpy(relation[number_of_files],"input-files/");
-		//strcat(relation[number_of_files++],token);
 		strcpy(relation[(*number_of_files)++],token);
 	}
 	return relation;
 }
-
-
-///////////////////////////////////////////////////////////////////////////////////
 void createRelations(int number_of_files,multiColumnRelation **relationArray,all_stats **statsArray,char **relation){
 
 	int i=0,j,k;
@@ -655,7 +554,6 @@ void createRelations(int number_of_files,multiColumnRelation **relationArray,all
 
 
 	for(i=0;i<number_of_files;i++){
-		//printf("relation=%s\n",relation[i]);
 		fp=fopen(relation[i],"rb");
 		if(fp==NULL){
 			printf("error\n");
@@ -674,16 +572,12 @@ void createRelations(int number_of_files,multiColumnRelation **relationArray,all
 			exit(0);
 		}
 		(*relationArray)[i].colCount=temp;
-		//(*relationArray)[i].table=malloc((*relationArray)[i].colCount*sizeof(uint64_t *));
-		//(*relationArray)[i].stats=malloc((*relationArray)[i].colCount*sizeof(statistics));
-
 		(*relationArray)[i].columns = malloc((*relationArray)[i].colCount*sizeof(oneColumnRelation));
 		(*statsArray)->cols[i]=(*relationArray)[i].colCount;
 		(*statsArray)->array_with_stats[i]=malloc((*relationArray)[i].colCount*sizeof(stats));//
 
 		for(j=0;j<(*relationArray)[i].colCount;j++){
 			(*statsArray)->array_with_stats[i][j].f=(*relationArray)[i].rowCount;//
-		//	(*relationArray)[i].table[j]=malloc((*relationArray)[i].rowCount*sizeof(uint64_t));//mporei na prepei na bgoun eksw
 			(*relationArray)[i].columns[j].tuples=malloc((*relationArray)[i].rowCount*sizeof(tuple));//mporei na prepei na bgoun eksw
 
 			for(k=0;k<(*relationArray)[i].rowCount;k++){
@@ -692,7 +586,6 @@ void createRelations(int number_of_files,multiColumnRelation **relationArray,all
 					perror("Fread :");
 					exit(0);
 				}
-				//(*relationArray)[i].table[j][k]=temp;
 				(*relationArray)[i].columns[j].tuples[k].value=temp;
 				(*relationArray)[i].columns[j].tuples[k].id=k;
 
@@ -710,7 +603,6 @@ void createRelations(int number_of_files,multiColumnRelation **relationArray,all
 					}
 				}
 			}
-			//(*relationArray)[i].stats[j].average=(*relationArray)[i].stats[j].average/(*relationArray)[i].rowCount;
 			int d=0;
 			if((*statsArray)->array_with_stats[i][j].u-(*statsArray)->array_with_stats[i][j].l+1>500000){
 				int sizeofbool=500000;
@@ -718,13 +610,6 @@ void createRelations(int number_of_files,multiColumnRelation **relationArray,all
 				for(int qaz=0;qaz<sizeofbool;qaz++){
 					distArray[qaz]=false;
 				}
-
-				/*for(k=0;k<(*relationArray)[i].rowCount;k++){
-					if(distArray[((*relationArray)[i].table[j][k]-(*statsArray)->array_with_stats[i][j].l)%sizeofbool]==false){
-						distArray[((*relationArray)[i].table[j][k]-(*statsArray)->array_with_stats[i][j].l)%sizeofbool]=true;
-						d++;
-					}
-				}*/
 				for(k=0;k<(*relationArray)[i].rowCount;k++){
 					if(distArray[((*relationArray)[i].columns[j].tuples[k].value-(*statsArray)->array_with_stats[i][j].l)%sizeofbool]==false){
 						distArray[((*relationArray)[i].columns[j].tuples[k].value-(*statsArray)->array_with_stats[i][j].l)%sizeofbool]=true;
@@ -738,13 +623,6 @@ void createRelations(int number_of_files,multiColumnRelation **relationArray,all
 				for(int qaz=0;qaz<sizeofbool;qaz++){
 					distArray[qaz]=false;
 				}
-
-				/*for(k=0;k<(*relationArray)[i].rowCount;k++){
-					if(distArray[(*relationArray)[i].table[j][k]-(*statsArray)->array_with_stats[i][j].l]==false){
-						distArray[(*relationArray)[i].table[j][k]-(*statsArray)->array_with_stats[i][j].l]=true;
-						d++;
-					}
-				}*/
 				for(k=0;k<(*relationArray)[i].rowCount;k++){
 					if(distArray[(*relationArray)[i].columns[j].tuples[k].value-(*statsArray)->array_with_stats[i][j].l]==false){
 						distArray[(*relationArray)[i].columns[j].tuples[k].value-(*statsArray)->array_with_stats[i][j].l]=true;
@@ -756,18 +634,13 @@ void createRelations(int number_of_files,multiColumnRelation **relationArray,all
 		}
 		fclose(fp);
 	}
-
 	return;
 }
-
-
-//////////////////////////////////////////////////////////////////////////////
 void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 	char buffer[4096];
 	char *token,*queryString;
 	while(1)
 	{
-		//memset(buffer,0,sizeof(buffer));
 		ssize_t bytes = read(STDIN_FILENO,buffer,sizeof(buffer));
 		if(bytes==0)		//to programma den diavase allo batch ara termatizei
 		{
@@ -789,8 +662,7 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 			execQueries[numBatchQueries]=malloc(strlen(token)+1);
 			strcpy(execQueries[numBatchQueries++],token);
 		}
-		char c='a';
-		int teamCounter=1,counter=0,phrase_size=100,middleResultsSize=100,i,columnIndx,relationId,relationIndex,flag=0,middleResultsCounter=0,j,leftRelationId,rightRelationId,leftRelationIndx,leftTeam=0,rightTeam=0,rightRelationIndx,leftColumnIndx,rightColumnIndx;
+		int teamCounter=1,phrase_size=100,middleResultsSize=100,i,columnIndx,relationId,relationIndex,flag=0,middleResultsCounter=0,j,leftRelationId,rightRelationId,leftRelationIndx,leftTeam=0,rightTeam=0,rightRelationIndx,leftColumnIndx,rightColumnIndx;
 		queryString = malloc(phrase_size*sizeof(char));
 		middleResults *middleResArray=malloc(middleResultsSize*sizeof(middleResults));
 		for(i=0;i<middleResultsSize;i++){
@@ -802,11 +674,8 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 		}
 		queryDataIndex *data;
 		int y=1;
-		//while(queryString!=NULL){
 		for(cur=0;cur<numBatchQueries;cur++){
 				oneColumnRelation *column;
-				//printf("query:%s\n",queryString);
-				//printf("\n\n%d)%s\n",y,queryString);
 				y++;
 				data=analyzeQuery(execQueries[cur]);
 				//ftiaxnw enan mikrotero pinaka me ta stastika pou xreiazomai , mporei na exw kapoio relation 2 fores
@@ -816,13 +685,7 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 				temp_stats->cols=malloc(temp_stats->rels*sizeof(uint64_t));
 				temp_stats->array_with_stats=malloc(temp_stats->rels*sizeof(stats *));
 				for(i=0;i<temp_stats->rels;i++){
-					//temp_stats->cols[i]=relationArray[data->QueryRelArray[i]].colCount;
 					temp_stats->cols[i]=statsArray->cols[data->QueryRelArray[i]];
-					//printf("QQQQQQQ %ld %ld\n",relationArray[data->QueryRelArray[i]].colCount,statsArray->cols[data->QueryRelArray[i]]);
-					if(relationArray[data->QueryRelArray[i]].colCount!=statsArray->cols[data->QueryRelArray[i]]){
-						//printf("PR0BLEM");
-						//sleep(20);
-					}
 
 					temp_stats->array_with_stats[i]=malloc(temp_stats->cols[i]*sizeof(stats));
 					for(j=0;j<temp_stats->cols[i];j++){
@@ -884,7 +747,6 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 				{
 					//kalw thn sun gia na dw thn seira
 					int *seira;
-					seira=malloc(data->numPredJoinTwoRel*sizeof(int));
 					seira=JoinEnumeration(data,temp_stats);
 					leftTeam=0;
 					rightTeam=0;
@@ -893,32 +755,10 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 
 					for(i=0;i<data->numPredJoinTwoRel;i++){//
 						//indx=i;
-						indx=seira[i];//
-					//for(i=0;i<data->numPredJoinTwoRel;i++)
-					//{
+						indx=seira[i];
 						oneColumnRelation *leftColumn;
 						oneColumnRelation *rightColumn;
-						clock_t start, end;
-						double cpu_time_used;
-						start = clock();
-						////edw dialegw thn seira twn kathgorhmatwn
-					   /* if(data->numPredJoinTwoRel!=1 )
-						{
-							indx=checkIfOneRelationJoinExists(data,middleResArray,middleResultsCounter,i);
-							if(indx==-1)			//eimaste se TwoRelationJoin kai theloume na vroume ta statistika gia kathe kathgorhma//
-							{
-								indx=createStatsAndFindPred(data,middleResArray,middleResultsCounter,relationArray);
-							}
-						}*/
-	////end - edw dialegw thn seira twn kathgorhmatwn
-						//FILE * fp;
-						//fp=fopen("test.txt","w");
-						//fprintf(stdout,"index=%d\n",indx);
-						//fclose(fp);
-						end = clock();
-						cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-						//printf("\nTime = %f\n",cpu_time_used);
-						//printf("Indx=%d\n",indx);
+
 						leftColumnPosInMiddleArray=-1;
 						rightColumnPosInMiddleArray=-1;
 						leftRelationId = data->twoRelationPredArray[indx].left->rel;					//pernoume ta stoixeia apo thn domh pou krataei ta predications data //
@@ -962,7 +802,6 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 						resultList *resultList1,*resultList2;
 						if(leftRelationId==rightRelationId || (leftTeam==rightTeam && leftColumnPosInMiddleArray!=-1 && rightColumnPosInMiddleArray!=-1))			//JoinOneRelationArray
 						{
-							//printf("One Relation Join\n");
 							resultList1=sameRelationJoin(leftColumn,rightColumn);
 							data->twoRelationPredArray[indx].selected=1;
 							if(leftColumnPosInMiddleArray==-1)			//an den uparxei to left column ston middle array
@@ -985,16 +824,10 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 						}
 						else// if(joinFlag==2)										//JointwoRelationArray
 						{
-							clock_t start, end;
-							double cpu_time_used;
-							start = clock();
-						 //   printf("%d.%d=%d.%d    Score=%d\n",data->twoRelationPredArray[indx].left->rel,data->twoRelationPredArray[indx].left->col,data->twoRelationPredArray[indx].right->rel,data->twoRelationPredArray[indx].right->col,data->twoRelationPredArray[indx].score);
+
 							resultList2=RadixHashJoin(leftColumn,rightColumn);
 							data->twoRelationPredArray[indx].selected=1;
 
-							end = clock();
-							cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-							//printf("Radix Time = %f\n",cpu_time_used);
 							if(leftColumnPosInMiddleArray==-1 && rightColumnPosInMiddleArray==-1){	//ftiaxnoume neo team
 
 								middleResArray[middleResultsCounter].relation=leftRelationIndx;
@@ -1090,7 +923,6 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 						if(data->numViewQuery>0)
 						{
 							char *answer=malloc(100*sizeof(char));
-							//answer=NULL;
 							memset(answer,0,100);
 							for(i=0;i<data->numViewQuery;i++)
 							{
@@ -1101,52 +933,24 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 								{
 									if(middleResArray[j].relation==relationIndex && middleResArray[j].relation_id==relationId)
 									{
-										clock_t start, end;
-										double cpu_time_used;
-										start = clock();
+
 										int arrayIndx=j;
 										long sum=0;
 										for(int k=0;k<middleResArray[arrayIndx].rowIdsNum;k++)
 										{
 											int index=middleResArray[arrayIndx].rowIds[k];
 											sum+=relationArray[relationIndex].columns[columnIndx].tuples[index].value;
-											//temp->tuples[k].id=k;
 										}
-
-										//column=setColumnFromMiddleArray(middleResArray,relationIndex,columnIndx,j,relationArray);
-										end = clock();
-										cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-										//printf("SetCol Time = %f\n",cpu_time_used);
-										//long sum=SumOneColumnRelation(column);
-										//end = clock();
-										//cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-										//printf("Sum Time = %f\n",cpu_time_used);
-										/*Job_Scheduler* job_scheduler;
-										job_scheduler=malloc(sizeof(Job_Scheduler));
-										job_scheduler=initialize_scheduler(THREADS_NUM,NULL,NULL);
-										Job *job;
-										int segSize=middleResArray[arrayIndx].rowIdsNum/THREADS_NUM;
-										for(int i=0;i<THREADS_NUM;i++){
-											job=initializeJob("partition");
-											job->partitionjob.start=i*segSize;
-											job->partitionjob.end=job->partitionjob.start+segSize;
-											job->partitionjob.rel='S';
-											if(i==THREADS_NUM-1)
-												job->partitionjob.end+=relS->num_of_tuples%THREADS_NUM;
-											submit_Job(job_scheduler,job);
-										}*/
-
 										if(sum==0)
-										{	//printf("NULL");
+										{
 											if(write(STDOUT_FILENO,"NULL",strlen("NULL"))<=0)
 											{
 												perror("Write:");
 												exit(0);
 											}
-											//strcpy(answer,"NULL");
 										}
 										else
-										{	//printf("%ld",sum);
+										{
 											char *str;
 											str=malloc(100);
 											sprintf(str,"%ld",sum);
@@ -1156,41 +960,20 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 												exit(0);
 											}
 											memset(str,0,strlen(str)+1);
-											/*if(!strcmp(answer,""))
-											{
-												sprintf(answer,"%ld",sum);
-											}
-											else
-											{
-												char *str;
-												str=malloc(20);
-												sprintf(str,"%ld",sum);
-												write(STDOUT_FILENO,str,strlen(str)+1);
-												strcat(answer,str);
-												//memset(str,0,strlen(str));
-											}*/
 											free(str);
 
 										}
 										if(i!=data->numViewQuery-1)
 										{
-											//printf(" ");
-											//strcat(answer," ");
 											if(write(STDOUT_FILENO," ",strlen(" "))<=0)
 											{
 												perror("Write:");
 												exit(0);
 											}
 										}
-										//free(column->tuples);
-										//free(column);
 									}
 								}
 							}
-							//printf("\n");
-							//printf("answer =%s\n",answer);
-							//write(STDOUT_FILENO,answer,strlen(answer)+1);
-//							strcat(answer,"\n");
 							if(write(STDOUT_FILENO,"\n",strlen("\n"))<=0)
 							{
 								perror("Write:");
@@ -1231,458 +1014,16 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 				free(temp_stats->array_with_stats);
 				free(temp_stats->cols);
 				free(temp_stats);
-
-
-
-
-				//queryString=strtok(NULL,"\n");
 		}
 		free(queryString);
-
 		free(middleResArray);
-		//bytes = read(STDIN_FILENO,buffer,sizeof(buffer));
 		for(cur=0;cur<numBatchQueries;cur++){
 			free(execQueries[cur]);
 		}
 		free(execQueries);
 	}
 }
-////////////////////////////////////////////////////////////////////////////
 
-
-
-void readWorkFile(char *filename,multiColumnRelation *relationArray,all_stats *statsArray)
-{
-	char *queryString;
-	//readBatch()
-
-	FILE *query_f;
-	query_f=fopen(filename,"r");
-    char c='a';
-	int teamCounter=1,counter=0,phrase_size=100,middleResultsSize=100,i,columnIndx,relationId,relationIndex,flag=0,middleResultsCounter=0,j,leftRelationId,rightRelationId,leftRelationIndx,leftTeam=0,rightTeam=0,rightRelationIndx,leftColumnIndx,rightColumnIndx;
-	queryString = malloc(phrase_size*sizeof(char));
-	middleResults *middleResArray=malloc(middleResultsSize*sizeof(middleResults));
-	for(i=0;i<middleResultsSize;i++){
-		middleResArray[i].team=0;
-		middleResArray[i].relation=-1;
-		middleResArray[i].rowIdsNum=0;
-		middleResArray[i].fromArray=-1;
-		middleResArray[i].relation_id=-1;
-	}
-	queryDataIndex *data;
-	int y=1;
-    while(c!=EOF)
-    {
-    	counter=0,phrase_size=100;
-		c=fgetc(query_f);
-		while(c!=EOF && c!='\n')
-		{
-			queryString[counter]=c;
-			if(counter==phrase_size)
-			{
-				phrase_size*=2;
-				queryString=realloc(queryString,phrase_size*sizeof(char));
-			}
-			counter++;
-			c=fgetc(query_f);
-		}
-		queryString[counter]='\0';
-		//if(strcmp(queryString,"F")==0)
-			//break;
-		if(strcmp(queryString,"F") && c!=EOF)
-		{
-			oneColumnRelation *column;
-			//printf("\n\n%d)%s\n",y,queryString);
-			y++;
-			data=analyzeQuery(queryString);
-
-			//ftiaxnw enan mikrotero pinaka me ta stastika pou xreiazomai , mporei na exw kapoio relation 2 fores
-			all_stats *temp_stats;
-			temp_stats=malloc(sizeof(all_stats));
-			temp_stats->rels=data->numRelQuery;
-			temp_stats->cols=malloc(temp_stats->rels*sizeof(uint64_t));
-			temp_stats->array_with_stats=malloc(temp_stats->rels*sizeof(stats *));
-			for(i=0;i<temp_stats->rels;i++){
-				//temp_stats->cols[i]=relationArray[data->QueryRelArray[i]].colCount;
-				temp_stats->cols[i]=statsArray->cols[data->QueryRelArray[i]];
-		//printf("QQQQQQQ %d %ld\n",relationArray[data->QueryRelArray[i]].colCount,statsArray->cols[data->QueryRelArray[i]]);
-				if(relationArray[data->QueryRelArray[i]].colCount!=statsArray->cols[data->QueryRelArray[i]]){
-					//printf("PR0BLEM");
-					//sleep(20);
-				}
-
-				temp_stats->array_with_stats[i]=malloc(temp_stats->cols[i]*sizeof(stats));
-				for(j=0;j<temp_stats->cols[i];j++){
-					temp_stats->array_with_stats[i][j].l=statsArray->array_with_stats[data->QueryRelArray[i]][j].l;
-					temp_stats->array_with_stats[i][j].u=statsArray->array_with_stats[data->QueryRelArray[i]][j].u;
-					temp_stats->array_with_stats[i][j].f=statsArray->array_with_stats[data->QueryRelArray[i]][j].f;
-					temp_stats->array_with_stats[i][j].d=statsArray->array_with_stats[data->QueryRelArray[i]][j].d;
-				}
-			}
-//print_stats_function(temp_stats);
-			if(data->numPredFilter>0)				//kanoume prwta tis prakseis me arithmous
-			{
-				for(i=0;i<data->numPredFilter;i++)		//apo 0 mexri ton arithmo twn filtrwn pou uparxoun//
-				{
-					relationId = data->predFilterArray[i].relColumn->rel;
-					columnIndx= data->predFilterArray[i].relColumn->col;
-					relationIndex = data->QueryRelArray[relationId];
-					flag=0;
-					if(middleResultsCounter>0)			//exoume endiamesa apotelesmata
-					{
-						for(j=0;j<middleResultsCounter;j++)			//trexoume ton pinaka me ta relations kai psaxnoume an uparxei antistoixia//
-						{
-							if(middleResArray[j].relation==relationIndex)
-							{
-								column=setColumnFromMiddleArray(middleResArray,relationIndex,columnIndx,j,relationArray);
-
-								free(middleResArray[j].rowIds);
-								int team =middleResArray[j].team;
-								middleResArray[j]=executeFilter(column,data->predFilterArray[i].value,data->predFilterArray[i].typeOperation,relationIndex,temp_stats,relationId,columnIndx);
-								middleResArray[j].team=team;
-								middleResArray[j].relation_id=data->predFilterArray[i].relColumn->rel;
-
-								///if(middleResArray[middleResultsCounter].relation==-1)
-								{
-									//free(middleResArray[middleResultsCounter].rowIds);
-									//middleResultsCounter--;
-								}
-
-								flag=1;
-								free(column->tuples);
-								free(column);
-								break;
-							}
-						}
-						if(flag==1)continue;
-					}
-
-					//edw tha erthei an den uparxei kapoio apotelesma apo to middleResults h an uparxoun apotelesmata sto middleResult pou den mas ikanopoioun.ara ftiaxnoume neo RowID sto middleResult
-					column = setColumnFromFirstArray(relationArray,relationIndex,columnIndx);
-					if(middleResultsCounter==0)
-						middleResArray[middleResultsCounter++]=executeFilter(column,data->predFilterArray[i].value,data->predFilterArray[i].typeOperation,relationIndex,temp_stats,relationId,columnIndx);
-					else if(middleResultsCounter!=0)
-						middleResArray[++middleResultsCounter]=executeFilter(column,data->predFilterArray[i].value,data->predFilterArray[i].typeOperation,relationIndex,temp_stats,relationId,columnIndx);
-
-					middleResArray[middleResultsCounter-1].relation_id=data->predFilterArray[i].relColumn->rel;
-					middleResArray[middleResultsCounter-1].team=teamCounter++;
-
-					middleResArray[middleResultsCounter-1].fromArray=0;
-					/*if(middleResArray[middleResultsCounter-1].relation==-1)
-					{
-						free(middleResArray[middleResultsCounter-1].rowIds);
-						middleResultsCounter--;
-					}*/
-					free(column->tuples);
-					free(column);
-				}
-			}
-			if(data->numPredJoinTwoRel>0)			//join 2 columns//
-			{
-				//kalw thn sun gia na dw thn seira
-				int *seira;
-				seira=malloc(data->numPredJoinTwoRel*sizeof(int));
-				seira=JoinEnumeration(data,temp_stats);
-				leftTeam=0;
-				rightTeam=0;
-				int indx=0;
-				int leftColumnPosInMiddleArray=-1,rightColumnPosInMiddleArray=-1;
-
-				for(i=0;i<data->numPredJoinTwoRel;i++){//
-					//indx=i;
-					indx=seira[i];//
-				//for(i=0;i<data->numPredJoinTwoRel;i++)
-				//{
-					oneColumnRelation *leftColumn;
-					oneColumnRelation *rightColumn;
-				    clock_t start, end;
-				    double cpu_time_used;
-				    start = clock();
-////edw dialegw thn seira twn kathgorhmatwn
-				   /* if(data->numPredJoinTwoRel!=1 )
-				    {
-				    	indx=checkIfOneRelationJoinExists(data,middleResArray,middleResultsCounter,i);
-						if(indx==-1)			//eimaste se TwoRelationJoin kai theloume na vroume ta statistika gia kathe kathgorhma//
-						{
-							indx=createStatsAndFindPred(data,middleResArray,middleResultsCounter,relationArray);
-						}
-				    }*/
-////end - edw dialegw thn seira twn kathgorhmatwn
-				    //printf("index=%d\n",indx);
-					end = clock();
-					cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-					//printf("\nTime = %f\n",cpu_time_used);
-					//printf("Indx=%d\n",indx);
-					leftColumnPosInMiddleArray=-1;
-					rightColumnPosInMiddleArray=-1;
-					leftRelationId = data->twoRelationPredArray[indx].left->rel;					//pernoume ta stoixeia apo thn domh pou krataei ta predications data //
-					leftColumnIndx =data->twoRelationPredArray[indx].left->col;
-					rightRelationId = data->twoRelationPredArray[indx].right->rel;
-					rightColumnIndx= data->twoRelationPredArray[indx].right->col;
-
-					leftRelationIndx = data->QueryRelArray[leftRelationId];
-					rightRelationIndx = data->QueryRelArray[rightRelationId];
-					if(middleResultsCounter>0)			//exoume endiamesa apotelesmata
-					{
-						for(j=0;j<middleResultsCounter;j++)			//trexoume ton pinaka me ta relations kai psaxnoume an uparxei antistoixia//
-						{
-							if(middleResArray[j].relation==leftRelationIndx && middleResArray[j].relation_id==leftRelationId)
-							{
-								leftColumn=setColumnFromMiddleArray(middleResArray,leftRelationIndx,leftColumnIndx,j,relationArray);	//dhmiourgia aristerhs sthlhs apo to middle results
-								leftColumnPosInMiddleArray=j;			//h thesh ths aristerhs sthlhs mesa ston middleArray
-								middleResArray[j].fromArray=1;
-								leftTeam=middleResArray[j].team;
-							}
-							if(middleResArray[j].relation==rightRelationIndx && middleResArray[j].relation_id==rightRelationId)
-							{
-								rightColumn=setColumnFromMiddleArray(middleResArray,rightRelationIndx,rightColumnIndx,j,relationArray);	//dhmiourgia deksias sthlhs apo to middle results
-								rightColumnPosInMiddleArray=j;			//h thesh ths deksias sthlhs mesa ston middleArray
-								middleResArray[j].fromArray=1;
-								rightTeam=middleResArray[j].team;
-							}
-						}
-					}
-					if(leftColumnPosInMiddleArray==-1)
-					{
-						leftColumn = setColumnFromFirstArray(relationArray,leftRelationIndx,leftColumnIndx);		//dhmiourgia aristerhs sthlhs apo ton arxiko pinaka
-						middleResArray[middleResultsCounter].fromArray=0;
-					}
-
-					if(rightColumnPosInMiddleArray==-1)		//an den uparxei mesa ston middle array pairnoume thn sthlh apo ton arxiko pinaka
-					{
-						rightColumn = setColumnFromFirstArray(relationArray,rightRelationIndx,rightColumnIndx);		//dhmiourgia deksias sthlhs apo ton arxiko pinaka
-						middleResArray[middleResultsCounter].fromArray=0;
-					}
-					resultList *resultList1,*resultList2;
-					if(leftRelationId==rightRelationId || (leftTeam==rightTeam && leftColumnPosInMiddleArray!=-1 && rightColumnPosInMiddleArray!=-1))			//JoinOneRelationArray
-					{
-						//printf("One Relation Join\n");
-					    clock_t start, end;
-					    double cpu_time_used;
-					    start = clock();
-						resultList1=sameRelationJoin(leftColumn,rightColumn);
-						end = clock();
-						cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-					//	printf("Same Time = %f\n",cpu_time_used);
-						data->twoRelationPredArray[indx].selected=1;
-						if(leftColumnPosInMiddleArray==-1)			//an den uparxei to left column ston middle array
-						{
-							middleResArray[middleResultsCounter].relation=leftRelationIndx;
-							middleResArray[middleResultsCounter].fromArray=0;
-							setResultsToMiddleArray(resultList1,middleResArray,middleResultsCounter,0,middleResultsCounter);
-							middleResultsCounter++;
-							middleResArray[middleResultsCounter-1].team=teamCounter++;
-						}
-
-						if(leftColumnPosInMiddleArray!=-1)			//an uparxei to left column ston middle array
-						{
-							middleResArray[leftColumnPosInMiddleArray].relation=leftRelationIndx;
-							setResultsToMiddleArray(resultList1,middleResArray,leftColumnPosInMiddleArray,0,middleResultsCounter);
-							changeRowIdNumOfTeam(middleResArray,middleResArray[leftColumnPosInMiddleArray].team,resultList1->numberOfResults,middleResultsCounter,middleResArray[leftColumnPosInMiddleArray].team);
-						}
-						deleteResultList(resultList1);
-					}
-					else// if(joinFlag==2)										//JointwoRelationArray
-					{
-					    clock_t start, end;
-					    double cpu_time_used;
-					    start = clock();
-					 //   printf("%d.%d=%d.%d    Score=%d\n",data->twoRelationPredArray[indx].left->rel,data->twoRelationPredArray[indx].left->col,data->twoRelationPredArray[indx].right->rel,data->twoRelationPredArray[indx].right->col,data->twoRelationPredArray[indx].score);
-						resultList2=RadixHashJoin(leftColumn,rightColumn);
-						data->twoRelationPredArray[indx].selected=1;
-
-						end = clock();
-						cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-						//printf("Radix Time = %f\n",cpu_time_used);
-						if(leftColumnPosInMiddleArray==-1 && rightColumnPosInMiddleArray==-1){	//ftiaxnoume neo team
-
-							middleResArray[middleResultsCounter].relation=leftRelationIndx;
-							middleResArray[middleResultsCounter].fromArray=0;
-							setResultsToMiddleArray(resultList2,middleResArray,middleResultsCounter,0,middleResultsCounter);
-							middleResArray[middleResultsCounter].relation_id=leftRelationId;
-							middleResultsCounter++;
-
-							middleResArray[middleResultsCounter].relation=rightRelationIndx;
-							middleResArray[middleResultsCounter].fromArray=0;
-							setResultsToMiddleArray(resultList2,middleResArray,middleResultsCounter,1,middleResultsCounter);
-							middleResArray[middleResultsCounter].relation_id=rightRelationId;
-
-							middleResultsCounter++;
-
-							middleResArray[middleResultsCounter-1].team=teamCounter;
-							middleResArray[middleResultsCounter-2].team=teamCounter++;
-						}
-						else if(leftColumnPosInMiddleArray==-1 && rightColumnPosInMiddleArray!=-1){ //an uparxei team gia right column
-							middleResArray[middleResultsCounter].relation=leftRelationIndx;
-							middleResArray[middleResultsCounter].fromArray=0;
-							setResultsToMiddleArray(resultList2,middleResArray,middleResultsCounter,0,middleResultsCounter);
-							middleResArray[middleResultsCounter].relation_id=leftRelationId;
-
-
-							middleResultsCounter++;
-							middleResArray[rightColumnPosInMiddleArray].relation=rightRelationIndx;
-							setResultsToMiddleArray(resultList2,middleResArray,rightColumnPosInMiddleArray,1,middleResultsCounter);
-							middleResArray[rightColumnPosInMiddleArray].relation_id=rightRelationId;
-
-							int team=middleResArray[middleResultsCounter-1].team;
-							middleResArray[middleResultsCounter-1].team = middleResArray[rightColumnPosInMiddleArray].team;
-							changeRowIdNumOfTeam(middleResArray,team,resultList2->numberOfResults,middleResultsCounter,middleResArray[rightColumnPosInMiddleArray].team);
-						}
-						else if(leftColumnPosInMiddleArray!=-1 && rightColumnPosInMiddleArray==-1){ //an uparxei team gia left column
-
-							middleResArray[leftColumnPosInMiddleArray].relation=leftRelationIndx;
-							setResultsToMiddleArray(resultList2,middleResArray,leftColumnPosInMiddleArray,0,middleResultsCounter);
-							middleResArray[leftColumnPosInMiddleArray].relation_id=leftRelationId;
-
-
-							middleResArray[middleResultsCounter].relation=rightRelationIndx;
-							middleResArray[middleResultsCounter].fromArray=0;
-							setResultsToMiddleArray(resultList2,middleResArray,middleResultsCounter,1,middleResultsCounter);
-							middleResArray[middleResultsCounter].relation_id=rightRelationId;
-
-							middleResultsCounter++;
-							int team=middleResArray[middleResultsCounter-1].team ;
-							middleResArray[middleResultsCounter-1].team = middleResArray[leftColumnPosInMiddleArray].team;
-							changeRowIdNumOfTeam(middleResArray,team,resultList2->numberOfResults,middleResultsCounter,middleResArray[leftColumnPosInMiddleArray].team);
-
-						}
-						else{  //uparxei team kai gia ta 2 column --- psaxnoume gia mikrotero # of team
-							middleResArray[leftColumnPosInMiddleArray].relation=leftRelationIndx;
-							setResultsToMiddleArray(resultList2,middleResArray,leftColumnPosInMiddleArray,0,middleResultsCounter);
-							middleResArray[leftColumnPosInMiddleArray].relation_id=leftRelationId;
-
-							middleResArray[rightColumnPosInMiddleArray].relation=rightRelationIndx;
-							setResultsToMiddleArray(resultList2,middleResArray,rightColumnPosInMiddleArray,1,middleResultsCounter);
-							middleResArray[rightColumnPosInMiddleArray].relation_id=rightRelationId;
-
-
-							int team;
-							//printf("LeftTeam %d\tRightTeam %d\n",middleResArray[leftColumnPosInMiddleArray].team,middleResArray[rightColumnPosInMiddleArray].team);
-							if(middleResArray[leftColumnPosInMiddleArray].team <= middleResArray[rightColumnPosInMiddleArray].team){
-							//	printf("left\n");
-								for(j=0;j<middleResultsCounter;j++){
-									if(middleResArray[j].team==middleResArray[rightColumnPosInMiddleArray].team){
-										team=middleResArray[rightColumnPosInMiddleArray].team;
-										middleResArray[j].team=middleResArray[leftColumnPosInMiddleArray].team;
-									}
-								}
-								changeRowIdNumOfTeam(middleResArray,team,resultList2->numberOfResults,middleResultsCounter,middleResArray[leftColumnPosInMiddleArray].team);
-							}
-							else{
-								//printf("right\n");
-								for(j=0;j<middleResultsCounter;j++){
-									if(middleResArray[j].team==middleResArray[leftColumnPosInMiddleArray].team){
-										team=middleResArray[j].team;
-										middleResArray[j].team=middleResArray[rightColumnPosInMiddleArray].team;
-									}
-								}
-								//printf("team=%d\n",team);
-								changeRowIdNumOfTeam(middleResArray,team,resultList2->numberOfResults,middleResultsCounter,middleResArray[rightColumnPosInMiddleArray].team);
-							}
-						}
-						deleteResultList(resultList2);
-						//printMiddleArray(middleResArray,middleResultsCounter);
-					}
-					free(leftColumn->tuples);
-					free(rightColumn->tuples);
-					free(leftColumn);
-					free(rightColumn);
-					leftColumnPosInMiddleArray=-1;
-					rightColumnPosInMiddleArray=-1;
-				}
-				teamCounter=1;
-				if(i==data->numPredJoinTwoRel)
-				{
-					if(data->numViewQuery>0)
-					{
-						for(i=0;i<data->numViewQuery;i++)
-						{
-							columnIndx = data->viewQueryArray[i].col;
-							relationId =data->viewQueryArray[i].rel;
-							relationIndex = data->QueryRelArray[relationId];
-							for(j=0;j<middleResultsCounter;j++)
-							{
-								if(middleResArray[j].relation==relationIndex && middleResArray[j].relation_id==relationId)
-								{
-								    clock_t start, end;
-								    double cpu_time_used;
-								    start = clock();
-								    int arrayIndx=j;
-								    long sum=0;
-									for(int k=0;k<middleResArray[arrayIndx].rowIdsNum;k++)
-									{
-										int index=middleResArray[arrayIndx].rowIds[k];
-										//sum+=relationArray[relationIndex].table[columnIndx][index];
-										//printf("Col %d  indx %d\n",columnIndx,index);
-										//printf("Sum %d\n",relationArray[relationIndex].columns[columnIndx].tuples[index].value);
-										sum+=relationArray[relationIndex].columns[columnIndx].tuples[index].value;
-										//temp->tuples[k].id=k;
-									}
-
-									//column=setColumnFromMiddleArray(middleResArray,relationIndex,columnIndx,j,relationArray);
-									end = clock();
-									cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-									//printf("SetCol Time = %f\n",cpu_time_used);
-									//long sum=SumOneColumnRelation(column);
-									//end = clock();
-									//cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-									//printf("Sum Time = %f\n",cpu_time_used);
-
-
-									if(sum==0)
-										printf("NULL");
-									else
-										printf("%ld",sum);
-									if(i!=data->numViewQuery-1)
-									{
-										printf(" ");
-									}
-									//free(column->tuples);
-									//free(column);
-								}
-							}
-						}
-						printf("\n");
-					}
-				}
-				//printf("middleCounter = %d\n",middleResultsCounter);
-
-			}
-			for(j=0;j<middleResultsCounter;j++){
-				if(middleResArray[j].relation_id!=-1)
-				{
-					//printf("free()\n");
-					free(middleResArray[j].rowIds);
-				}
-				middleResArray[j].relation=-1;
-				middleResArray[j].rowIdsNum=0;
-				middleResArray[j].team=0;
-				middleResArray[j].fromArray=-1;
-				middleResArray[j].relation_id=-1;
-			}
-		    for(int i=0;i<data->numPredJoinTwoRel;i++)
-		    {
-		        free(data->twoRelationPredArray[i].left);
-		        free(data->twoRelationPredArray[i].right);
-		    }
-		    free(data->twoRelationPredArray);
-		    free(data->QueryRelArray);
-		    free(data->viewQueryArray);
-		    for(int i=0;i<data->numPredFilter;i++)
-		    {
-		        free(data->predFilterArray[i].relColumn);
-		    }
-		    free(data->predFilterArray);
-		    free(data);
-			middleResultsCounter=0;
-		}
-		//printf("next query\n\n");
-		memset(queryString,0,strlen(queryString));
-    }
-    free(queryString);
-
-    free(middleResArray);
-}
 int checkIfOneRelationJoinExists(queryDataIndex* data,middleResults* middleResArray,int middleResultsCounter,int indx)
 {
 	int k,rightRelationId,leftRelationId,leftRelationIndx,rightRelationIndx,j,leftTeam=0,rightTeam=0,rightColumnPosInMiddleArray=-1,tempValue=-1,leftColumnPosInMiddleArray=-1;
@@ -2112,7 +1453,6 @@ resultList* sameRelationJoin(oneColumnRelation *relR,oneColumnRelation *relS){//
 	int i;
 	resultList *resList;
 	resList=initializeResultList();
-
 	for(i=0;i<relR->num_of_tuples;i++){
 		if(relR->tuples[i].value==relS->tuples[i].value){//prepei ta id na einai ta idia
 			insertResult(resList,relR->tuples[i].id,relR->tuples[i].id,1);			//2 sto teleutaio orisma shmainei oti exoume join apo idio relation
@@ -2120,7 +1460,6 @@ resultList* sameRelationJoin(oneColumnRelation *relR,oneColumnRelation *relS){//
 	}
 	return resList;
 }
-
 middleResults executeFilter(oneColumnRelation* column,int value,char typeOperation,int relation,all_stats *temp_stats,int relationId,int columnIndx)
 {
 	int i;
@@ -2129,8 +1468,6 @@ middleResults executeFilter(oneColumnRelation* column,int value,char typeOperati
 	results.rowIdsNum=0;
 	results.relation=relation;
 	results.fromArray=0;
-//printf("relation %d\n",relation);
-
 	if(typeOperation=='=')
 	{
 		for(i=0;i<column->num_of_tuples;i++){
@@ -2140,8 +1477,6 @@ middleResults executeFilter(oneColumnRelation* column,int value,char typeOperati
 				results.rowIdsNum++;
 			}
 		}
-
-
 		int prev_f=temp_stats->array_with_stats[relationId][columnIndx].f;
 		//stats gia thn sthlh pou kaname to filter
 		temp_stats->array_with_stats[relationId][columnIndx].l=value;
@@ -2154,17 +1489,14 @@ middleResults executeFilter(oneColumnRelation* column,int value,char typeOperati
 			temp_stats->array_with_stats[relationId][columnIndx].f=temp_stats->array_with_stats[relationId][columnIndx].f/temp_stats->array_with_stats[relationId][columnIndx].d;//edw mporw na balw kai results.rowIdsNum
 			temp_stats->array_with_stats[relationId][columnIndx].d=1;
 		}
-
 		//stats gia tis upoloipes
 		for(i=0;i<temp_stats->cols[relationId];i++){
 			if(i!=columnIndx){
 				double base,power;
 				base=1-(1.0*temp_stats->array_with_stats[relationId][columnIndx].f)/prev_f;
 				power=(1.0*temp_stats->array_with_stats[relationId][i].f)/temp_stats->array_with_stats[relationId][i].d;
-				//printf("= base=%f power=%f\n",base,power);
 				temp_stats->array_with_stats[relationId][i].d=temp_stats->array_with_stats[relationId][i].d*(1-pow(base,power));
 				temp_stats->array_with_stats[relationId][i].f=temp_stats->array_with_stats[relationId][columnIndx].f;
-
 				if(temp_stats->array_with_stats[relationId][i].f>0 && temp_stats->array_with_stats[relationId][i].d==0){
 					temp_stats->array_with_stats[relationId][i].d=1;
 				}
@@ -2180,13 +1512,11 @@ middleResults executeFilter(oneColumnRelation* column,int value,char typeOperati
 				results.rowIdsNum++;
 			}
 		}
-
 		int prev_f=temp_stats->array_with_stats[relationId][columnIndx].f;
 		//stats
 		if(value<temp_stats->array_with_stats[relationId][columnIndx].l){
 			value=temp_stats->array_with_stats[relationId][columnIndx].l;
 		}
-
 		double suntelesths;
 		suntelesths=(1.0*temp_stats->array_with_stats[relationId][columnIndx].u-value)/(1.0*temp_stats->array_with_stats[relationId][columnIndx].u-temp_stats->array_with_stats[relationId][columnIndx].l);
 
@@ -2200,7 +1530,6 @@ middleResults executeFilter(oneColumnRelation* column,int value,char typeOperati
 				double base,power;
 				base=1-(1.0*temp_stats->array_with_stats[relationId][columnIndx].f)/prev_f;
 				power=(1.0*temp_stats->array_with_stats[relationId][i].f)/(1.0*temp_stats->array_with_stats[relationId][i].d);
-				//printf("> base=%f power=%f\n",base,power);
 				temp_stats->array_with_stats[relationId][i].d=temp_stats->array_with_stats[relationId][i].d*(1-pow(base,power));
 				temp_stats->array_with_stats[relationId][i].f=temp_stats->array_with_stats[relationId][columnIndx].f;
 
@@ -2219,16 +1548,13 @@ middleResults executeFilter(oneColumnRelation* column,int value,char typeOperati
 				results.rowIdsNum++;
 			}
 		}
-
 		int prev_f=temp_stats->array_with_stats[relationId][columnIndx].f;
 		//stats
 		if(value>temp_stats->array_with_stats[relationId][columnIndx].u){
 			value=temp_stats->array_with_stats[relationId][columnIndx].u;
 		}
-
 		double suntelesths;
 		suntelesths=(1.0*value-temp_stats->array_with_stats[relationId][columnIndx].l)/(1.0*temp_stats->array_with_stats[relationId][columnIndx].u-temp_stats->array_with_stats[relationId][columnIndx].l);
-
 		temp_stats->array_with_stats[relationId][columnIndx].u=value;
 		temp_stats->array_with_stats[relationId][columnIndx].d=suntelesths*temp_stats->array_with_stats[relationId][columnIndx].d;
 		temp_stats->array_with_stats[relationId][columnIndx].f=suntelesths*temp_stats->array_with_stats[relationId][columnIndx].f;
@@ -2239,64 +1565,21 @@ middleResults executeFilter(oneColumnRelation* column,int value,char typeOperati
 				double base,power;
 				base=1-(1.0*temp_stats->array_with_stats[relationId][columnIndx].f)/prev_f;
 				power=(1.0*temp_stats->array_with_stats[relationId][i].f)/(1.0*temp_stats->array_with_stats[relationId][i].d);
-				//printf("< base=%f power=%f\n",base,power);
 				temp_stats->array_with_stats[relationId][i].d=temp_stats->array_with_stats[relationId][i].d*(1-pow(base,power));
 				temp_stats->array_with_stats[relationId][i].f=temp_stats->array_with_stats[relationId][columnIndx].f;
-
 				if(temp_stats->array_with_stats[relationId][i].f>0 && temp_stats->array_with_stats[relationId][i].d==0){
 					temp_stats->array_with_stats[relationId][i].d=1;
 				}
 			}
 		}
 	}
-	/*for(i=0;i<column->num_of_tuples;i++)
-	{
-		if(typeOperation=='=')
-		{	if(column->tuples[i].value==value){
-				results.rowIds[results.rowIdsNum]=column->tuples[i].id;
-				results.relation = relation;
-				results.rowIdsNum++;
-			}
-		}
-		else if(typeOperation=='>')
-		{
-			if(column->tuples[i].value>value){
-				results.rowIds[results.rowIdsNum]=column->tuples[i].id;
-				results.relation = relation;
-				results.rowIdsNum++;
-			}
-		}
-		else if(typeOperation=='<')
-		{
-			if(column->tuples[i].value<value){
-				results.rowIds[results.rowIdsNum]=column->tuples[i].id;
-				results.relation = relation;
-				results.rowIdsNum++;
-			}
-		}
-	}*/
 	return results;
 }
-
-int64_t SumOneColumnRelation(oneColumnRelation *R){
-	int64_t sum=0,i;
-
-	for(i=0;i<R->num_of_tuples;i++){
-		sum+=R->tuples[i].value;
-	}
-
-	return sum;
-}
-
-
-
-
 int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
-	int i,j,k,pnt;
+	int i,j,k;
 	int **graph;//an exw kathgorhma ths morfhs A.x=A.y tote 8a balw sthn diagwnio 1
 	bestTree *btree;
 	btree=NULL;
-
 	//initiliaze graph
 	graph=malloc(data->numRelQuery*sizeof(int *));
 	for(i=0;i<data->numRelQuery;i++){
@@ -2357,7 +1640,8 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 				teams[j]=0;
 			}
 
-			int *seira,seira_point=0;
+			int *seira;
+			int seira_point=0;
 			seira=malloc(data->numPredJoinTwoRel*sizeof(int));
 			for(j=0;j<data->numPredJoinTwoRel;j++){
 				seira[j]=-1;
@@ -2367,7 +1651,7 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 			all_stats *temp_stats;
 			temp_stats=malloc(sizeof(all_stats));
 			temp_stats->rels=before_joins_stats->rels;
-			temp_stats->cols=malloc(temp_stats->rels*sizeof(int));
+			temp_stats->cols=malloc(temp_stats->rels*sizeof(uint64_t));
 			temp_stats->array_with_stats=malloc(temp_stats->rels*sizeof(stats *));
 			for(j=0;j<temp_stats->rels;j++){
 				temp_stats->cols[j]=before_joins_stats->cols[j];
@@ -2401,22 +1685,19 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 					}
 
 					cost=temp_stats->array_with_stats[rightRelationId][rightColumnIndx].f;//mallon 8a agnow to cost gia thn prwth fora
-
+				//	insertList(&(btree[0].startlist),cost,set,data->numRelQuery,teams,teamCount,temp_stats,seira,data->numPredJoinTwoRel,seira_point);
 					//printf("bazw sthn lista 1\n");
-					insertList(&(btree[0].startlist),cost,set,data->numRelQuery,teams,teamCount,temp_stats,seira,data->numPredJoinTwoRel,seira_point);
-					free(set);
-					free(teams);
-					free(seira);
 				}
+				insertList(&(btree[0].startlist),cost,set,data->numRelQuery,teams,teamCount,temp_stats,seira,data->numPredJoinTwoRel,seira_point);
 			}
 			else{
 				cost=0;
 				//printf("bazw sthn lista 2\n");
 				insertList(&(btree[0].startlist),cost,set,data->numRelQuery,teams,teamCount,temp_stats,seira,data->numPredJoinTwoRel,seira_point);
-				free(set);
-				free(teams);
-				free(seira);
 			}
+			free(set);
+			free(teams);
+			free(seira);
 		}
 		//////////////
 		//print
@@ -2456,14 +1737,11 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 							}
 							//
 							//printf("i just took set : ");
-							/*for(i=0;i<data->numRelQuery;i++){
-								//printf("%d ",set[i]);
-							}*/
-							//printf("\n\n");
+
 
 							local_stats=malloc(sizeof(all_stats));
 							local_stats->rels=temp->local_stats->rels;
-							local_stats->cols=malloc(local_stats->rels*sizeof(int));
+							local_stats->cols=malloc(local_stats->rels*sizeof(uint64_t));
 							local_stats->array_with_stats=malloc(local_stats->rels*sizeof(stats *));
 							for(i=0;i<local_stats->rels;i++){
 								local_stats->cols[i]=temp->local_stats->cols[i];
@@ -2510,10 +1788,7 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 										//
 										//insert
 										//printf("111before insert set : ");
-										/*for(int qaz=0;qaz<data->numRelQuery;qaz++){
-											//printf("(%d) %d ",qaz,set[qaz]);
-										}
-										printf("\n\n");*/
+
 
 										//allazw ta teams
 										int newteam;
@@ -2555,10 +1830,7 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 							}
 							//insert
 							//printf("before insert set : ");
-							/*for(int qaz=0;qaz<data->numRelQuery;qaz++){
-								printf("(%d) %d ",qaz,set[qaz]);
-							}
-							printf("\n\n");*/
+
 							insertList(&(btree[1].startlist),cost,set,data->numRelQuery,teams,teamCount,local_stats,seira,data->numPredJoinTwoRel,seira_point);
 							//kai na kanw to besttree
 							if(btree[1].BestNode==NULL){
@@ -2629,14 +1901,11 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 							}
 							//
 							//printf("i just took set : ");
-							/*for(i=0;i<data->numRelQuery;i++){
-								//printf("%d ",set[i]);
-							}*/
-							//printf("\n\n");
+
 
 							local_stats=malloc(sizeof(all_stats));
 							local_stats->rels=temp->local_stats->rels;
-							local_stats->cols=malloc(local_stats->rels*sizeof(int));
+							local_stats->cols=malloc(local_stats->rels*sizeof(uint64_t));
 							local_stats->array_with_stats=malloc(local_stats->rels*sizeof(stats*));
 							for(i=0;i<local_stats->rels;i++){
 								local_stats->cols[i]=temp->local_stats->cols[i];
@@ -2683,10 +1952,7 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 										//
 										//insert
 										//printf("111before insert set : ");
-										/*for(int qaz=0;qaz<data->numRelQuery;qaz++){
-											//printf("(%d) %d ",qaz,set[qaz]);
-										}
-										printf("\n\n");*/
+
 
 										//allazw ta teams
 										int newteam;
@@ -2728,10 +1994,7 @@ int *JoinEnumeration(queryDataIndex *data,all_stats *before_joins_stats){
 							}
 							//insert
 							//printf("before insert set : ");
-							/*for(int qaz=0;qaz<data->numRelQuery;qaz++){
-								printf("(%d) %d ",qaz,set[qaz]);
-							}
-							printf("\n\n");*/
+
 							insertList(&(btree[subteam].startlist),cost,set,data->numRelQuery,teams,teamCount,local_stats,seira,data->numPredJoinTwoRel,seira_point);
 							//kai na kanw to besttree
 							if(btree[subteam].BestNode==NULL){
@@ -3212,7 +2475,6 @@ void insertList(listnode **list,int cost,int *set,int size,int *teams,int teamCo
 		}
 		temp->next=malloc(sizeof(listnode));
 		temp->next->cost=cost;
-printf("size = %d\n\n",size);
 		temp->next->set=malloc(size*sizeof(int));
 		temp->next->teams=malloc(size*sizeof(int));
 		//
@@ -3230,7 +2492,7 @@ printf("size = %d\n\n",size);
 		temp->next->local_stats=stats;
 		temp->next->next=NULL;
 	}
-//printf("end insert\n");
+	//printf("end insert\n");
 }
 
 void printList(listnode *list,int max,int max_seira){

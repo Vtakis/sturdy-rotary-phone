@@ -309,11 +309,10 @@ int main(int argc, char *argv[]) {
       }
       if (matched)
       {
-          cout << "Received: " << val << " Expect: " << result_batches[batch][i]<<endl;
+         // cout << "Received: " << val << " Expect: " << result_batches[batch][i]<<endl;
       }
       ++query_no;
     }
-    cout<<endl;
   }
 
   struct timeval end;

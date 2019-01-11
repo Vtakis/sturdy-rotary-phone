@@ -9,7 +9,7 @@ SOURCE3=harness.cpp
 OUT3=harness
 CC=gcc
 CCX=g++
-FLAGS=-c -g 
+FLAGS=-g -c -Wall 
 
 all:$(OBJS) $(OBJS2)
 	$(CC) -g $(SOURCE) -o $(OUT) -lpthread -lm -O3
