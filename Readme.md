@@ -48,3 +48,25 @@ Eντολη Μεταγλωτισσης: make
 Η κύρια συνάρτησή μας είναι η readWorkFile , στην αρχή παίρνουμε και αναλύουμε ένα ένα τα queries .Για κάθε query τρέχουμε πρώτα όλα τα filter, ύστερα όλα τα onejoin και στο τέλος διαλέγουμε με βάση τα στατιστικά που κρατάμε ποιο κατηγόρημα(radix) θα εκτελέσουμε και αν με την εκτέλεση ενός τέτοιου κατηγορήματος δημιουργηθεί νέο onejoin , τοτε το επιλεγουμε ως επόμενο κατηγόρημα προς εκτέλεση.Σε κάθε εκτέλεση τα αποτελέσματα μπαίνουν στο middleArray και αν θελουμε να χρησιμοποήσουμε πάλι κάποιο relation , το παίρνουμε απο εκεί.Κάθε φορά που βάζουμε κάτι στο middleArray , το τοποθετούμε σε μια ομάδα , σε περίπτωση filter ή onejoin αν δεν υπάρχει στο middleArray το τοποθετούμε σε καινούργια ομάδα ενω στην περίπτωση που υπάρχει ήδη αφληνουμε την ίδια ομάδα και αλλάζουμε όλα τα relation που ανήκουν στην ομάδα του.Παρόμοια προσεγγιση είναι και η radix με την διαφορά οτι εδώ ενώνουμε τις δύο ομάδες.
 Για στατιστικά κρατάμε min,max,average distinct και numbers.
 
+Για το part 3:
+
+    Έχουν γίνει αλλαγές στα πρωτότυπα κάποιων συναρτήσεων:
+1) hist* createHistArray(oneColumnRelation **rel,int start,int end);
+    >Έχουν προστεθεί 2 ορίσματα start, end ώστε καθε thread να ξέρει ποιο κομμάτι από το relation θα πρέπει να επεξεργαστεί.
+2) oneColumnRelation* createReOrderedArray(oneColumnRelation *array,hist *sumArray,int start,int end,oneColumnRelation *reOrderedArray);
+    >Όπως και στην πάνω συνάρτηση, έχουμε 2 επιπλέον ορίσματα start, end ώστε κάθε thread να ξέρει ποιο κομμάτι να επεξεργαστεί.
+3) indexHT* createHashTable(oneColumnRelation* reOrderedArray,int32_t start,int32_t end);
+    >Το ίδιο με πριν.
+4) void compareRelations(indexHT *ht,oneColumnRelation *array,int32_t start,int32_t end,oneColumnRelation *hashedArray,resultList *resList,int32_t fromArray);
+    >Ομοίως.
+
+    Έχει γίνει σύνδεση με το πρόγραμμα harness ώστε το δικό μας πρόγραμμα να διαβάζει από εκεί τα δεδομένα που χρειάζεται. Γι' αυτό το λόγο έχει γίνει αλλαγή στη main
+του προγράμματος, όπου πλέον καλούνται οι εξής συναρτήσεις:
+1) char **createRelations(int *number_of_files);
+    > Διαβάζονται τα ονόματα των relations που στέλνονται από το harness και επιστρέφεται ένας πίνακας με τα ονόματα αυτών των relations.
+2) void createRelations(int number_of_files,multiColumnRelation **relationArray,all_stats **statsArray,char **relation);
+    > Με βάση τον πίνακα με τα ονόματα των relations, γίνεται διάβασμα των relations αυτών και δημιουργούμε τον πίνακα relationArray, όπου αποθηκεύονται τα δεδομένα τους και τον πίνακα statsArray, όπου κρατάμε στατιστικά για τα δεδομένα αυτά.
+3) void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray);
+    > Η συνάρτηση είναι παρόμοια με την readWorkFile του part2, με την διαφορά πως τώρα η συνάρτηση διαβάζει batches και τα εκτελεί, τα οποία batches στέλνονται μέσω
+του harness. Μόλις διαβάσει 0 bytes, τερματίζει.
+
