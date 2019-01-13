@@ -754,7 +754,7 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 					int leftColumnPosInMiddleArray=-1,rightColumnPosInMiddleArray=-1;
 
 					for(i=0;i<data->numPredJoinTwoRel;i++){//
-						//indx=i;
+						indx=i;
 						indx=seira[i];
 						oneColumnRelation *leftColumn;
 						oneColumnRelation *rightColumn;
@@ -1075,9 +1075,7 @@ int checkIfOneRelationJoinExists(queryDataIndex* data,middleResults* middleResAr
 }
 void changeRowIdNumOfTeam(middleResults *array,int team,int numRows,int countMiddleArray,int new_team){
 	int i;
-	//printf("team=%d\n",team);
 	for(i=0;i<countMiddleArray;i++){
-		//printf("array_team=%d\n",array[i].team);
 		if(array[i].team==team){
 			array[i].rowIdsNum=numRows;
 			array[i].team=new_team;
@@ -1089,12 +1087,11 @@ void printMiddleArray(middleResults *array,int size)
 	for(int i=0;i<size;i++)
 	{
 		printf("Relation[%d]-->%d  RelationID %d  Rows %d  Teams %d\n",i,array[i].relation,array[i].relation_id,array[i].rowIdsNum,array[i].team);
-		//printf("STATS min=%ld max=%ld average=%ld\n",array[i].stats.min,array[i].stats.max,array[i].stats.average);
 		for(int j=0;j<array[i].rowIdsNum;j++)
 		{
-			//printf("Row[%d]=%d\n",j,array[i].rowIds[j]);
+			printf("Row[%d]=%d\n",j,array[i].rowIds[j]);
 		}
-		//printf("\n");
+		printf("\n");
 	}
 }
 void setResultsToMiddleArray(resultList *list,middleResults *middleResultsArray,int index,int direction,int middleResultsCounter)
@@ -1104,8 +1101,6 @@ void setResultsToMiddleArray(resultList *list,middleResults *middleResultsArray,
 	temp =list->start;
 	if(temp==NULL)
 	{
-
-		//printf("index=%d--->%d\n",index,middleResultsArray[index].rowIdsNum);
 		for(int j=0;j<middleResultsCounter;j++)
 		{
 			if(middleResultsArray[index].team==middleResultsArray[j].team)
@@ -1113,10 +1108,8 @@ void setResultsToMiddleArray(resultList *list,middleResults *middleResultsArray,
 				middleResultsArray[j].rowIdsNum=0;
 			}
 		}
-		//printf("index=%d--->%d\n",index,middleResultsArray[index].rowIdsNum);
 		if(middleResultsArray[index].relation_id!=-1)
 		{
-			//printf("FREEEE()\n");
 			free(middleResultsArray[index].rowIds);
 		}
 		middleResultsArray[index].rowIds=malloc(sizeof(int));
@@ -1124,8 +1117,6 @@ void setResultsToMiddleArray(resultList *list,middleResults *middleResultsArray,
 	}
 
 	if(middleResultsArray[index].rowIdsNum==0){
-		//printf("index=%d\n",index);
-		//printMiddleArray(middleResultsArray,middleResultsCounter+2);
 		middleResultsArray[index].rowIds=malloc(list->numberOfResults*sizeof(int));
 		middleResultsArray[index].rowIdsNum=list->numberOfResults;
 	}
@@ -1197,7 +1188,6 @@ void setResultsToMiddleArray(resultList *list,middleResults *middleResultsArray,
 		for(int k=0;k<list->numberOfResults;k++){
 			for(int j=0;j<middleResultsCounter;j++){
 				if(middleResultsArray[index].team==middleResultsArray[j].team){
-					//printf("j=%d relation=%d rowIndx=%d counter=%d\n",j,middleResultsArray[j].relation,rowIndx,tempArray[counter]);
 					middleResultsArray[j].rowIds[rowIndx]=tempArray[counter];
 					counter++;
 				}
@@ -1212,17 +1202,7 @@ oneColumnRelation* setColumnFromFirstArray(multiColumnRelation* relationArray,in
 	temp=malloc(sizeof(oneColumnRelation));
 	temp->tuples=malloc(relationArray[relationIndx].rowCount*sizeof(tuple));
 	temp->num_of_tuples=relationArray[relationIndx].rowCount;
-	//printf("tuples = %d\n",temp->num_of_tuples);
-	//temp->tuples = (relationArray[relationIndx].columns[columnIndx].tuples);
 	 memcpy(temp->tuples, relationArray[relationIndx].columns[columnIndx].tuples,relationArray[relationIndx].rowCount*sizeof(tuple));
-
-	/*for(int j=0;j<relationArray[relationIndx].rowCount;j++)
-	{
-		temp->tuples[j].value = (relationArray[relationIndx].columns[columnIndx].tuples[j].value);
-		temp->tuples[j].id=j;
-		//temp->tuples[j].value=relationArray[relationIndx].table[columnIndx][j];		//h mporw na stelnw kateutheian to table[column]//vazw se mia sthlh thn sthlh apo to arxiko table me ta data//
-		//temp->tuples[j].id=j;
-	}*/
 	return temp;
 }
 oneColumnRelation* setColumnFromMiddleArray(middleResults* middleResArray,int relationIndx,int columnIndx,int arrayIndx,multiColumnRelation* relationArray){
@@ -1237,12 +1217,9 @@ oneColumnRelation* setColumnFromMiddleArray(middleResults* middleResArray,int re
 
 	}
 	temp->num_of_tuples=middleResArray[arrayIndx].rowIdsNum;
-//	printf("..%d\n",temp->num_of_tuples);
 	for(int k=0;k<middleResArray[arrayIndx].rowIdsNum;k++)
 	{
 		int index=middleResArray[arrayIndx].rowIds[k];
-		//temp->tuples[k].value=relationArray[relationIndx].table[columnIndx][index];
-		//memcpy(&(temp->tuples[k]),&(relationArray[relationIndx].columns[columnIndx].tuples[index]),sizeof(tuple));
 		temp->tuples[k].value=relationArray[relationIndx].columns[columnIndx].tuples[index].value;
 		temp->tuples[k].id=k;
 	}

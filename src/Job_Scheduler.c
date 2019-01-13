@@ -1,7 +1,6 @@
 #include <pthread.h>
 #include <stdio.h>
 #include "../header-files/Job_Scheduler.h"
-//#include "../header-files/functions.h"
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
@@ -19,7 +18,7 @@ pthread_mutex_t resList_counter_mutex= PTHREAD_MUTEX_INITIALIZER;
 int ending;
 int resList_counter=0;
 
-void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti paragogou
+void *Worker(void* j)
 {
     int thread_mutex_place=0;
 	thread_param* x=(thread_param*)j;
@@ -34,7 +33,7 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
 		pthread_mutex_unlock(&start_mutex);
 
 		pthread_mutex_lock(&worker_mutex[thread_mutex_place]);
-		while(x->sch->q->jobs[thread_mutex_place].isEmpty==true){			//oso h thesh pou exei parei ena thread sthn oura einai adeia tote perimenei sot condition variable//
+		while(x->sch->q->jobs[thread_mutex_place].isEmpty==true){			//oso h thesh pou exei parei ena thread sthn oura einai adeia tote perimenei sto condition variable//
 			if(ending==1)
 			{
 				pthread_mutex_unlock(&worker_mutex[thread_mutex_place]);
@@ -45,6 +44,7 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
 
 		}
 		pthread_mutex_unlock(&worker_mutex[thread_mutex_place]);
+		//an h douleia sthn thesh thread_mutex_place einai tupou hist
 		if(x->sch->q->jobs[thread_mutex_place].histFlag==true)
 		{
 			int start = x->sch->q->jobs[thread_mutex_place].histjob.start;
@@ -58,10 +58,11 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
 				x->sch->shared_data.histArrayS[thread_mutex_place%x->sch->execution_threads]=x->sch->q->jobs[thread_mutex_place].histjob.createHistArray(&(x->S),start,end);
 			}
 		}
-		else if(x->sch->q->jobs[thread_mutex_place].partitionFlag==true)
+		else if(x->sch->q->jobs[thread_mutex_place].partitionFlag==true)		//an h douleia sthn thesh thread_mutex_place einai tupou partition
 		{
 			int start = x->sch->q->jobs[thread_mutex_place].partitionjob.start;
 			int end = x->sch->q->jobs[thread_mutex_place].partitionjob.end;
+			//kaloume thn createReOrderedArray gia na mas ftiaksei ton R' kai S'
 			if(x->sch->q->jobs[thread_mutex_place].partitionjob.rel=='R')
 			{
 				x->sch->q->jobs[thread_mutex_place].partitionjob.createReOrderedArray(x->R,*(x->sch->shared_data.histArrayR),start,end,*(x->sch->shared_data.RR));
@@ -71,7 +72,7 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
 				x->sch->q->jobs[thread_mutex_place].partitionjob.createReOrderedArray(x->S,*(x->sch->shared_data.histArrayS),start,end,*(x->sch->shared_data.RS));
 			}
 		}
-		else if(x->sch->q->jobs[thread_mutex_place].joinFlag==true)
+		else if(x->sch->q->jobs[thread_mutex_place].joinFlag==true)		//an h douleia sthn thesh thread_mutex_place einai tupou join
 		{
 			indexHT* ht;
 			resultList *resList=initializeResultList();
@@ -79,6 +80,8 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
 			int endR = x->sch->q->jobs[thread_mutex_place].joinjob.endR;
 			int startS = x->sch->q->jobs[thread_mutex_place].joinjob.startS;
 			int endS = x->sch->q->jobs[thread_mutex_place].joinjob.endS;
+
+			//dhmiourgia hashtable gia to katallhlo bucket ,sugkrish twn 2 bucket kai ustera eisagwgh sthn lista
 			if(x->sch->q->jobs[thread_mutex_place].joinjob.rel=='R')
 			{
 				ht=createHashTable(*(x->sch->shared_data.RR),startR,endR);
@@ -92,7 +95,7 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
 				deleteHashTable(&ht);
 			}
 			pthread_mutex_lock(&resList_counter_mutex);
-			x->sch->shared_data.resList[resList_counter] = resList;
+			x->sch->shared_data.resList[resList_counter] = resList;		//pername ston pinaka me tis listes thn lista pou ftiaxthke parapanw kai meta tha tis enwsoume oles mazi
 			resList_counter++;
 			pthread_mutex_unlock(&resList_counter_mutex);
 		}
@@ -104,14 +107,15 @@ void *Worker(void* j)//sunartisi ton thread akolouthei to montelo tou katanoloti
 		pthread_cond_signal(&producer_wait_cond);
 	}
 }
-void sleep_producer(Job_Scheduler *job_scheduler,int end)
+void sleep_producer(Job_Scheduler *job_scheduler,int end)		//sunarthsh pou kaleitai apo thn radix kai blockarei thn leitourgia ths kentrikhs diergasias ews otou teleiwsoun oles oi douleies
 {
 	pthread_mutex_lock(&job_counter_mutex);
-	while(job_scheduler->q->jobs_counter>0)
-	{
-		pthread_cond_wait(&producer_wait_cond,&job_counter_mutex);
-	}
+		while(job_scheduler->q->jobs_counter>0)
+		{
+			pthread_cond_wait(&producer_wait_cond,&job_counter_mutex);
+		}
 	pthread_mutex_unlock(&job_counter_mutex);
+	//an to end einai iso me 1 tote shmainei oti h teleutaia douleia pou dothike htan join kai den exoume alles douleies .ara termatizoume ta threads
 	if(end==1)
 	{
 		ending=1;
@@ -119,35 +123,35 @@ void sleep_producer(Job_Scheduler *job_scheduler,int end)
 	}
 	resList_counter=0;
 }
-void delete_threads(Job_Scheduler** schedule)//katharizei ton jobscheduler
+void delete_threads(Job_Scheduler** schedule)		//katharizei ton jobscheduler
 {
     int i;
 	int err;
-	for (i =0 ; i <(*schedule)->execution_threads ; i++)
+	for (i =0 ; i <(*schedule)->execution_threads ; i++)		//perimenoume na teleiwsoun ola ta threads thn leitourgia tous
 	{
-		pthread_cond_broadcast(&worker_wait_cond);
+		pthread_cond_broadcast(&worker_wait_cond);				//ksupname gia teleutaia fora osa threads exoun meinei ston condition variable
 		if ( (err = pthread_join (((*schedule)->tids[i]) ,NULL)))
 		{
 			perror (" pthread_join " );
 			exit (1) ;
 		}
 	}
-	for(i=0;i<5000;i++)
+	for(i=0;i<5000;i++)			//katastrofh tou mutex ths ouras
 	{
 		pthread_mutex_destroy(&worker_mutex[i]);
 	}
 
-	free((*schedule)->tids);
+	free((*schedule)->tids);		//diagrafh tou job scheduler
 	free((*schedule)->q->jobs);
 	free((*schedule)->q);
 	free((*schedule));
 	free(worker_mutex);
 }
 
-void submit_Job(Job_Scheduler* schedule,Job Job){
+void submit_Job(Job_Scheduler* schedule,Job Job){			//upovolh douleias ston job scheduler
 
 	pthread_mutex_lock(&worker_mutex[schedule->q->end]);
-		if((Job).histFlag==true)
+		if((Job).histFlag==true)							//upovolh hist douleias ston job scheduler
 		{
 			schedule->q->jobs[schedule->q->end]=Job;
 			schedule->q->jobs[schedule->q->end].histFlag=true;
@@ -155,7 +159,7 @@ void submit_Job(Job_Scheduler* schedule,Job Job){
 			schedule->q->jobs[schedule->q->end].joinFlag=false;
 			schedule->q->jobs[schedule->q->end].partitionFlag=false;
 		}
-		else if((Job).partitionFlag==true)
+		else if((Job).partitionFlag==true)					//upovolh partition douleias ston job scheduler
 		{
 			schedule->q->jobs[schedule->q->end]=Job;
 			schedule->q->jobs[schedule->q->end].histFlag=false;
@@ -163,7 +167,7 @@ void submit_Job(Job_Scheduler* schedule,Job Job){
 			schedule->q->jobs[schedule->q->end].joinFlag=false;
 			schedule->q->jobs[schedule->q->end].partitionFlag=true;
 		}
-		else if((Job).joinFlag==true)
+		else if((Job).joinFlag==true)						//upovolh join douleias ston job scheduler
 		{
 			schedule->q->jobs[schedule->q->end]=Job;
 			schedule->q->jobs[schedule->q->end].histFlag=false;
@@ -171,19 +175,19 @@ void submit_Job(Job_Scheduler* schedule,Job Job){
 			schedule->q->jobs[schedule->q->end].joinFlag=true;
 			schedule->q->jobs[schedule->q->end].partitionFlag=false;
 		}
-		pthread_mutex_lock( &job_counter_mutex );
-			schedule->q->jobs_counter++;
+		pthread_mutex_lock( &job_counter_mutex );			//mutex gia ton metrhth twn douleiwn
+			schedule->q->jobs_counter++;					//aukshsh metrhth douleiwn tou job scheduler
 		pthread_mutex_unlock( &job_counter_mutex );
 	pthread_mutex_unlock(&worker_mutex[schedule->q->end]);
 
-	schedule->q->end=(schedule->q->end+1)%(schedule->q->size);
-	pthread_cond_broadcast(&worker_wait_cond);
+	schedule->q->end=(schedule->q->end+1)%(schedule->q->size);		//allagh tou deikth end sthn teleutaia thesh ths ouras pou uparxei douleia
+	pthread_cond_broadcast(&worker_wait_cond);						//ksupname ola ta threads pou perimenoun na paroun kapoia douleia
 }
-Job_Scheduler* initialize_scheduler(int execution_threads,oneColumnRelation *R,oneColumnRelation *S)//arxikopoiisi JobScheduler
+Job_Scheduler* initialize_scheduler(int execution_threads,oneColumnRelation *R,oneColumnRelation *S)//arxikopoihsh tou JobScheduler
 {
 	Job_Scheduler* scheduler=malloc(sizeof(Job_Scheduler));
 	pthread_t *workers;
-	Queue* queue=malloc(sizeof(Queue));//dimiourgeia buffer
+	Queue* queue=malloc(sizeof(Queue)); //dimiourgeia buffer ouras
 	queue->start=0;
 	queue->end=0;
 	queue->size=5000;
@@ -213,16 +217,14 @@ Job_Scheduler* initialize_scheduler(int execution_threads,oneColumnRelation *R,o
 	int err;
 	void *Worker(void*) ;
 	thread_param *temp1;
-	temp1=malloc(scheduler->execution_threads*sizeof(thread_param));
-
+	temp1=malloc(scheduler->execution_threads*sizeof(thread_param));		//proswrinh metavlhth sthn opoia kratame ta dedomena pou xreiazontai
+																			//ta threads gia na ektelesoun tis douleies tous
     for(i=0;i<scheduler->execution_threads;i++)//dimiourgia ton thread
 	{
 		temp1[i].sch=scheduler;
 		temp1[i].id=i;
 		temp1[i].R=R;
 		temp1[i].S=S;
-		temp1[i].HistR=NULL;
-		temp1[i].HistS=NULL;
 		if ((err=pthread_create( (scheduler->tids)+i  , NULL , Worker ,(void*)(temp1+i))))		/*ftiaxnw ta threads workers*/
 		{
 			perror (" pthread_create " );
