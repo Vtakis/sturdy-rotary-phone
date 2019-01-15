@@ -192,9 +192,6 @@ struct queryDataIndex
 	int numPredFilter;  //posa predicators filter
 	filterPredNode *predFilterArray;  //pinakas me ta filter predicators
 
-	int numPredJoinOneRel;  //posa predicators join pou aforoun columns tou idiou relation
-	joinPredNode *oneRelationPredArray;  //pinakas me ta join predicators apo idio relation
-
 	int numPredJoinTwoRel;  //posa predicators join pou aforoun columns diaforetikou relation
 	joinPredNode *twoRelationPredArray;  //pinakas me ta join predicators apo diaforetika relations
 

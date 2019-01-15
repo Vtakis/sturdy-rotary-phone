@@ -1283,7 +1283,6 @@ queryDataIndex* analyzeQuery(char *query)
 				queryData->predFilterArray[k].relColumn=malloc(sizeof(RelColNode));
 
 			queryData->numPredJoinTwoRel=numPredJoinTwoRel;
-			queryData->numPredJoinOneRel=0;
 			queryData->twoRelationPredArray=malloc(queryData->numPredJoinTwoRel*sizeof(joinPredNode));
 			for(k=0;k<queryData->numPredJoinTwoRel;k++){
 				queryData->twoRelationPredArray[k].left=malloc(sizeof(RelColNode));
