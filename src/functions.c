@@ -520,9 +520,9 @@ void deleteResultList(resultList * reslist){
 	}
 	free(reslist);
 }
-char **readRelations(int *number_of_files){
+char **readRelations(int *number_of_files){//
 	char **relation,*token,buffer[4096];
-	if(read(STDIN_FILENO,buffer,sizeof(buffer))==-1)
+	if(read(STDIN_FILENO,buffer,sizeof(buffer))==-1)//diavazoume apo to harness ta relations
 	{
 		perror("Read :");
 		exit(0);
@@ -533,7 +533,7 @@ char **readRelations(int *number_of_files){
 	relation[0]=malloc(strlen(token)+1);
 	strcpy(relation[0],token);
 
-	while(token!=NULL){
+	while(token!=NULL){ 
 		token=strtok(NULL,"\n");
 		if(token==NULL)
 			break;
@@ -541,7 +541,7 @@ char **readRelations(int *number_of_files){
 		relation[*number_of_files]=malloc(strlen(token)+1);
 		strcpy(relation[(*number_of_files)++],token);
 	}
-	return relation;
+	return relation; //epistrefoume ena pinaka apo string pou exei ta onomata twn relations
 }
 void createRelations(int number_of_files,multiColumnRelation **relationArray,all_stats **statsArray,char **relation){
 
@@ -554,7 +554,7 @@ void createRelations(int number_of_files,multiColumnRelation **relationArray,all
 
 
 	for(i=0;i<number_of_files;i++){
-		fp=fopen(relation[i],"rb");
+		fp=fopen(relation[i],"rb"); //me vash ton pinaka me ta onomata twn relations, anoigoume to ka8e relation
 		if(fp==NULL){
 			printf("error\n");
 			return;
@@ -641,7 +641,7 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 	char *token,*queryString;
 	while(1)
 	{
-		ssize_t bytes = read(STDIN_FILENO,buffer,sizeof(buffer));
+		ssize_t bytes = read(STDIN_FILENO,buffer,sizeof(buffer)); //diavasma batch apo harness
 		if(bytes==0)		//to programma den diavase allo batch ara termatizei
 		{
 			break;
@@ -674,7 +674,7 @@ void executeBatches(multiColumnRelation *relationArray,all_stats *statsArray){
 		}
 		queryDataIndex *data;
 		int y=1;
-		for(cur=0;cur<numBatchQueries;cur++){
+		for(cur=0;cur<numBatchQueries;cur++){ //ekteloume ta queries pou exei to batch
 				oneColumnRelation *column;
 				y++;
 				data=analyzeQuery(execQueries[cur]);
