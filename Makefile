@@ -4,9 +4,9 @@ HEADER= header-files/functions.h header-files/Job_Scheduler.h
 OUT=myexe
 OBJS2=src/unit_testing.o src/functions.o src/Job_Scheduler.o
 SOURCE2=src/unit_testing.c src/functions.c src/Job_Scheduler.c
-OUT2=unitest
+OUT2=unitest 
 SOURCE3=harness.cpp
-OUT3=harness
+OUT3=harness 
 CC=gcc
 CCX=g++
 FLAGS=-g -c -Wall 
@@ -30,7 +30,7 @@ src/functions.o : src/functions.c
 
 
 clean: 
-	rm -f *.o  $(OUT) $(OUT2) $(OUT3)
+	rm -f *.o  $(OUT) $(OUT2) $(OUT3) input-files/input.txt
 
 count:
 	wc $(SOURCE) $(HEADER)

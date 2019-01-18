@@ -6,7 +6,7 @@
 myexe
 unitest
 *.orig
-input-files/
+input-files/public/
 *.txt
 Debug/
 compile.sh

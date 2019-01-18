@@ -10,7 +10,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <chrono>
 //---------------------------------------------------------------------------
 using namespace std;
 //---------------------------------------------------------------------------
@@ -210,7 +209,7 @@ int main(int argc, char *argv[]) {
 
   unsigned long query_no = 0;
   unsigned long failure_cnt = 0;
- // cout <<"Batces " << input_batches.size() <<endl;
+
   // Loop over all batches
   for (unsigned long batch = 0; batch != input_batches.size() && failure_cnt < MAX_FAILED_QUERIES; ++batch) {
     string output;  // raw output is collected here
@@ -223,34 +222,21 @@ int main(int argc, char *argv[]) {
       fd_set read_fd, write_fd;
       FD_ZERO(&read_fd);
       FD_ZERO(&write_fd);
-      	// cout << "inputs_ofs " <<input_ofs <<" "<< input_batches[batch].length()<<endl;
-      	// cout << "output_read " <<output_read <<" "<< result_batches[batch].size()<<endl;
-      if (input_ofs != input_batches[batch].length()){
-    	 // cout<<"input"<<endl;
-    	  FD_SET(stdin_pipe[1], &write_fd);
-      }
 
-      if (output_read != result_batches[batch].size()){
-    	 // cout<<"output"<<endl;
-    	  FD_SET(stdout_pipe[0], &read_fd);
-      }
+      if (input_ofs != input_batches[batch].length()) FD_SET(stdin_pipe[1], &write_fd);
 
-     // cout<<"select1"<<endl;
-     // cout <<stdin_pipe[1]<<" "<<stdout_pipe[0]<<" "<<max(stdin_pipe[1], stdout_pipe[0])<<endl;
+      if (output_read != result_batches[batch].size()) FD_SET(stdout_pipe[0], &read_fd);
+
       int retval = select(max(stdin_pipe[1], stdout_pipe[0]) + 1, &read_fd, &write_fd, NULL, NULL);
-    //  cout<<"select2"<<endl;
       if (retval == -1) {
         perror("select");
         exit(EXIT_FAILURE);
       }
 
       // Read output from the test program
-      //cout<<"Read from test"<<endl;
       if (FD_ISSET(stdout_pipe[0], &read_fd)) {
-
         char buffer[4096];
         int bytes = read(stdout_pipe[0], buffer, sizeof(buffer));
-        //cout<<"Bytes Readed "<<bytes<<endl;
         if (bytes < 0) {
           if (errno == EINTR) continue;
           perror("read");
@@ -260,18 +246,13 @@ int main(int argc, char *argv[]) {
         for (size_t j = 0; j != size_t(bytes); ++j) {
           if (buffer[j] == '\n') ++output_read;
         }
-        //cout<<"Test out lines: "<<output_read<<endl;
-       // cout<<"Read from test..."<<buffer<<endl;
         output.append(buffer, bytes);
       }
 
       // Feed another chunk of data from this batch to the test program
-      //cout<<"Feed data1"<<endl;
       if (FD_ISSET(stdin_pipe[1], &write_fd)) {
-    	 // cout<<"Feed data"<<endl;
         int bytes =
             write(stdin_pipe[1], input_batches[batch].data() + input_ofs, input_batches[batch].length() - input_ofs);
-        	//cout<<input_batches[batch].data() + input_ofs<<"and "<<input_batches[batch].length() - input_ofs<<endl;
         if (bytes < 0) {
           if (errno == EINTR) continue;
           perror("write");
@@ -279,13 +260,11 @@ int main(int argc, char *argv[]) {
         }
         input_ofs += bytes;
       }
-   	// cout << "inputs_ofs end " <<input_ofs <<" "<< input_batches[batch].length()<<endl;
-   	// cout << "output_read end " <<output_read <<" "<< result_batches[batch].size()<<endl<<endl;
     }
 
     // Parse and compare the batch result
     stringstream result(output);
-   // cout<<"Results"<<endl;
+
     for (unsigned i = 0; i != result_batches[batch].size() && failure_cnt < MAX_FAILED_QUERIES; ++i) {
       string val;
 
@@ -295,22 +274,17 @@ int main(int argc, char *argv[]) {
         cerr << "Incomplete batch output for batch " << batch << endl;
         exit(EXIT_FAILURE);
       }
-      //cout<<"...."<<endl;
-      for(int j=0;j<val.length();j++)
-      {
-    	 // cout<<val[j]<<"\t"<<result_batches[batch][i][j]<<endl;
-      }
-     //cout<<"...."<<endl;
+
       bool matched = val == result_batches[batch][i];
       if (!matched) {
         cerr << "Result mismatch for query " << query_no << ", expected: " << result_batches[batch][i]
-                  << ", actual: " << val <<","<< endl;
+                  << ", actual: " << val << endl;
         ++failure_cnt;
       }
-      if (matched)
+      /*if (matched)
       {
-         // cout << "Received: " << val << " Expect: " << result_batches[batch][i]<<endl;
-      }
+          cout << endl << val << endl <<  endl << result_batches[batch][i];
+      }*/
       ++query_no;
     }
   }

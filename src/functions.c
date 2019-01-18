@@ -5,8 +5,8 @@
 #include <time.h>
 #include "../header-files/functions.h"
 #include "../header-files/Job_Scheduler.h"
-#define bucketPosNum 50
-#define N 12
+#define bucketPosNum 30
+#define N 5
 #define THREADS_NUM 4
 #include <stdbool.h>
 #include <unistd.h>
@@ -481,7 +481,7 @@ void writeFile(uint32_t size_A,uint32_t size_B){
 	}
 	fclose(fp);
 }
-void readFile(int32_t A[],uint32_t *size_A,int32_t B[],uint32_t *size_B){
+void readFile(int32_t A[],int *size_A,int32_t B[],int *size_B){
 	FILE *fp;
 	fp=fopen("input-files/input.txt","r");
 	int32_t el1,el2;
@@ -490,7 +490,6 @@ void readFile(int32_t A[],uint32_t *size_A,int32_t B[],uint32_t *size_B){
 		perror("fscanf:");
 		exit(0);
 	}
-
 	for(int32_t i=0;i<*size_A;i++){
 		if(fscanf(fp,"%d,",&el1)==EOF)
 		{
@@ -500,7 +499,7 @@ void readFile(int32_t A[],uint32_t *size_A,int32_t B[],uint32_t *size_B){
 		A[i]=el1;
 	}
 	for(int32_t i=0;i<*size_B;i++){
-		if(fscanf(fp,"%d,",&el2))
+		if(fscanf(fp,"%d,",&el2)==EOF)
 		{
 			perror("fscanf:");
 			exit(0);

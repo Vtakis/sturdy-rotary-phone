@@ -15,7 +15,7 @@ static FILE* temp_file = NULL;
  */
 int init_suite1(void)
 {
-   if (NULL == (temp_file = fopen("temp.txt", "w+"))) {
+   if (NULL == (temp_file = fopen("input-files/input.txt", "w+"))) {
       return -1;
    }
    else {
@@ -39,9 +39,9 @@ int clean_suite1(void)
 }
 void testOneRelationJoin(void)
 {
-	uint32_t size_A=100;
+	int size_A=100;
 	int32_t A[size_A];
-	uint32_t size_B=100;
+	int size_B=100;
 	int32_t B[size_B];
 	resultList* resList;
 	oneColumnRelation *S,*R;
@@ -129,13 +129,14 @@ void testOneRelationJoin(void)
 
 	}
 }
+
 void testRadixHashJoin(void)
 {
 
 
-	uint32_t size_A=100;
+	int size_A=100;
 	int32_t A[size_A];
-	uint32_t size_B=100;
+	int size_B=100;
 	int32_t B[size_B];
 	resultList* resList;
 	oneColumnRelation *S,*R;

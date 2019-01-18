@@ -233,7 +233,7 @@ void insertResult(resultList *list,uint32_t id1,uint32_t id2,int32_t);
 void printResults(resultList *list);
 void createHT_CompareBuckets(resultList* ,hist*,hist*,oneColumnRelation*,oneColumnRelation*,int32_t,int32_t);//to last orisma einai boolean , apo poion pinaka erxete
 void writeFile(uint32_t,uint32_t);
-void readFile(int32_t[],uint32_t *,int32_t[],uint32_t *);
+void readFile(int32_t[],int *,int32_t[],int *);
 void deleteResultList(resultList *);
 queryDataIndex* analyzeQuery(char * query);
 void readWorkFile(char *filename,multiColumnRelation *,all_stats *);
